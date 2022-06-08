@@ -19,6 +19,10 @@ if __name__ == '__main__':
     )
 
 bot.load_extensions(exts=[
+    'cogs.alch',
+    'cogs.examine',
+    'cogs.price',
     'cogs.wiki'
 ])
+
 bot.run(env['BOT_TOKEN'])
