@@ -18,7 +18,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 
 ## Prerequisites
 - Python 3.8 +
-- The [pip](https://pypi.org/project/pip/) package management tool.
+[Poetry](https://python-poetry.org/docs) (or, the [pip](https://pypi.org/project/pip/) package management tool.)
 
 ## Tools
 - [Disnake API Wrapper](https://github.com/DisnakeDev/disnake)
