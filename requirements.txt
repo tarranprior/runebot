@@ -1,0 +1,5 @@
+beautifulsoup4==4.11.1
+colorthief==0.2.1
+disnake==2.4.0
+loguru==0.6.0
+python-dotenv==0.20.0

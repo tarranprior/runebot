@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "discord-rotten-soup"
+version = "1.0.0"
+description = ""
+authors = ["Tarran Prior <Tarranprior@protonmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+disnake = "2.4.0"
+loguru = "0.6.0"
+python-dotenv = "0.20.0"
+colorthief = "0.2.1"
+beautifulsoup4 = "4.11.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
