@@ -29,7 +29,7 @@ class Wiki(commands.Cog, name='wiki'):
         thumbnail_url = attributes['thumbnail_url']
 
         if description:
-            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{WIKI_URL}/w/{query}')
+            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{WIKI_URL}{query}')
             return(embed, view)
         embed, view = EmbedFactory().create(title=title, description=f'{title} may refer to several articles. Use the dropdown below to select an option.', options=options)
         return(embed, view)
