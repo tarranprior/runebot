@@ -81,7 +81,7 @@ Preferably, you should use Poetry to run this bot for local development:
 | Developer | `purge` | Deletes a specified number of messages. |
 | Developer | `toggle` | Toggles colour mode on/off. An alternative to `configure colours`. |
 | Lookup | `alch` | Fetches alchemy data from the official Old School RuneScape wikipedia. |
-| Lookup | `examie` | Fetch the examine text from the official Old School RuneScape wikipedia. |
+| Lookup | `examine` | Fetch the examine text from the official Old School RuneScape wikipedia. |
 | Lookup | `price` | Fetch guide price data from the official Old School RuneScape wikipedia. |
 | Lookup | `wiki` | Look up an entry from the official Old School RuneScape wikipedia. |
 
