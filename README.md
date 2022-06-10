@@ -88,9 +88,14 @@ Preferably, you should use Poetry to run this bot for local development:
 | `🔎 Lookup` | `wiki` | Look up an entry from the official Old School RuneScape wikipedia. |
 
 ## Screenshots
-<img src="https://i.imgur.com/6TVvpeB.png" />
-<img src="https://i.imgur.com/mg2kI6x.png" />
-<img src="https://i.imgur.com/FUby7Y3.png" />
+
+> RottenSoup has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, monsters, NPCs, pets and followers, skills and more - directly from the official wiki.
+> <br /><br />
+> <img src="https://i.imgur.com/6TVvpeB.png" />
+> <br /><br />
+> <img src="https://i.imgur.com/mg2kI6x.png" />
+> <br /><br />
+> <img src="https://i.imgur.com/FUby7Y3.png" />
 
 ## Support
 If you have any questions about this template, please submit an issue [here](https://github.com/tarranprior/discord-rotten-soup/issues).<br/>
