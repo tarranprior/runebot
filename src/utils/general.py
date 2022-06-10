@@ -45,6 +45,20 @@ def load_configuration():
         sys.exit(f"Configuration file not found. Please add it and try again.")
 
 '''
+Function to update configuration data in './config.json'
+'''
+def update_configuration(key: str, value: str):
+    if str(load_configuration()['configuration'][f'{key}']) != value:
+        with open('config.json', 'r+') as json_file:
+            data = json.load(json_file)
+            data['configuration'][f'{key}'] = value
+            json_file.seek(0)
+            json.dump(data, json_file, indent=4)
+            json_file.truncate()
+        return(data['configuration'][f'{key}'], value)
+    return False
+
+'''
 Function to reformat a query.
 :param query: (String) - Represents a search value.
 '''
