@@ -1,3 +1,5 @@
+
+<p align="center"><img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/rottensoup-banner.png" /></p>
 <h1 align="center">Rotten Soup</h1>
 
 <a href="https://github.com/tarranprior/discord-rotten-soup/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.0-7289da?style=for-the-badge)</a>
