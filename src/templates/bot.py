@@ -62,7 +62,7 @@ class Bot(commands.Bot):
                 embed = EmbedFactory().create(title='No Examine Text', description=str(error.__cause__), colour=disnake.Colour.red())
                 return await ctx.reply(embed=embed)
 
-        logger.error(f'Ignoring exception in command {ctx.command}:\n{error}')
+        logger.error(f'Ignoring exception in command {ctx.command}: {error}')
 
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
@@ -82,7 +82,7 @@ class Bot(commands.Bot):
                 embed = EmbedFactory().create(title='No Examine Text', description=str(error.__cause__), colour=disnake.Colour.red())
                 return await inter.response.send_message(embed=embed)
 
-        logger.error(f'Ignoring exception in slash command {inter.command}:\n{error}')
+        logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')
 
     @tasks.loop(minutes=10.0)
     async def status() -> None:
