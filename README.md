@@ -89,13 +89,20 @@ Preferably, you should use Poetry to run this bot for local development:
 
 ## Screenshots
 
-> RottenSoup has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, monsters, NPCs, pets and followers, skills and more - directly from the official wiki.
+> RottenSoup has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, monsters, NPCs, pets and followers, skills etc. Directly from the official wiki for the most up to date information.
 > <br /><br />
-> <img src="https://i.imgur.com/6TVvpeB.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo1.png" />
 > <br /><br />
-> <img src="https://i.imgur.com/mg2kI6x.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo2.png" />
+
+> Supports NPCs, followers and pets, skills etc.
 > <br /><br />
-> <img src="https://i.imgur.com/FUby7Y3.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo3.png" />
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo4.png" />
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo5.png" />
+
 
 ## Support
 If you have any questions about this template, please submit an issue [here](https://github.com/tarranprior/discord-rotten-soup/issues).<br/>
