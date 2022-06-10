@@ -13,6 +13,10 @@ class Price(commands.Cog, name='price'):
 
         global WIKI_URL
         WIKI_URL = self.bot.config['configuration']['wiki_url']
+        global API_URL
+        API_URL = self.bot.config['configuration']['api_url']
+        global GRAPHAPI_URL
+        GRAPHAPI_URL = self.bot.config['configuration']['graphapi_url']
         global HEADERS
         HEADERS = self.bot.config['headers']
 
@@ -36,12 +40,25 @@ class Price(commands.Cog, name='price'):
         except KeyError:
             raise exceptions.NoPriceData
 
+        api_data = parse_price_data(f'{API_URL}{item_id}', HEADERS)
+        #graphapi_data = parse_price_data(f'{GRAPHAPI_URL}{item_id}.json', HEADERS)
+
         embed, view = EmbedFactory().create(
             title=f'{title} (ID: {item_id})',
-            description=f'**Value**: {value_price} • **Exchange Price**: {exchange_price} • **Buy Limit**: {buy_limit}',
+            description=api_data['item']['description'],
+            thumbnail_url=api_data['item']['icon_large'],
             button_label='Real-Time Prices',
             button_url=f'https://prices.runescape.wiki/osrs/item/{item_id}'
         )
+        embed.add_field(name='Current Value', value=value_price, inline=True)
+        embed.add_field(name='Exchange Price', value=exchange_price, inline=True)
+        embed.add_field(name='Buy Limit', value=buy_limit, inline=True)
+
+        embed.add_field(name='Today', value=f"{api_data['item']['today']['price']} coins ({api_data['item']['today']['trend'].title()})", inline=False)
+
+        embed.add_field(name='30 Days', value=f"{api_data['item']['day30']['change']}", inline=True)
+        embed.add_field(name='90 Days', value=f"{api_data['item']['day90']['change']}", inline=True)
+        embed.add_field(name='180 Days', value=f"{api_data['item']['day180']['change']}", inline=True)
 
         return(embed, view)
 

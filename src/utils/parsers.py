@@ -1,3 +1,4 @@
+import requests
 from urllib.error import HTTPError
 from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
@@ -97,6 +98,20 @@ def parse_options(page_div) -> None:
     sorted_options = list(dict.fromkeys(options))[:25]
 
     return(sorted_options)
+
+'''
+Parses price data using the official API.
+:param url: (String) - Represents the full URL with an item_id.
+:param headers: (Dictionary) - Represents a series of request headers.
+'''
+def parse_price_data(url, headers) -> None:
+    try:
+        request = requests.get(url, headers=headers)
+        data = request.json()
+    except:
+        raise exceptions.NoPriceData
+
+    return(data)    
 
 '''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.

@@ -13,7 +13,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
-- Display names, descriptions, images, properties etc. beautifully with embeds.
+- Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
 - Get the most up to date information - directly from the official wiki.
 - Full slash command integration.
 - User interface components (buttons, dropdowns etc.) for usability.
