@@ -18,7 +18,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 
 ## Prerequisites
 - Python 3.8 +
-- [Poetry](https://python-poetry.org/docs) (or, the [pip](https://pypi.org/project/pip/) package management tool.)
+- [Poetry](https://python-poetry.org/docs) (or the [pip](https://pypi.org/project/pip/) package management tool.)
 
 ## Tools
 - [Disnake API Wrapper](https://github.com/DisnakeDev/disnake)
@@ -91,10 +91,10 @@ Preferably, you should use Poetry to run this bot for local development:
 <img src="https://i.imgur.com/FUby7Y3.png" />
 
 ## Support
-If you have any questions about this template, please submit an issue [here](https://github.com/linuxiso/rotten-soup/issues).<br/>
+If you have any questions about this template, please submit an issue [here](https://github.com/tarranprior/discord-rotten-soup/issues).<br/>
 
 ## License
-This project is licensed under the CC BY-NC-SA 3.0 License - see the [LICENSE](https://github.com/linuxiso/rotten-soup/blob/main/LICENSE) file for details.
+This project is licensed under the CC BY-NC-SA 3.0 License - see the [LICENSE](https://github.com/tarranprior/discord-rotten-soup/blob/main/LICENSE) file for details.
 
 ## References
 - Beautiful Soup Docs https://www.crummy.com/software/BeautifulSoup/bs4/doc/
