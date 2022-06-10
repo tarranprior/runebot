@@ -94,7 +94,7 @@ Preferably, you should use Poetry to run this bot for local development:
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo1.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo2.png" />
-
+> <br/><br/>
 > Supports NPCs, followers and pets, skills etc.
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo3.png" />
