@@ -16,6 +16,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 - Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
 - Get the most up to date information - directly from the official wiki.
 - Full slash command integration.
+- Data visualisation for displaying the latest trends.
 - User interface components (buttons, dropdowns etc.) for usability.
 
 ## Prerequisites
@@ -102,6 +103,10 @@ Preferably, you should use Poetry to run this bot for local development:
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo4.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo5.png" />
+> <br/><br/>
+> Fetches the latest price trends and uses data visualisation.
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo6.png" />
 
 
 ## Support
