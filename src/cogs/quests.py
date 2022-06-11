@@ -46,9 +46,14 @@ class Quests(commands.Cog, name='quests'):
             button_url=f"https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}/Quick_guide"
         )
         embed.add_field(name='Quest series', value=quest_series, inline=True)
-        embed.add_field(name='Official difficulty', value=difficulty, inline=True)
+        embed.add_field(name='Difficulty', value=difficulty, inline=True)
         embed.add_field(name='Members', value=members, inline=True)
+
         embed.add_field(name='Start point', value=quest_details['Start point'], inline=False)
+
+        embed.add_field(name='Requirements', value=f"Click [here](https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
+        embed.add_field(name='Rewards', value=f"Click [here](https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
+        
         embed.set_image(url=f"https://oldschool.runescape.wiki{reward_scroll['Reward scroll']}")
 
         return(embed, view)
