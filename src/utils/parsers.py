@@ -116,6 +116,35 @@ def parse_price_data(url, headers) -> None:
     return(data)
 
 '''
+Parses quest details from an Old School RuneScape quest page.
+This will always pass a page with quest details, so won't fail.
+
+:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+'''
+def parse_quest_details(page_content) -> None:
+    detail_table = page_content.find('table', class_='questdetails').find_all('tr')
+    quest_details = {}
+    for row in detail_table:
+        property_name = row.find('th').getText()
+        property_value = row.find('td').getText()
+        quest_details.update({property_name: property_value})
+        continue
+    return(quest_details)
+
+'''
+Parses a quest reward scroll (url) from an Old School RuneScape quest page.
+This will always pass a page with quest details, so won't fail.
+
+:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+'''
+def parse_quest_rewards(page_content) -> None:
+    imgs = page_content.find_all('img')
+    for img in imgs:
+        if 'reward_scroll' in img['src'].lower():
+            reward_scroll = img['src']
+    return({'Reward scroll': reward_scroll})
+
+'''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.
 :param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
 '''

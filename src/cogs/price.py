@@ -74,7 +74,7 @@ class Price(commands.Cog, name='price'):
     @commands.slash_command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.', options=[
             Option(
                 name="Query",
-                description="Search for an article.",
+                description="Search for an item.",
                 type=OptionType.string,
                 required=True
             )

@@ -23,6 +23,7 @@ bot.load_extensions(exts=[
     'cogs.developer',
     'cogs.examine',
     'cogs.price',
+    'cogs.quests',
     'cogs.wiki'
 ])
 
