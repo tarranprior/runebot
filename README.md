@@ -27,6 +27,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 - [Disnake API Wrapper](https://github.com/DisnakeDev/disnake)
 - [Beautiful Soup 4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
 - [Color-thief-py](https://github.com/fengsp/color-thief-py)
+- [Matplotlib - Data Visualisation](https://matplotlib.org/)
 
 ## Disclaimer
 The Old School RuneScape Wiki, also known as the OSRS Wiki and previously known as the 2007Scape Wiki, is the official wiki for the MMORPG game Old School RuneScape developed and published by Jagex Ltd.
