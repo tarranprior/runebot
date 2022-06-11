@@ -65,3 +65,17 @@ Function to reformat a query.
 def search_query(query: str) -> None:
     search_query = query.lower().replace(' ', '_')
     return(search_query)
+
+'''
+Function to reformat (normalise) price integers into RuneScape currency (eg. 550000 to 550K gp)
+:param price: (Integer) - Represents a price integer.
+'''
+def normalise_price(price: int) -> None:
+    if price < 1000:
+        return f'{price:,.0f} gp'
+    elif price < 1000000:
+        return f'{price / 1000:,.1f} K gp'
+    elif price < 1000000000:
+        return f'{price / 1000000:,.1f} M gp'
+    else:
+        return f'{price / 1000000000:,.2f} B gp'

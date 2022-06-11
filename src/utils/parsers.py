@@ -1,9 +1,11 @@
 import requests
+import matplotlib.pyplot as plotter
 from urllib.error import HTTPError
 from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
 
 import exceptions
+from utils.general import normalise_price
 
 '''
 Parses all attributes (title, description, thumbnail etc.) from an Old School RuneScape wikipedia page
@@ -111,7 +113,7 @@ def parse_price_data(url, headers) -> None:
     except:
         raise exceptions.NoPriceData
 
-    return(data)    
+    return(data)
 
 '''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.
@@ -132,3 +134,35 @@ Parses a title from an Old School RuneScape wikipedia page.
 def parse_title(page_content) -> None:
     page_title = page_content.find('h1', class_='firstHeading').string
     return(page_title)
+
+'''
+Generates a graph with given api price data.
+:param data: (Dictionary) - Represents a dictionary of price data.
+'''
+def generate_graph(data) -> None:
+
+    prices = data['daily'].values()
+    average = data['average'].values()
+
+    plotter.rcParams['ytick.color'] = 'lightslategrey'
+    plotter.rcParams['figure.figsize'] = 8, 3
+    plotter.box(on=None)
+    plotter.yticks(
+        [
+            max(prices),
+            sum(prices)/len(prices),
+            min(prices)
+        ],
+        [
+            normalise_price(max(prices)),
+            normalise_price(sum(prices)/len(prices)),
+            normalise_price(min(prices))
+        ]
+    )
+    plotter.xticks([])
+    plotter.axhline(y=sum(prices)/len(prices), dashes=[1, 3])
+    plotter.plot(average, color='#5865F2')
+    plotter.plot(prices, color='lightslategrey')
+    plotter.title('Past 180 Days', loc='right', color='lightslategrey')
+    plotter.savefig('assets/apigraph.png', transparent=True)
+    plotter.close()

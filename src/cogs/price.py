@@ -37,11 +37,13 @@ class Price(commands.Cog, name='price'):
             exchange_price = info['Exchange']
             buy_limit = info['Buy limit']
             item_id = info['Item ID']
+        
         except KeyError:
             raise exceptions.NoPriceData
 
         api_data = parse_price_data(f'{API_URL}{item_id}', HEADERS)
-        #graphapi_data = parse_price_data(f'{GRAPHAPI_URL}{item_id}.json', HEADERS)
+        graphapi_data = parse_price_data(f'{GRAPHAPI_URL}{item_id}.json', HEADERS)
+        generate_graph(graphapi_data)
 
         embed, view = EmbedFactory().create(
             title=f'{title} (ID: {item_id})',
@@ -60,12 +62,14 @@ class Price(commands.Cog, name='price'):
         embed.add_field(name='90 Days', value=f"{api_data['item']['day90']['change']}", inline=True)
         embed.add_field(name='180 Days', value=f"{api_data['item']['day180']['change']}", inline=True)
 
-        return(embed, view)
+        file = disnake.File('assets/apigraph.png', filename='apigraph.png')
+        embed.set_image(url='attachment://apigraph.png')
+        return(embed, view, file)
 
     @commands.command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.')
     async def price(self, ctx: Context, *, query: str):
-        embed, view = Price.price_data(query)
-        await ctx.send(embed=embed, view=view)
+        embed, view, file = Price.price_data(query)
+        await ctx.send(embed=embed, view=view, file=file)
 
     @commands.slash_command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.', options=[
             Option(
@@ -77,8 +81,9 @@ class Price(commands.Cog, name='price'):
         ]
     )
     async def price_slash(self, inter: ApplicationCommandInteraction, *, query):
-        embed, view = Price.price_data(query)
-        await inter.response.send_message(embed=embed, view=view)
+        embed, view, file = Price.price_data(query)
+        await inter.response.send_message(embed=embed, view=view, file=file)
+        file.close()
 
 def setup(bot) -> None:
     bot.add_cog(Price(bot))
