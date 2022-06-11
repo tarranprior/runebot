@@ -84,11 +84,11 @@ Preferably, you should use Poetry to run this bot for local development:
 | `📏 Developer` | `configure` | Update the bot's configuration including activity, colour mode and prefix. |
 | `📏 Developer` | `purge` | Deletes a specified number of messages. |
 | `📏 Developer` | `toggle` | Toggles colour mode on/off. An alternative to `configure colours`. |
-| `🔎 Lookup` | `alch` | Fetches alchemy data from the official Old School RuneScape wikipedia. |
-| `🔎 Lookup` | `examine` | Fetch the examine text from the official Old School RuneScape wikipedia. |
-| `🔎 Lookup` | `price` | Fetch guide price data from the official Old School RuneScape wikipedia. |
-| `🔎 Lookup` | `quest` | Fetch quest information from the official Old School RuneScape wikipedia. |
-| `🔎 Lookup` | `wiki` | Look up an entry from the official Old School RuneScape wikipedia. |
+| `🔎 Lookup` | `alch` | Fetches alchemy data from the official Old School wiki. |
+| `🔎 Lookup` | `examine` | Fetch the examine text from the official Old School wiki. |
+| `🔎 Lookup` | `price` | Fetch guide price data using the official Old School API. |
+| `🔎 Lookup` | `quest` | Fetch quest information from the official Old School wiki. |
+| `🔎 Lookup` | `wiki` | Look up an entry from the official Old School wiki. |
 
 ## Screenshots
 
@@ -113,6 +113,7 @@ Preferably, you should use Poetry to run this bot for local development:
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo7.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo8.png" />
+> <br /><br />
 > Look up quests and rewards.
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo9.png" />
