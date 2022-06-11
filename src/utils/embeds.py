@@ -56,8 +56,9 @@ class EmbedFactory:
 
         if thumbnail_url:
             embed.set_thumbnail(url=thumbnail_url)
-            colour = disnake.Colour.from_rgb(*extract_colour(thumbnail_url, HEADERS))
-            embed.colour = colour
+            if not colour:
+                colour = disnake.Colour.from_rgb(*extract_colour(thumbnail_url, HEADERS))
+                embed.colour = colour
 
         if infobox:
             for i in list(infobox.items())[:3]:
