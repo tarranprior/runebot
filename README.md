@@ -2,7 +2,7 @@
 <p align="center"><img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/rottensoup-banner.png" /></p>
 <h1 align="center">Rotten Soup</h1>
 
-<a href="https://github.com/tarranprior/discord-rotten-soup/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.0-7289da?style=for-the-badge)</a>
+<a href="https://github.com/tarranprior/discord-rotten-soup/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.1-7289da?style=for-the-badge)</a>
 <a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.8-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
 <a href="https://github.com/tarranprior/discord-rotten-soup/blob/main/LICENSE">![License](https://img.shields.io/badge/license-CC%20BY%20NC%20SA%203.0-7289da?style=for-the-badge)</p></a>
 </p>
