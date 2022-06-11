@@ -108,6 +108,8 @@ Preferably, you should use Poetry to run this bot for local development:
 > Fetches the latest price trends and uses data visualisation.
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo6.png" />
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo7.png" />
 
 
 ## Support
