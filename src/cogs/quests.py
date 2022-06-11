@@ -35,7 +35,7 @@ class Quests(commands.Cog, name='quests'):
             difficulty = info['Official difficulty']
             members = info['Members']
         except:
-            exceptions.Nonexistence
+            exceptions.NoQuestData
 
         embed, view = EmbedFactory().create(
             title=title,

@@ -21,3 +21,8 @@ class NoPriceData(Exception):
     def __init__(self, message: str = 'The term you have searched for does not have any price data.'):
         self.message = message
         super().__init__(self.message)
+
+class NoQuestData(Exception):
+    def __init__(self, message: str = 'The term you have searched for does not appear to be a quest.'):
+        self.message = message
+        super().__init__(self.message)

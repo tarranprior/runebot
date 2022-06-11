@@ -70,16 +70,20 @@ class Bot(commands.Bot):
                 embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png?94769')
                 return await inter.response.send_message(embed=embed)
 
-            elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No Price Data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
-                return await inter.response.send_message(embed=embed)
-
             elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No Alch Data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No Examine Text', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                return await inter.response.send_message(embed=embed)
+
+            elif 'NoPriceData' in str(error.__str__()):
+                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                return await inter.response.send_message(embed=embed)
+            
+            elif 'NoQuestData' in str(error.__str__()):
+                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
                 return await inter.response.send_message(embed=embed)
 
         logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')
