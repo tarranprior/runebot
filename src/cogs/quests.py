@@ -25,17 +25,19 @@ class Quests(commands.Cog, name='quests'):
     def quest_data(query: str) -> None:
         query = search_query(query)
         page_content = parse_page(WIKI_URL, query, HEADERS)
-        title = parse_title(page_content)
         info = parse_infobox(page_content)
-        quest_details = parse_quest_details(page_content)
-        reward_scroll = parse_quest_rewards(page_content)
+        title = parse_title(page_content)
 
         try:
             quest_series = info['Quest series']
             difficulty = info['Official difficulty']
             members = info['Members']
-        except:
-            exceptions.NoQuestData
+
+        except KeyError:
+            raise exceptions.NoQuestData
+
+        quest_details = parse_quest_details(page_content)
+        reward_scroll = parse_quest_rewards(page_content)
 
         embed, view = EmbedFactory().create(
             title=title,
