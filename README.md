@@ -97,19 +97,21 @@ Preferably, you should use Poetry to run this bot for local development:
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo2.png" />
 > <br/><br/>
-> Supports NPCs, followers and pets, skills etc.
-> <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo3.png" />
+> <br/><br/>
+> Supports NPCs, followers and pets, skills etc.
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo4.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo5.png" />
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo6.png" />
 > <br/><br/>
 > Fetches the latest price trends and uses data visualisation.
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo6.png" />
-> <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo7.png" />
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo8.png" />
 
 
 ## Support

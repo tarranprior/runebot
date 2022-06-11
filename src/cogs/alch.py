@@ -36,9 +36,11 @@ class Alch(commands.Cog, name='alch'):
 
         embed = EmbedFactory().create(
             title=f'{title} (ID: {item_id})',
-            description=f'**Value**: {value} • **Low alch**: {low_alch} • **High alch**: {high_alch}',
             thumbnail_url=thumbnail_url
         )
+        embed.add_field(name='Value', value=value, inline=True)
+        embed.add_field(name='High alch', value=high_alch, inline=True)
+        embed.add_field(name='Low alch', value=low_alch, inline=True)
 
         return(embed)
 
