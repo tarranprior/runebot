@@ -24,6 +24,7 @@ class Alch(commands.Cog, name='alch'):
 
         title = parse_title(page_content)
         info = parse_infobox(page_content)
+        thumbnail_url = parse_thumbnail(page_content)
 
         try:
             value = info['Value']
@@ -34,8 +35,9 @@ class Alch(commands.Cog, name='alch'):
             raise exceptions.NoAlchData
 
         embed = EmbedFactory().create(
-            title=f'{title} ({item_id})',
-            description=f'**Value**: {value} • **Low Alch**: {low_alch} • **High Alch**: {high_alch}'
+            title=f'{title} (ID: {item_id})',
+            description=f'**Value**: {value} • **Low alch**: {low_alch} • **High alch**: {high_alch}',
+            thumbnail_url=thumbnail_url
         )
 
         return(embed)
