@@ -15,7 +15,7 @@ Rotten Soup is a Discord tool which scrapes and displays information about Old S
 - Search for items and equipment, activities, bosses and more directly on discord.
 - Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
 - Get the most up to date information - directly from the official wiki.
-- Full slash command integration.
+- Supports slash commands.
 - Data visualisation for displaying the latest trends.
 - User interface components (buttons, dropdowns etc.) for usability.
 
@@ -87,6 +87,7 @@ Preferably, you should use Poetry to run this bot for local development:
 | `🔎 Lookup` | `alch` | Fetches alchemy data from the official Old School RuneScape wikipedia. |
 | `🔎 Lookup` | `examine` | Fetch the examine text from the official Old School RuneScape wikipedia. |
 | `🔎 Lookup` | `price` | Fetch guide price data from the official Old School RuneScape wikipedia. |
+| `🔎 Lookup` | `quest` | Fetch quest information from the official Old School RuneScape wikipedia. |
 | `🔎 Lookup` | `wiki` | Look up an entry from the official Old School RuneScape wikipedia. |
 
 ## Screenshots
@@ -112,6 +113,9 @@ Preferably, you should use Poetry to run this bot for local development:
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo7.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo8.png" />
+> Look up quests and rewards.
+> <br /><br />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo9.png" />
 
 
 ## Support
