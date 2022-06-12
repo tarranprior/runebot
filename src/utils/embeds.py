@@ -61,6 +61,7 @@ class EmbedFactory:
                 embed.colour = colour
 
         if infobox:
+            infobox.pop('Image', 'Icon')
             for i in list(infobox.items())[:3]:
                 embed.add_field(name=i[0], value=i[1], inline=True)
 

@@ -79,10 +79,17 @@ def parse_infobox(page_content) -> None:
             try:
                 property_name = row.find('th').getText().rstrip('\n').strip()
                 property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').rstrip('\n').strip()
-                if not property_name == 'Icon':
-                    infobox.update({property_name: property_value})
+                if property_name == 'Icon':
+                    property_value = row.find('img')['src']
                     continue
+                infobox.update({property_name: property_value})
             except AttributeError:
+                try:
+                    property_name = 'Image'
+                    property_value = row.find('td', class_="infobox-image infobox-full-width-content").find('img')['src']
+                    infobox.update({property_name: property_value})
+                except AttributeError:
+                    pass
                 pass
 
     return(infobox)

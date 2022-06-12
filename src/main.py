@@ -22,6 +22,7 @@ bot.load_extensions(exts=[
     'cogs.alch',
     'cogs.developer',
     'cogs.examine',
+    'cogs.monsters',
     'cogs.price',
     'cogs.quests',
     'cogs.wiki'

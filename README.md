@@ -101,31 +101,31 @@ Preferably, you should use Poetry to run this bot for local development:
 
 > RottenSoup has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, monsters, NPCs, pets and followers, skills etc. Directly from the official wiki for the most up to date information.
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo1.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo1.png" />
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo2.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo2.png" />
 > <br/><br/>
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo3.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo3.png" />
 > <br/><br/>
 > Supports NPCs, followers and pets, skills etc.
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo4.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo4.png" />
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo5.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo5.png" />
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo6.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo6.png" />
 > <br/><br/>
 > Fetches the latest price trends and uses data visualisation.
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo7.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo7.png" />
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo8.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo8.png" />
 > <br /><br />
 > Look up quests and rewards.
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo9.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo9.png" />
 > <br /><br />
-> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/demo10.png" />
+> <img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/screenshots/demo10.png" />
 
 
 ## Support
