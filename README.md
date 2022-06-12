@@ -2,7 +2,7 @@
 <p align="center"><img src="https://github.com/tarranprior/runebot/blob/main/assets/banner.png" /></p>
 <h1 align="center">Runebot</h1>
 
-<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.1-7289da?style=for-the-badge)</a>
+<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.2-7289da?style=for-the-badge)</a>
 <a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.8-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
 <a href="https://github.com/tarranprior/runebot/blob/main/LICENSE">![License](https://img.shields.io/badge/license-CC%20BY%20NC%20SA%203.0-7289da?style=for-the-badge)</p></a>
 </p>
@@ -14,7 +14,7 @@ Runebot is a feature-rich Discord tool which scrapes, pulls and displays informa
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
 - Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
-- Get the most up to date information - directly from the official wiki.
+- Get the most up to date information - directly from the official api(s) and wiki.
 - Supports slash commands.
 - Data visualisation for displaying the latest trends.
 - User interface components (buttons, dropdowns etc.) for usability.
@@ -100,7 +100,7 @@ Preferably, you should use Poetry to run this bot for local development:
 
 ## Screenshots
 
-> Runebot has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, price data, monsters, NPCs, pets and followers, skills etc. Directly from the official wiki for the most up to date information.
+> Runebot has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, price data, monsters, NPCs, pets and followers, skills, quests etc. Directly from the official api/wiki for the most up to date information.
 > <br /><br />
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo1.png" />
 > <br /><br />
