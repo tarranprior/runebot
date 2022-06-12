@@ -81,6 +81,7 @@ class Price(commands.Cog, name='price'):
         ]
     )
     async def price_slash(self, inter: ApplicationCommandInteraction, *, query):
+        inter.response.defer
         embed, view, file = Price.price_data(query)
         await inter.response.send_message(embed=embed, view=view, file=file)
         file.close()
