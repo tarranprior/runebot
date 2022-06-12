@@ -1,6 +1,6 @@
 
 <p align="center"><img src="https://github.com/tarranprior/discord-rotten-soup/blob/main/assets/rottensoup-banner.png" /></p>
-<h1 align="center">Rotten Soup</h1>
+<h1 align="center">RottenSoup</h1>
 
 <a href="https://github.com/tarranprior/discord-rotten-soup/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.1-7289da?style=for-the-badge)</a>
 <a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.8-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
@@ -9,7 +9,7 @@
 <p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a> • <a href="#references">References</a></p>
 
 ## Introduction
-Rotten Soup is a Discord tool which scrapes and displays information about Old School RuneScape. Built with Python and Beautiful Soup 4.
+RottenSoup is a Discord tool which scrapes and displays information about Old School RuneScape. Built with Python and Beautiful Soup 4.
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
@@ -93,6 +93,7 @@ Preferably, you should use Poetry to run this bot for local development:
 | ------------- | ------------- | ------------- |
 | `🔎` | `alch` | Fetches alchemy data from the official Old School wiki. |
 | `🔎` | `examine` | Fetches examine text from the official Old School wiki. |
+| `🔎` | `monster` | Fetches monster data from the official Old School wiki. |
 | `🔎` | `price` | Fetches guide price data using the official Old School API. |
 | `🔎` | `quest` | Fetches quest information from the official Old School wiki. |
 | `🔎` | `wiki` | Looks up an entry from the official Old School wiki. |
