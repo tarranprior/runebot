@@ -90,12 +90,13 @@ Preferably, you should use Poetry to run this bot for local development:
 
 | Category | Command Name | Description |
 | ------------- | ------------- | ------------- |
-| `🔎` | `alch` | Fetches alchemy data from the official Old School wiki. |
-| `🔎` | `examine` | Fetches examine text from the official Old School wiki. |
-| `🔎` | `monster` | Fetches monster data from the official Old School wiki. |
-| `🔎` | `price` | Fetches guide price data using the official Old School API. |
-| `🔎` | `quest` | Fetches quest information from the official Old School wiki. |
-| `🔎` | `wiki` | Looks up an entry from the official Old School wiki. |
+| `🔎` | `alch` | Fetches the latest alchemy price data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `🔎` | `examine` | Displays examine text from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `🔎` | `minigame` | Grabs minigame information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `🔎` | `monster` | Fetches monster data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `🔎` | `price` | Displays price data from the official API and generates data visualisation. |
+| `🔎` | `quest` | Fetches quest information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `🔎` | `wiki` | Looks up an entry from the official [Old School wiki](https://oldschool.runescape.wiki/). |
 
 ## Screenshots
 
