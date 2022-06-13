@@ -63,14 +63,14 @@ class Quests(commands.Cog, name='quests'):
 
     @commands.slash_command(name='quest', description='Fetch quest information from the official Old School RuneScape wikipedia.', options=[
             Option(
-                name="Query",
+                name="query",
                 description="Search for a quest.",
                 type=OptionType.string,
                 required=True
             )
         ]
     )
-    async def price_slash(self, inter: ApplicationCommandInteraction, *, query):
+    async def quest_slash(self, inter: ApplicationCommandInteraction, *, query):
         embed, view = Quests.quest_data(query)
         await inter.response.send_message(embed=embed, view=view)
 

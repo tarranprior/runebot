@@ -44,7 +44,7 @@ class Examine(commands.Cog, name='examine'):
 
     @commands.slash_command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.', options=[
             Option(
-                name="Query",
+                name="query",
                 description="Search for an item.",
                 type=OptionType.string,
                 required=True

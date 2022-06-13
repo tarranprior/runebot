@@ -76,13 +76,13 @@ class Monsters(commands.Cog, name='monsters'):
         return(embed, view)
 
     @commands.command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.')
-    async def quest(self, ctx: Context, *, query: str) -> None:
+    async def monster(self, ctx: Context, *, query: str) -> None:
         embed, view = Monsters.monster_data(query)
         await ctx.send(embed=embed, view=view)
     
     @commands.slash_command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.', options=[
             Option(
-                name="Query",
+                name="query",
                 description="Search for a monster.",
                 type=OptionType.string,
                 required=True

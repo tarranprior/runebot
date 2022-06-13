@@ -47,7 +47,7 @@ class Alch(commands.Cog, name='alch'):
     
     @commands.slash_command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.', options=[
             Option(
-                name="Query",
+                name="query",
                 description="Search for an article.",
                 type=OptionType.string,
                 required=True
