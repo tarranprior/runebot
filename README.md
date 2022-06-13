@@ -84,7 +84,7 @@ Preferably, you should use Poetry to run this bot for local development:
 | Category | Command Name | Description |
 | ------------- | ------------- | ------------- |
 | `📏` | `purge` | Deletes a specified number of messages. |
-| `📏` | `toggle` | Toggles colour mode on/off. An alternative to `configure colours`. |
+| `📏` | `toggle` | Toggles configuration values on/off. (`colour_mode`, `hide_scrolls` etc.) |
 
 ### 🔎 Search Tools
 
