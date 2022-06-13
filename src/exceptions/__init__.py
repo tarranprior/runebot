@@ -17,6 +17,11 @@ class NoAlchData(Exception):
         self.message = message
         super().__init__(self.message)
 
+class NoMinigameData(Exception):
+    def __init__(self, message: str = 'The term you have searched for does not appear to be a minigame.'):
+        self.message = message
+        super().__init__(self.message)
+
 class NoMonsterData(Exception):
     def __init__(self, message: str = 'The term you have searched for does not appear to be a monster.'):
         self.message = message

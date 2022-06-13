@@ -77,6 +77,14 @@ class Bot(commands.Bot):
                 )
                 return await ctx.reply(embed=embed)
             
+            elif 'NoMinigameData' in str(error.__str__()):
+                embed = EmbedFactory().create(
+                                        title='No minigame data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
+                return await ctx.reply(embed=embed)
+
             elif 'NoMonsterData' in str(error.__str__()):
                 embed = EmbedFactory().create(
                                         title='No monster data',
@@ -125,6 +133,14 @@ class Bot(commands.Bot):
             elif 'NoExamineText' in str(error.__str__()):
                 embed = EmbedFactory().create(
                                         title='No examine text',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
+                return await inter.response.send_message(embed=embed)
+
+            elif 'NoMinigameData' in str(error.__str__()):
+                embed = EmbedFactory().create(
+                                        title='No minigame data',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )

@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from urllib.request import Request, urlopen
 
 import exceptions
-from utils.general import normalise_price
+from config import *
+from utils.general import *
 
 
 '''
@@ -96,6 +97,17 @@ def parse_infobox(page_content) -> None:
     return(infobox)
 
 '''
+Parses a minigame icon from 'https://oldschool.runescape.wiki/w/Minigames'.
+:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+'''
+def parse_minigame_icon(page_content, query: str) -> None:
+    for table in page_content.find_all('table', class_='wikitable'):
+        for icon in table.find_all('img'):
+            if query in search_query(icon['alt']):
+                icon_url = icon['src']
+                return(f'https://oldschool.runescape.wiki{icon_url}')
+
+'''
 Parses a list of options for queries that may refer to several articles.
 :param page_div: (BeautifulSoup object) Represents a div as a nested data structure.
 '''
@@ -120,7 +132,6 @@ def parse_price_data(url, headers) -> None:
         data = request.json()
     except:
         raise exceptions.NoPriceData
-
     return(data)
 
 '''

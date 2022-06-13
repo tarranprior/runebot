@@ -16,8 +16,7 @@ if __name__ == '__main__':
         command_prefix=load_configuration()['configuration']['prefix'],
         help_command=None,
         intents=disnake.Intents.all(),
-        owner_id=int(env['BOT_OWNER']),
-        test_guilds=[978951090710122536]
+        owner_id=int(env['BOT_OWNER'])
     )
 
 bot.load_extensions(exts=[
@@ -25,6 +24,7 @@ bot.load_extensions(exts=[
     'cogs.developer_tools.toggle',
     'cogs.search_tools.alch',
     'cogs.search_tools.examine',
+    'cogs.search_tools.minigames',
     'cogs.search_tools.monsters',
     'cogs.search_tools.price',
     'cogs.search_tools.quests',
