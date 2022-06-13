@@ -8,6 +8,7 @@ from utils import *
 
 import exceptions
 
+
 class Price(commands.Cog, name='price'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -18,7 +19,7 @@ class Price(commands.Cog, name='price'):
     
     :param query: (String) - Represents a search query.
     '''
-    def price_data(query: str):
+    def fetch_price_data(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
@@ -29,7 +30,6 @@ class Price(commands.Cog, name='price'):
             exchange_price = info['Exchange']
             buy_limit = info['Buy limit']
             item_id = info['Item ID']
-
         except KeyError:
             raise exceptions.NoPriceData
 
@@ -56,11 +56,12 @@ class Price(commands.Cog, name='price'):
 
         file = disnake.File('assets/apigraph.png', filename='apigraph.png')
         embed.set_image(url='attachment://apigraph.png')
+
         return(embed, view, file)
 
     @commands.command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.')
-    async def price(self, ctx: Context, *, query: str):
-        embed, view, file = Price.price_data(query)
+    async def price(self, ctx: Context, *, query: str) -> None:
+        embed, view, file = self.fetch_price_data(query)
         await ctx.send(embed=embed, view=view, file=file)
 
     @commands.slash_command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.', options=[
@@ -72,9 +73,9 @@ class Price(commands.Cog, name='price'):
             )
         ]
     )
-    async def price_slash(self, inter: ApplicationCommandInteraction, *, query):
+    async def price_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
         inter.response.defer
-        embed, view, file = Price.price_data(query)
+        embed, view, file = self.fetch_price_data(query)
         await inter.response.send_message(embed=embed, view=view, file=file)
         file.close()
 

@@ -1,17 +1,18 @@
 import io, os, sys
 import json
-from urllib.request import Request, urlopen
 
+from urllib.request import Request, urlopen
 from colorthief import ColorThief as ColourThief
 
 import disnake
 
+
 '''
-Function to check whether colour mode is set to True/False.
+Function to check whether `colour_mode` is set to True/False.
 '''
-def check_colour_mode() -> None:
-    colour_mode = load_configuration()['configuration']['colour_mode']
-    if colour_mode == 'True':
+def check_mode(mode: str) -> None:
+    mode = load_configuration()['configuration'][f'{mode}']
+    if mode == 'True':
         return(True)
     return(False)
 
@@ -23,7 +24,7 @@ Extracts the most frequent colour from an image with a given URL, using color-th
 :param headers: (String) - Represents HTTP request headers for the web request.
 '''
 def extract_colour(image_url, headers) -> None:
-    colour_mode = check_colour_mode()
+    colour_mode = check_mode('colour_mode')
     if colour_mode == True:
         request_image = Request(image_url, headers=headers)
         open_image = urlopen(request_image)

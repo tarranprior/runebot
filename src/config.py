@@ -1,5 +1,6 @@
 from utils.general import load_configuration
 
+
 # URLs
 BASE_URL = load_configuration()['urls']['wiki_url']
 PRICEAPI_URL = load_configuration()['urls']['priceapi_url']

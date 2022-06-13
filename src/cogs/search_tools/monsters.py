@@ -8,6 +8,7 @@ from utils import *
 
 import exceptions
 
+
 class Monsters(commands.Cog, name='monsters'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -16,7 +17,7 @@ class Monsters(commands.Cog, name='monsters'):
     Monster function. Takes the given search query and returns monster data (if exists.)
     :param query: (String) - Represents a search query.
     '''
-    def monster_data(query: str) -> None:
+    def fetch_monster_data(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
@@ -35,7 +36,6 @@ class Monsters(commands.Cog, name='monsters'):
             venom = info['Venom']
             cannons = info['Cannons']
             thralls = info['Thralls']
-
         except KeyError:
             raise exceptions.NoMonsterData
 
@@ -66,7 +66,6 @@ class Monsters(commands.Cog, name='monsters'):
             embed.add_field(name='Respawn time', value=respawn_time, inline=True)
         except KeyError:
             pass
-
         try:
             monster_id = info['Monster ID']
             embed.add_field(name='Monster ID(s)', value=f"```\n{', '.join(monster_id.split(','))}```", inline=False)
@@ -77,7 +76,7 @@ class Monsters(commands.Cog, name='monsters'):
 
     @commands.command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.')
     async def monster(self, ctx: Context, *, query: str) -> None:
-        embed, view = Monsters.monster_data(query)
+        embed, view = self.fetch_monster_data(query)
         await ctx.send(embed=embed, view=view)
     
     @commands.slash_command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.', options=[
@@ -89,8 +88,8 @@ class Monsters(commands.Cog, name='monsters'):
             )
         ]
     )
-    async def monster_slash(self, inter: ApplicationCommandInteraction, *, query):
-        embed, view = Monsters.monster_data(query)
+    async def monster_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
+        embed, view = self.fetch_monster_data(query)
         await inter.response.send_message(embed=embed, view=view)
 
 def setup(bot) -> None:

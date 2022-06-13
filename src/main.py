@@ -5,6 +5,7 @@ import disnake
 from templates.bot import Bot
 from utils.general import load_configuration
 
+
 load_dotenv()
 
 if __name__ == '__main__':
@@ -15,7 +16,8 @@ if __name__ == '__main__':
         command_prefix=load_configuration()['configuration']['prefix'],
         help_command=None,
         intents=disnake.Intents.all(),
-        owner_id=int(env['BOT_OWNER'])
+        owner_id=int(env['BOT_OWNER']),
+        test_guilds=[978951090710122536]
     )
 
 bot.load_extensions(exts=[

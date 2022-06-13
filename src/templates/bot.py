@@ -8,6 +8,7 @@ from disnake import ApplicationCommandInteraction
 from config import *
 from utils import *
 
+
 class Bot(commands.Bot):
     def __init__(self, config=None, base_url=None, headers=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -43,60 +44,114 @@ class Bot(commands.Bot):
             return
 
         elif isinstance(error, commands.errors.MissingRequiredArgument):
-            embed = EmbedFactory().create(title='Missing Required Argument', description=f"{str(error).capitalize()}\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
+            embed = EmbedFactory().create(
+                                    title='Missing required argument',
+                                    description=f"{str(error).capitalize()}\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.",
+                                    thumbnail_url=BUCKET_ICO
+            )
             return await ctx.reply(embed=embed)
 
         elif isinstance(error, commands.errors.CommandInvokeError):
+            
             if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='Nonexistence',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
 
             elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No alch data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No examine text',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
             
             elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No monster data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
 
             elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No price data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
             
             elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No quest data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await ctx.reply(embed=embed)
 
         logger.error(f'Ignoring exception in command {ctx.command}: {error}')
 
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
+            
             if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='Nonexistence',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No alch data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No examine text',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No monster data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No price data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
             
             elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
+                embed = EmbedFactory().create(
+                                        title='No quest data',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=BUCKET_ICO
+                )
                 return await inter.response.send_message(embed=embed)
 
         logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')

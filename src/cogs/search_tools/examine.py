@@ -6,6 +6,7 @@ from templates.bot import Bot
 from config import *
 from utils import *
 
+
 class Examine(commands.Cog, name='examine'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -14,10 +15,9 @@ class Examine(commands.Cog, name='examine'):
     Examine text function. Takes the given search query and fetches the examine text (if available.)
     :param query: (String) - Represents a search query.
     '''
-    def examine_text(query: str):
+    def fetch_examine_text(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
-        
         title = parse_title(page_content)
         info = parse_infobox(page_content)
         thumbnail_url = parse_thumbnail(page_content)
@@ -38,8 +38,8 @@ class Examine(commands.Cog, name='examine'):
         return(embed)
 
     @commands.command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.')
-    async def examine(self, ctx: Context, *, query: str):
-        embed = Examine.examine_text(query)
+    async def examine(self, ctx: Context, *, query: str) -> None:
+        embed = self.fetch_examine_text(query)
         await ctx.send(embed=embed)
 
     @commands.slash_command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.', options=[
@@ -51,8 +51,8 @@ class Examine(commands.Cog, name='examine'):
             )
         ]
     )
-    async def examine_slash(self, inter: ApplicationCommandInteraction, *, query):
-        embed = Examine.examine_text(query)
+    async def examine_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
+        embed = self.fetch_examine_text(query)
         await inter.response.send_message(embed=embed)
 
 def setup(bot) -> None:

@@ -6,6 +6,7 @@ from templates.bot import Bot
 from config import *
 from utils import *
 
+
 class Wiki(commands.Cog, name='wiki'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -14,7 +15,7 @@ class Wiki(commands.Cog, name='wiki'):
     Wikipedia general lookup function. Takes the given search query and returns the results in an embed.
     :param query: (String) - Represents a search query.
     '''
-    def lookup(query: str) -> None:
+    def fetch_wiki_data(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
         attributes = parse_all(page_content)
@@ -33,7 +34,7 @@ class Wiki(commands.Cog, name='wiki'):
 
     @commands.command(name='wiki', description='Look up an entry from the official Old School RuneScape wikipedia.')
     async def wiki(self, ctx: Context, *, query) -> None:
-        embed, view = Wiki.lookup(query)
+        embed, view = self.fetch_wiki_data(query)
         await ctx.send(embed=embed, view=view)
 
         '''
@@ -44,7 +45,7 @@ class Wiki(commands.Cog, name='wiki'):
         :param interaction_1: (Interaction) - Represents the previous dropdown (select) menu.
         '''
         async def select_option(interaction_1) -> None:
-            inter_1_embed, inter_1_view = Wiki.lookup(view.children[0].values[0])
+            inter_1_embed, inter_1_view = self.fetch_wiki_data(view.children[0].values[0])
             await interaction_1.response.send_message(embed=inter_1_embed, view=inter_1_view)
 
             '''
@@ -55,7 +56,7 @@ class Wiki(commands.Cog, name='wiki'):
             :param interaction_2: (Interaction) - Represents the previous dropdown (select) menu.
             '''
             async def select_option_2(interaction_2) -> None:
-                inter_2_embed, inter_2_view = Wiki.lookup(inter_1_view.children[0].values[0])
+                inter_2_embed, inter_2_view = self.fetch_wiki_data(inter_1_view.children[0].values[0])
                 await interaction_2.response.send_message(embed=inter_2_embed, view=inter_2_view)
 
             inter_1_view.children[0].callback = select_option_2
@@ -73,16 +74,16 @@ class Wiki(commands.Cog, name='wiki'):
     )
     async def wiki_slash(self, inter: disnake.ApplicationCommandInteraction, *, query: str) -> None:
         inter.response.defer
-        embed, view = Wiki.lookup(query)
+        embed, view = self.fetch_wiki_data(query)
         await inter.response.send_message(embed=embed, view=view)
 
         async def select_option(interaction_1) -> None:
             inter.response.defer
-            inter_1_embed, inter_1_view = Wiki.lookup(view.children[0].values[0])
+            inter_1_embed, inter_1_view = self.fetch_wiki_data(view.children[0].values[0])
             await interaction_1.response.send_message(embed=inter_1_embed, view=inter_1_view)
 
             async def select_option_2(interaction_2) -> None:
-                inter_2_embed, inter_2_view = Wiki.lookup(inter_1_view.children[0].values[0])
+                inter_2_embed, inter_2_view = self.fetch_wiki_data(inter_1_view.children[0].values[0])
                 await interaction_2.response.send_message(embed=inter_2_embed, view=inter_2_view)
 
             inter_1_view.children[0].callback = select_option_2

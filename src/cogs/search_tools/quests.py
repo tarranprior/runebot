@@ -8,6 +8,7 @@ from utils import *
 
 import exceptions
 
+
 class Quests(commands.Cog, name='quests'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
@@ -18,7 +19,7 @@ class Quests(commands.Cog, name='quests'):
 
     :param query: (String) - Represents a search query.
     '''
-    def quest_data(query: str) -> None:
+    def fetch_quest_data(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
@@ -28,12 +29,11 @@ class Quests(commands.Cog, name='quests'):
             quest_series = info['Quest series']
             difficulty = info['Official difficulty']
             members = info['Members']
-
         except KeyError:
             raise exceptions.NoQuestData
 
         quest_details = parse_quest_details(page_content)
-        reward_scroll = parse_quest_rewards(page_content)
+        quest_rewards = parse_quest_rewards(page_content)
 
         embed, view = EmbedFactory().create(
             title=title,
@@ -51,14 +51,15 @@ class Quests(commands.Cog, name='quests'):
 
         embed.add_field(name='Requirements', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
         embed.add_field(name='Rewards', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
-        
-        embed.set_image(url=f"https://oldschool.runescape.wiki{reward_scroll['Reward scroll']}")
+
+        if check_mode('hide_scrolls') == False:
+            embed.set_image(url=f"https://oldschool.runescape.wiki{quest_rewards['Reward scroll']}")
 
         return(embed, view)
     
     @commands.command(name='quest', description='Fetch quest information from the official Old School RuneScape wikipedia.')
     async def quest(self, ctx: Context, *, query: str) -> None:
-        embed, view = Quests.quest_data(query)
+        embed, view = self.fetch_quest_data(query)
         await ctx.send(embed=embed, view=view)
 
     @commands.slash_command(name='quest', description='Fetch quest information from the official Old School RuneScape wikipedia.', options=[
@@ -70,8 +71,8 @@ class Quests(commands.Cog, name='quests'):
             )
         ]
     )
-    async def quest_slash(self, inter: ApplicationCommandInteraction, *, query):
-        embed, view = Quests.quest_data(query)
+    async def quest_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
+        embed, view = self.fetch_quest_data(query)
         await inter.response.send_message(embed=embed, view=view)
 
 def setup(bot) -> None:

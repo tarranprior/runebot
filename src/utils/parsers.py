@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 import exceptions
 from utils.general import normalise_price
 
+
 '''
 Parses all attributes (title, description, thumbnail etc.) from an Old School RuneScape wikipedia page
 and returns a dictionary.

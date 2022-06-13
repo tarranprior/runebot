@@ -7,6 +7,7 @@ from disnake import ApplicationCommandInteraction, Option, OptionType
 from templates.bot import Bot
 from utils import *
 
+
 class Purge(commands.Cog, name='purge'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot

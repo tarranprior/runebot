@@ -6,18 +6,18 @@ from templates.bot import Bot
 from config import *
 from utils import *
 
+
 class Alch(commands.Cog, name='alch'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
     '''
-    Alch data function. Takes the given search query and returns low alch and high alch price data.
+    Fetch alch data. Takes the given search query and returns low alch and high alch prices, thumbnail etc.
     :param query: (String) - Represents a search query.
     '''
-    def alch_data(query: str):
+    def fetch_alch_data(self, query: str) -> None:
         query = search_query(query)
         page_content = parse_page(BASE_URL, query, HEADERS)
-
         title = parse_title(page_content)
         info = parse_infobox(page_content)
         thumbnail_url = parse_thumbnail(page_content)
@@ -29,7 +29,7 @@ class Alch(commands.Cog, name='alch'):
             item_id = info['Item ID']
         except KeyError:
             raise exceptions.NoAlchData
-
+        
         embed = EmbedFactory().create(
             title=f'{title} (ID: {item_id})',
             thumbnail_url=thumbnail_url
@@ -37,12 +37,11 @@ class Alch(commands.Cog, name='alch'):
         embed.add_field(name='Value', value=value, inline=True)
         embed.add_field(name='High alch', value=high_alch, inline=True)
         embed.add_field(name='Low alch', value=low_alch, inline=True)
-
         return(embed)
 
     @commands.command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.')
-    async def alch(self, ctx: Context, *, query: str):
-        embed = Alch.alch_data(query)
+    async def alch(self, ctx: Context, *, query: str) -> None:
+        embed = self.fetch_alch_data(query)
         await ctx.send(embed=embed)
     
     @commands.slash_command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.', options=[
@@ -54,8 +53,8 @@ class Alch(commands.Cog, name='alch'):
             )
         ]
     )
-    async def alch_slash(self, inter: ApplicationCommandInteraction, *, query):
-        embed = Alch.alch_data(query)
+    async def alch_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
+        embed = self.fetch_alch_data(query)
         await inter.response.send_message(embed=embed)
 
 def setup(bot) -> None:
