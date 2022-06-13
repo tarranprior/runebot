@@ -5,10 +5,11 @@ import disnake
 from disnake.ext import commands, tasks
 from disnake import ApplicationCommandInteraction
 
+from config import *
 from utils import *
 
 class Bot(commands.Bot):
-    def __init__(self, config = None, *args, **kwargs) -> None:
+    def __init__(self, config=None, base_url=None, headers=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.config = config or load_configuration()
         self.bot = Bot
@@ -47,27 +48,27 @@ class Bot(commands.Bot):
 
         elif isinstance(error, commands.errors.CommandInvokeError):
             if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png?94769')
+                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
 
             elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
             
             elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
 
             elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
             
             elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await ctx.reply(embed=embed)
 
         logger.error(f'Ignoring exception in command {ctx.command}: {error}')
@@ -75,27 +76,27 @@ class Bot(commands.Bot):
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
             if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png?94769')
+                embed = EmbedFactory().create(title='Nonexistence', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No alch data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No examine text', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No monster data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
 
             elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No price data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
             
             elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Potato_detail.png/120px-Potato_detail.png?18b75')
+                embed = EmbedFactory().create(title='No quest data', description=str(error.__cause__), thumbnail_url=BUCKET_ICO)
                 return await inter.response.send_message(embed=embed)
 
         logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')

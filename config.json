@@ -1,10 +1,12 @@
 {
     "configuration": {
-        "activity": "Old School RuneScape",
+        "activity": "!help Runebot",
         "colour_mode": "True",
-        "prefix": "!",
+        "prefix": "!"
+    },
+    "urls": {
         "wiki_url": "https://oldschool.runescape.wiki/w/",
-        "api_url": "https://secure.runescape.com/m=itemdb_oldschool/api/catalogue/detail.json?item=",
+        "priceapi_url": "https://secure.runescape.com/m=itemdb_oldschool/api/catalogue/detail.json?item=",
         "graphapi_url": "https://secure.runescape.com/m=itemdb_oldschool/api/graph/"
     },
     "headers": {

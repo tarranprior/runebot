@@ -83,7 +83,6 @@ Preferably, you should use Poetry to run this bot for local development:
 
 | Category | Command Name | Description |
 | ------------- | ------------- | ------------- |
-| `📏` | `configure` | Updates the bot configuration (such as activity, colour mode and prefix.) |
 | `📏` | `purge` | Deletes a specified number of messages. |
 | `📏` | `toggle` | Toggles colour mode on/off. An alternative to `configure colours`. |
 

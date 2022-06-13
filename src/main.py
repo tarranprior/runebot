@@ -19,13 +19,14 @@ if __name__ == '__main__':
     )
 
 bot.load_extensions(exts=[
-    'cogs.alch',
-    'cogs.developer',
-    'cogs.examine',
-    'cogs.monsters',
-    'cogs.price',
-    'cogs.quests',
-    'cogs.wiki'
+    'cogs.developer_tools.purge',
+    'cogs.developer_tools.toggle',
+    'cogs.search_tools.alch',
+    'cogs.search_tools.examine',
+    'cogs.search_tools.monsters',
+    'cogs.search_tools.price',
+    'cogs.search_tools.quests',
+    'cogs.search_tools.wiki'
 ])
 
 bot.run(env['BOT_TOKEN'])

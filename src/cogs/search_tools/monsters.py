@@ -3,6 +3,7 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 import exceptions
@@ -11,18 +12,13 @@ class Monsters(commands.Cog, name='monsters'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
-
     '''
     Monster function. Takes the given search query and returns monster data (if exists.)
     :param query: (String) - Represents a search query.
     '''
     def monster_data(query: str) -> None:
         query = search_query(query)
-        page_content = parse_page(WIKI_URL, query, HEADERS)
+        page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
         title = parse_title(page_content)
         description = parse_description(page_content).pop()
@@ -48,7 +44,7 @@ class Monsters(commands.Cog, name='monsters'):
             description=description,
             thumbnail_url=f"https://oldschool.runescape.wiki{info['Image']}",
             button_label='Visit Page',
-            button_url=f'{WIKI_URL}{query}'
+            button_url=f'{BASE_URL}{query}'
         )
 
         embed.add_field(name='Examine', value=examine_text, inline=False)

@@ -3,16 +3,12 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 class Examine(commands.Cog, name='examine'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
 
     '''
     Examine text function. Takes the given search query and fetches the examine text (if available.)
@@ -20,7 +16,7 @@ class Examine(commands.Cog, name='examine'):
     '''
     def examine_text(query: str):
         query = search_query(query)
-        page_content = parse_page(WIKI_URL, query, HEADERS)
+        page_content = parse_page(BASE_URL, query, HEADERS)
         
         title = parse_title(page_content)
         info = parse_infobox(page_content)

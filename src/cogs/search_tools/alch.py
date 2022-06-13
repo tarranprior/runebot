@@ -3,16 +3,12 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 class Alch(commands.Cog, name='alch'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
 
     '''
     Alch data function. Takes the given search query and returns low alch and high alch price data.
@@ -20,7 +16,7 @@ class Alch(commands.Cog, name='alch'):
     '''
     def alch_data(query: str):
         query = search_query(query)
-        page_content = parse_page(WIKI_URL, query, HEADERS)
+        page_content = parse_page(BASE_URL, query, HEADERS)
 
         title = parse_title(page_content)
         info = parse_infobox(page_content)
@@ -44,12 +40,12 @@ class Alch(commands.Cog, name='alch'):
 
         return(embed)
 
-    @commands.command(name='alch', description='Fetches alch price data from the official Old School RuneScape wikipedia.')
+    @commands.command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.')
     async def alch(self, ctx: Context, *, query: str):
         embed = Alch.alch_data(query)
         await ctx.send(embed=embed)
     
-    @commands.slash_command(name='alch', description='Fetches alch price data from the official Old School RuneScape wikipedia.', options=[
+    @commands.slash_command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.', options=[
             Option(
                 name="Query",
                 description="Search for an article.",

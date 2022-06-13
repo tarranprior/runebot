@@ -3,15 +3,12 @@ from disnake.ext.commands import Context
 from disnake import Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 class Wiki(commands.Cog, name='wiki'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
 
     '''
     Wikipedia general lookup function. Takes the given search query and returns the results in an embed.
@@ -19,8 +16,8 @@ class Wiki(commands.Cog, name='wiki'):
     '''
     def lookup(query: str) -> None:
         query = search_query(query)
-        content = parse_page(WIKI_URL, query, HEADERS)
-        attributes = parse_all(content)
+        page_content = parse_page(BASE_URL, query, HEADERS)
+        attributes = parse_all(page_content)
 
         title = attributes['title']
         description = attributes['description']
@@ -29,7 +26,7 @@ class Wiki(commands.Cog, name='wiki'):
         thumbnail_url = attributes['thumbnail_url']
 
         if description:
-            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{WIKI_URL}{query}')
+            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{BASE_URL}{query}')
             return(embed, view)
         embed, view = EmbedFactory().create(title=title, description=f'{title} may refer to several articles. Use the dropdown below to select an option.', options=options)
         return(embed, view)

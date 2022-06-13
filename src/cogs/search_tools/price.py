@@ -3,6 +3,7 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 import exceptions
@@ -10,15 +11,6 @@ import exceptions
 class Price(commands.Cog, name='price'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global API_URL
-        API_URL = self.bot.config['configuration']['api_url']
-        global GRAPHAPI_URL
-        GRAPHAPI_URL = self.bot.config['configuration']['graphapi_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
 
     '''
     Price data function. Takes the given search query and returns exchange and value prices.
@@ -28,7 +20,7 @@ class Price(commands.Cog, name='price'):
     '''
     def price_data(query: str):
         query = search_query(query)
-        page_content = parse_page(WIKI_URL, query, HEADERS)
+        page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
         title = parse_title(page_content)
 
@@ -37,11 +29,11 @@ class Price(commands.Cog, name='price'):
             exchange_price = info['Exchange']
             buy_limit = info['Buy limit']
             item_id = info['Item ID']
-        
+
         except KeyError:
             raise exceptions.NoPriceData
 
-        api_data = parse_price_data(f'{API_URL}{item_id}', HEADERS)
+        api_data = parse_price_data(f'{PRICEAPI_URL}{item_id}', HEADERS)
         graphapi_data = parse_price_data(f'{GRAPHAPI_URL}{item_id}.json', HEADERS)
         generate_graph(graphapi_data)
 

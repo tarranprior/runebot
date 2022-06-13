@@ -3,6 +3,7 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 import exceptions
@@ -10,11 +11,6 @@ import exceptions
 class Quests(commands.Cog, name='quests'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-
-        global WIKI_URL
-        WIKI_URL = self.bot.config['configuration']['wiki_url']
-        global HEADERS
-        HEADERS = self.bot.config['headers']
 
     '''
     Quest function. Takes the given search query and returns quest data (if exists.)
@@ -24,7 +20,7 @@ class Quests(commands.Cog, name='quests'):
     '''
     def quest_data(query: str) -> None:
         query = search_query(query)
-        page_content = parse_page(WIKI_URL, query, HEADERS)
+        page_content = parse_page(BASE_URL, query, HEADERS)
         info = parse_infobox(page_content)
         title = parse_title(page_content)
 
@@ -43,9 +39,9 @@ class Quests(commands.Cog, name='quests'):
             title=title,
             description=quest_details['Description'],
             colour=disnake.Colour.og_blurple(),
-            thumbnail_url='https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png?f5120',
+            thumbnail_url=QUEST_ICO,
             button_label='Quick Guide',
-            button_url=f"https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}/Quick_guide"
+            button_url=f"{BASE_URL}{title.replace(' ', '_')}/Quick_guide"
         )
         embed.add_field(name='Quest series', value=quest_series, inline=True)
         embed.add_field(name='Difficulty', value=difficulty, inline=True)
@@ -53,8 +49,8 @@ class Quests(commands.Cog, name='quests'):
 
         embed.add_field(name='Start point', value=quest_details['Start point'], inline=False)
 
-        embed.add_field(name='Requirements', value=f"Click [here](https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
-        embed.add_field(name='Rewards', value=f"Click [here](https://oldschool.runescape.wiki/w/{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
+        embed.add_field(name='Requirements', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
+        embed.add_field(name='Rewards', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
         
         embed.set_image(url=f"https://oldschool.runescape.wiki{reward_scroll['Reward scroll']}")
 
