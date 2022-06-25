@@ -29,14 +29,14 @@ class Bot(commands.Bot):
         logger.info(f'{count} extension(s) have loaded successfully.\n')
 
     async def on_connect(self) -> None:
-        logger.success('Bot is connected to the gateway.')
+        logger.success('Runebot is connected to the gateway.')
         logger.info(f'Connected to {len(self.guilds)} guild(s.)')
         logger.info(f'Logged in as {self.user.name} ({self.user.id})')
         logger.info(f'API Version: {disnake.__version__}')
         logger.info(f'Platform: {platform.system()} {platform.release()} {os.name}\n')
 
     async def on_ready(self) -> None:
-        logger.success('Bot is ready.')
+        logger.success('Runebot is ready.')
         logger.info('For more information on usage, see the README.')
 
     async def on_command_error(self, ctx: disnake.ext.commands.Context, error) -> None:
