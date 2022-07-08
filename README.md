@@ -128,7 +128,7 @@ Preferably, you should use Poetry to run this bot for local development:
 
 
 ## Support
-If you have any questions about this template, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>
+If you have any questions about this project, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>
 
 ## License
 This project is licensed under the CC BY-NC-SA 3.0 License - see the [LICENSE](https://github.com/tarranprior/runebot/blob/main/LICENSE) file for details.
