@@ -81,51 +81,37 @@ Preferably, you should use Poetry to run this bot for local development:
 
 ### 📏 Developer Tools
 
-| Category | Command Name | Description |
-| ------------- | ------------- | ------------- |
-| `📏` | `purge` | Deletes a specified number of messages. |
-| `📏` | `toggle` | Toggles configuration values on/off. (`colour_mode`, `hide_scrolls` etc.) |
+| Command Name | Description |
+| ------------- | ------------- |
+| `purge` | Deletes a specified number of messages. |
+| `toggle` | Toggles configuration values on/off. (`colour_mode`, `hide_scrolls` etc.) |
 
 ### 🔎 Search Tools
 
-| Category | Command Name | Description |
-| ------------- | ------------- | ------------- |
-| `🔎` | `alch` | Fetches the latest alchemy price data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
-| `🔎` | `examine` | Displays examine text from the official [Old School wiki](https://oldschool.runescape.wiki/). |
-| `🔎` | `minigame` | Grabs minigame information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
-| `🔎` | `monster` | Fetches monster data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
-| `🔎` | `price` | Displays price data from the official API and generates data visualisation. |
-| `🔎` | `quest` | Fetches quest information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
-| `🔎` | `wiki` | Looks up an entry from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| Command Name | Description |
+| ------------- | ------------- |
+| `alch` | Fetches the latest alchemy price data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `examine` | Displays examine text from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `minigame` | Grabs minigame information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `monster` | Fetches monster data from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `price` | Displays price data from the official API and generates data visualisation. |
+| `quest` | Fetches quest information from the official [Old School wiki](https://oldschool.runescape.wiki/). |
+| `wiki` | Looks up an entry from the official [Old School wiki](https://oldschool.runescape.wiki/). |
 
 ## Screenshots
-
-> Runebot has built-in usability features including dropdowns, buttons, dynamic colours and more. Search for items, equipment, price data, monsters, NPCs, pets and followers, skills, quests etc. Directly from the official api/wiki for the most up to date information.
-> <br /><br />
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo1.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo2.png" />
 > <br/><br/>
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo3.png" />
-> <br/><br/>
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo4.png" />
 > <br /><br />
+> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo4.png" />
+> <br/><br/>
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo5.png" />
 > <br /><br />
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo6.png" />
-> <br/><br/>
+> <br /><br />
 > <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo7.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo8.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo9.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo10.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo11.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo12.png" />
-
 
 ## Support
 If you have any questions about this project, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>
