@@ -20,7 +20,7 @@ class Bot(commands.Bot):
         for ext in exts:
             try:
                 self.load_extension(ext)
-                logger.success(f"Load ext: '{ext}' complete.")
+                logger.success(ext)
                 count += 1
             except Exception as e:
                 exception = f'{type(e).__name__}: {e}'

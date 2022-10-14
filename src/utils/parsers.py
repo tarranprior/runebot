@@ -58,10 +58,10 @@ def parse_description(page_content) -> None:
     
     for paragraph in page_content.find_all('p'):
         description = paragraph.getText().replace('[1]', '')
-        if not len(description) < 108:
+        if not len(description) < 56:
             break
 
-    if len(description) < 108 or description == None:
+    if len(description) < 56 or description == None:
         raise exceptions.Nonexistence
     
     return([description])

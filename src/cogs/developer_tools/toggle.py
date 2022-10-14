@@ -3,6 +3,7 @@ from disnake.ext.commands import Context
 from disnake import ApplicationCommandInteraction
 
 from templates.bot import Bot
+from config import *
 from utils import *
 
 
@@ -27,16 +28,17 @@ class Toggle(commands.Cog, name='toggle'):
             toggle = self.toggle_mode('colour_mode')
             embed = EmbedFactory().create(
                                     title='Toggle colour mode',
-                                    description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again."
+                                    description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
+                                    thumbnail_url=COLOUR_ICO
             )
             embed.timestamp = ctx.message.created_at
-            embed.set_footer(text=f'{ctx.message.author.name} (ID: {ctx.message.author.id})')
+            embed.set_footer(text=f'{ctx.message.author.name} • {ctx.message.author.id}')
             return await ctx.send(embed=embed)
 
         else:
             embed = EmbedFactory().create(
                                     title='Usage',
-                                    description=f'```\ntoggle <colours|scrolls>```'
+                                    description=f'```\ntoggle <colours>```'
             )
             embed.timestamp = ctx.message.created_at
             embed.set_footer(text=f'{ctx.message.author.name} (ID: {ctx.message.author.id})')
@@ -49,14 +51,16 @@ class Toggle(commands.Cog, name='toggle'):
 
     @toggle_slash.sub_command(name='colours', description='📏 Developer-only. Toggles `colour_mode` on/off.')
     async def toggle_colours(self, inter: ApplicationCommandInteraction):
+        await inter.response.defer()
         toggle = self.toggle_mode('colour_mode')
         embed = EmbedFactory().create(
                                 title='Toggle colour mode',
-                                description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again."
+                                description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
+                                thumbnail_url=COLOUR_ICO
         )
         embed.timestamp = inter.created_at
-        embed.set_footer(text=f'{inter.author.name} (ID: {inter.author.id})')
-        return await inter.response.send_message(embed=embed)
+        embed.set_footer(text=f'{inter.author.name} • {inter.author.id}')
+        return await inter.followup.send(embed=embed)
 
 def setup(bot) -> None:
     bot.add_cog(Toggle(bot))
