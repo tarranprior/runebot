@@ -2,7 +2,6 @@
     "configuration": {
         "activity": "!help Runebot",
         "colour_mode": "True",
-        "hide_scrolls": "True",
         "prefix": "!"
     },
     "urls": {

@@ -82,7 +82,7 @@ Preferably, you should use Poetry to run this bot for local development:
 ### 📏 Developer Tools
 
 - `purge` - Deletes a specified number of messages.
-- `toggle` - Toggles configuration values on/off. (`colour_mode`, `hide_scrolls` etc.)
+- `toggle` - Toggles configuration values on/off. (`colour_mode` etc.)
 
 ### 🔎 Search Tools
 

@@ -57,10 +57,10 @@ def parse_description(page_content) -> None:
         return(options)
     
     for paragraph in page_content.find_all('p'):
-        description = paragraph.getText()
+        description = paragraph.getText().replace('[1]', '')
         if not len(description) < 108:
             break
-    
+
     if len(description) < 108 or description == None:
         raise exceptions.Nonexistence
     
@@ -80,7 +80,7 @@ def parse_infobox(page_content) -> None:
         for row in infobox_content.find_all('tr'):
             try:
                 property_name = row.find('th').getText().rstrip('\n').strip()
-                property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').rstrip('\n').strip()
+                property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').replace('[1]', '').rstrip('\n').strip()
                 if property_name == 'Icon':
                     property_value = row.find('img')['src']
                     continue
@@ -149,19 +149,6 @@ def parse_quest_details(page_content) -> None:
         quest_details.update({property_name: property_value})
         continue
     return(quest_details)
-
-'''
-Parses a quest reward scroll (url) from an Old School RuneScape quest page.
-This will always pass a page with quest details, so won't fail.
-
-:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
-'''
-def parse_quest_rewards(page_content) -> None:
-    imgs = page_content.find_all('img')
-    for img in imgs:
-        if 'reward_scroll' in img['src'].lower():
-            reward_scroll = img['src']
-    return({'Reward scroll': reward_scroll})
 
 '''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.

@@ -120,7 +120,7 @@ class Bot(commands.Bot):
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
 
             elif 'NoAlchData' in str(error.__str__()):
                 embed = EmbedFactory().create(
@@ -160,7 +160,7 @@ class Bot(commands.Bot):
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
             
             elif 'NoQuestData' in str(error.__str__()):
                 embed = EmbedFactory().create(

@@ -74,9 +74,9 @@ class Price(commands.Cog, name='price'):
         ]
     )
     async def price_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
-        inter.response.defer
+        await inter.response.defer()
         embed, view, file = self.fetch_price_data(query)
-        await inter.response.send_message(embed=embed, view=view, file=file)
+        await inter.followup.send(embed=embed, view=view, file=file)
         file.close()
 
 def setup(bot) -> None:

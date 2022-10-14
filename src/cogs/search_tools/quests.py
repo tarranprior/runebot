@@ -33,7 +33,6 @@ class Quests(commands.Cog, name='quests'):
             raise exceptions.NoQuestData
 
         quest_details = parse_quest_details(page_content)
-        quest_rewards = parse_quest_rewards(page_content)
 
         embed, view = EmbedFactory().create(
             title=title,
@@ -52,11 +51,8 @@ class Quests(commands.Cog, name='quests'):
         embed.add_field(name='Requirements', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
         embed.add_field(name='Rewards', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
 
-        if check_mode('hide_scrolls') == False:
-            embed.set_image(url=f"https://oldschool.runescape.wiki{quest_rewards['Reward scroll']}")
-
         return(embed, view)
-    
+
     @commands.command(name='quest', description='Fetch quest information from the official Old School RuneScape wikipedia.')
     async def quest(self, ctx: Context, *, query: str) -> None:
         embed, view = self.fetch_quest_data(query)

@@ -73,18 +73,18 @@ class Wiki(commands.Cog, name='wiki'):
         ]
     )
     async def wiki_slash(self, inter: disnake.ApplicationCommandInteraction, *, query: str) -> None:
-        inter.response.defer
+        await inter.response.defer()
         embed, view = self.fetch_wiki_data(query)
-        await inter.response.send_message(embed=embed, view=view)
+        await inter.followup.send(embed=embed, view=view)
 
         async def select_option(interaction_1) -> None:
-            inter.response.defer
+            await inter.response.defer()
             inter_1_embed, inter_1_view = self.fetch_wiki_data(view.children[0].values[0])
-            await interaction_1.response.send_message(embed=inter_1_embed, view=inter_1_view)
+            await interaction_1.followup.send(embed=inter_1_embed, view=inter_1_view)
 
             async def select_option_2(interaction_2) -> None:
                 inter_2_embed, inter_2_view = self.fetch_wiki_data(inter_1_view.children[0].values[0])
-                await interaction_2.response.send_message(embed=inter_2_embed, view=inter_2_view)
+                await interaction_2.followup.send(embed=inter_2_embed, view=inter_2_view)
 
             inter_1_view.children[0].callback = select_option_2
         
