@@ -64,7 +64,7 @@ def parse_description(page_content) -> None:
         options = parse_options(page_div)
         return(options)
 
-    if str('/Quick_guide') in page_content.find('link', rel='canonical').attrs['href']:
+    if str('/Quick guide') in page_div.getText():
         page_hyperlink = page_content.find('link', rel='canonical').attrs['href']
         description = parse_quick_guide(page_div, page_hyperlink)
 
@@ -102,6 +102,8 @@ def parse_infobox(page_content) -> None:
                     property_value = row.find('td', class_="infobox-image infobox-full-width-content").find('img')['src']
                     infobox.update({property_name: property_value})
                 except AttributeError:
+                    pass
+                except TypeError:
                     pass
                 pass
 
