@@ -76,7 +76,7 @@ class Monsters(commands.Cog, name='monsters'):
 
     @commands.command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.')
     async def monster(self, ctx: Context, *, query: str) -> None:
-        embed, view = self.fetch_monster_data(query)
+        embed, view = self.fetch_monster_data(query.lower())
         await ctx.send(embed=embed, view=view)
     
     @commands.slash_command(name='monster', description='Fetch monster information from the official Old School RuneScape wikipedia.', options=[
@@ -89,8 +89,9 @@ class Monsters(commands.Cog, name='monsters'):
         ]
     )
     async def monster_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
-        embed, view = self.fetch_monster_data(query)
-        await inter.response.send_message(embed=embed, view=view)
+        await inter.response.defer()
+        embed, view = self.fetch_monster_data(query.lower())
+        await inter.follow.send(embed=embed, view=view)
 
 def setup(bot) -> None:
     bot.add_cog(Monsters(bot))

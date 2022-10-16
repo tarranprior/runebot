@@ -61,7 +61,7 @@ class Price(commands.Cog, name='price'):
 
     @commands.command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.')
     async def price(self, ctx: Context, *, query: str) -> None:
-        embed, view, file = self.fetch_price_data(query)
+        embed, view, file = self.fetch_price_data(query.lower())
         await ctx.send(embed=embed, view=view, file=file)
 
     @commands.slash_command(name='price', description='Fetch guide price data from the official Old School RuneScape wikipedia.', options=[
@@ -75,7 +75,7 @@ class Price(commands.Cog, name='price'):
     )
     async def price_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
         await inter.response.defer()
-        embed, view, file = self.fetch_price_data(query)
+        embed, view, file = self.fetch_price_data(query.lower())
         await inter.followup.send(embed=embed, view=view, file=file)
         file.close()
 

@@ -76,7 +76,7 @@ class Minigames(commands.Cog, name='minigames'):
 
     @commands.command(name='minigame', description='Fetch minigame information from the official Old School RuneScape wikipedia.')
     async def minigame(self, ctx: Context, *, query: str) -> None:
-        embed, view = self.fetch_minigame_data(query)
+        embed, view = self.fetch_minigame_data(query.lower())
         await ctx.send(embed=embed, view=view)
     
     @commands.slash_command(name='minigame', description='Fetch minigame information from the official Old School RuneScape wikipedia.', options=[
@@ -89,8 +89,9 @@ class Minigames(commands.Cog, name='minigames'):
         ]
     )
     async def minigame_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
-        embed, view = self.fetch_minigame_data(query)
-        await inter.response.send_message(embed=embed, view=view)
+        await inter.response.defer()
+        embed, view = self.fetch_minigame_data(query.lower())
+        await inter.followup.send(embed=embed, view=view)
 
 def setup(bot) -> None:
     bot.add_cog(Minigames(bot))

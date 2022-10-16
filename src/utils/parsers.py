@@ -19,11 +19,11 @@ def parse_all(page_content):
     page_title = parse_title(page_content)
     page_description = parse_description(page_content)
     page_thumbnail = parse_thumbnail(page_content)
-    
+
     if len(page_description) == 1:
         infobox = parse_infobox(page_content)
         return({'title': page_title, 'description': page_description, 'infobox': infobox, 'options': False, 'thumbnail_url': page_thumbnail})
-    
+
     options = page_description
     return({'title': page_title, 'description': False, 'infobox': False, 'options': options, 'thumbnail_url': page_thumbnail})
 
@@ -51,19 +51,30 @@ Parses a description from an Old School RuneScape wikipedia page.
 '''
 def parse_description(page_content) -> None:
     page_div = page_content.find('div', class_='mw-parser-output')
-    
-    if str('May refer to').lower() in page_div.getText():
+
+    if str("This page doesn't exist on the wiki.") in page_div.getText():
+        raise exceptions.Nonexistence
+
+    for paragraph in page_content.find_all('p'):
+        description = paragraph.getText().replace('[1]', '').replace('[2]', '').replace('[3]', '')
+        if len(description) >= 34:
+            break # To only return qualifying descriptions for articles.
+
+    if str('May refer to').lower() in page_div.getText() or str('Could refer to').lower() in page_div.getText() or str('It can refer to:').lower() in page_div.getText() or str('Can mean any of the following:').lower() in page_div.getText() or str('Can refer to one of the following:').lower() in page_div.getText():
         options = parse_options(page_div)
         return(options)
-    
-    for paragraph in page_content.find_all('p'):
-        description = paragraph.getText().replace('[1]', '')
-        if not len(description) < 56:
-            break
 
-    if len(description) < 56 or description == None:
-        raise exceptions.Nonexistence
-    
+    if str('/Quick_guide') in page_content.find('link', rel='canonical').attrs['href']:
+        page_hyperlink = page_content.find('link', rel='canonical').attrs['href']
+        description = parse_quick_guide(page_div, page_hyperlink)
+
+    if str('/Level_up_table') in page_content.find('link', rel='canonical').attrs['href']:
+        description = parse_levelup_table(page_div)
+
+    if len(description) < 34 or description == None:
+        raise exceptions.StubArticle
+        # No description(s) over 36 characters nullifies article and returns StubArticle error.
+
     return([description])
 
 '''
@@ -80,8 +91,8 @@ def parse_infobox(page_content) -> None:
         for row in infobox_content.find_all('tr'):
             try:
                 property_name = row.find('th').getText().rstrip('\n').strip()
-                property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').replace('[1]', '').rstrip('\n').strip()
-                if property_name == 'Icon':
+                property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').replace('[1]', '').replace('[2]', '').replace('[3]', '').rstrip('\n').strip()
+                if property_name == 'Icon' or property_name == 'Minimap icon':
                     property_value = row.find('img')['src']
                     continue
                 infobox.update({property_name: property_value})
@@ -113,13 +124,28 @@ Parses a list of options for queries that may refer to several articles.
 '''
 def parse_options(page_div) -> None:
     options = []
-
     for item in page_div.find_all('ul'):
         for link in item.find_all('a'):
-            options.append(link.attrs['title'])
+            try:
+                if not str('rsw') in link.attrs['title']: # Prevents external RuneScape 3 options (404s).
+                    options.append(link.attrs['title'])
+            except KeyError:
+                pass
+    if len(options) == 0:
+        for item in page_div.find('table').find_all('td'):
+            for link in item.find_all('a'):
+                options.append(link.attrs['title'])
     sorted_options = list(dict.fromkeys(options))[:25]
 
     return(sorted_options)
+
+'''
+Parses a level up table from a table page (still in development.)
+:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+'''
+def parse_levelup_table(page_content) -> None:
+    quickguide_details = ["This is a level up table page. To view more information about this page, click the button below."]
+    return(''.join(quickguide_details))
 
 '''
 Parses price data using the official API.
@@ -149,6 +175,18 @@ def parse_quest_details(page_content) -> None:
         quest_details.update({property_name: property_value})
         continue
     return(quest_details)
+
+'''
+Parses quick guide details from a guide page (still in development.)
+:param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+'''
+def parse_quick_guide(page_content, page_hyperlink) -> None:
+    quickguide_details = ["This is a quick guide page. Use the links below to display more information about each section:\n\n"]
+    count=1
+    for header in page_content.find_all('span', class_='mw-headline'):
+        quickguide_details.append(f"Part {count}: [{header.getText()}]({page_hyperlink}#{header.getText().replace(' ', '_')})\n")
+        count+=1
+    return(''.join(quickguide_details))
 
 '''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.

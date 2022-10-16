@@ -17,8 +17,13 @@ class Wiki(commands.Cog, name='wiki'):
     '''
     def fetch_wiki_data(self, query: str) -> None:
         query = search_query(query)
-        page_content = parse_page(BASE_URL, query, HEADERS)
-        attributes = parse_all(page_content)
+
+        if query == str('random') or query == str("i'm_feeling_lucky"):
+            page_content = parse_page(BASE_URL, FEELING_LUCKY, HEADERS)
+            attributes = parse_all(page_content)
+        else:
+            page_content = parse_page(BASE_URL, query, HEADERS)
+            attributes = parse_all(page_content)
 
         title = attributes['title']
         description = attributes['description']
@@ -27,14 +32,16 @@ class Wiki(commands.Cog, name='wiki'):
         thumbnail_url = attributes['thumbnail_url']
 
         if description:
-            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{BASE_URL}{query}')
+            embed, view = EmbedFactory().create(title=title, description=description.pop(), infobox=infobox, thumbnail_url=thumbnail_url, button_url=f'{BASE_URL}{attributes["title"].replace(" ", "_")}')
+            if len(embed.description) < 84:
+                embed.set_footer(text="To view more information about this page, click the button below.")
             return(embed, view)
         embed, view = EmbedFactory().create(title=title, description=f'{title} may refer to several articles. Use the dropdown below to select an option.', options=options)
         return(embed, view)
 
     @commands.command(name='wiki', description='Look up an entry from the official Old School RuneScape wikipedia.')
     async def wiki(self, ctx: Context, *, query) -> None:
-        embed, view = self.fetch_wiki_data(query)
+        embed, view = self.fetch_wiki_data(query.lower())
         await ctx.send(embed=embed, view=view)
 
         '''
@@ -74,7 +81,7 @@ class Wiki(commands.Cog, name='wiki'):
     )
     async def wiki_slash(self, inter: disnake.ApplicationCommandInteraction, *, query: str) -> None:
         await inter.response.defer()
-        embed, view = self.fetch_wiki_data(query)
+        embed, view = self.fetch_wiki_data(query.lower())
         await inter.followup.send(embed=embed, view=view)
 
         async def select_option(interaction_1) -> None:

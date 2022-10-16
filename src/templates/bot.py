@@ -52,10 +52,10 @@ class Bot(commands.Bot):
             return await ctx.reply(embed=embed)
 
         elif isinstance(error, commands.errors.CommandInvokeError):
-            
+
             if 'Nonexistence' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='Nonexistence',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -63,7 +63,7 @@ class Bot(commands.Bot):
 
             elif 'NoAlchData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No alch data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -71,7 +71,7 @@ class Bot(commands.Bot):
 
             elif 'NoExamineText' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No examine text',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -79,7 +79,7 @@ class Bot(commands.Bot):
             
             elif 'NoMinigameData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No minigame data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -87,7 +87,7 @@ class Bot(commands.Bot):
 
             elif 'NoMonsterData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No monster data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -95,7 +95,7 @@ class Bot(commands.Bot):
 
             elif 'NoPriceData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No price data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -103,20 +103,28 @@ class Bot(commands.Bot):
             
             elif 'NoQuestData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No quest data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
                 return await ctx.reply(embed=embed)
+
+            elif 'StubArticle' in str(error.__str__()):
+                embed = EmbedFactory().create(
+                                        title='This project page is a stub.',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=STUB_ICO
+                )
+                return await ctx.send(embed=embed)
 
         logger.error(f'Ignoring exception in command {ctx.command}: {error}')
 
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
-            
+
             if 'Nonexistence' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='Nonexistence',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -124,39 +132,39 @@ class Bot(commands.Bot):
 
             elif 'NoAlchData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No alch data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
 
             elif 'NoExamineText' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No examine text',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
 
             elif 'NoMinigameData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No minigame data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
 
             elif 'NoMonsterData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No monster data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
 
             elif 'NoPriceData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No price data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
@@ -164,11 +172,19 @@ class Bot(commands.Bot):
             
             elif 'NoQuestData' in str(error.__str__()):
                 embed = EmbedFactory().create(
-                                        title='No quest data',
+                                        title='Nothing interesting happens.',
                                         description=str(error.__cause__),
                                         thumbnail_url=BUCKET_ICO
                 )
-                return await inter.response.send_message(embed=embed)
+                return await inter.followup.send(embed=embed)
+
+            elif 'StubArticle' in str(error.__str__()):
+                embed = EmbedFactory().create(
+                                        title='This project page is a stub.',
+                                        description=str(error.__cause__),
+                                        thumbnail_url=STUB_ICO
+                )
+                return await inter.followup.send(embed=embed)
 
         logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')
 

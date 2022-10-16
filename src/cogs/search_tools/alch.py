@@ -41,7 +41,7 @@ class Alch(commands.Cog, name='alch'):
 
     @commands.command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.')
     async def alch(self, ctx: Context, *, query: str) -> None:
-        embed = self.fetch_alch_data(query)
+        embed = self.fetch_alch_data(query.lower())
         await ctx.send(embed=embed)
     
     @commands.slash_command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.', options=[
@@ -54,8 +54,9 @@ class Alch(commands.Cog, name='alch'):
         ]
     )
     async def alch_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
-        embed = self.fetch_alch_data(query)
-        await inter.response.send_message(embed=embed)
+        await inter.response.defer()
+        embed = self.fetch_alch_data(query.lower())
+        await inter.followup.send(embed=embed)
 
 def setup(bot) -> None:
     bot.add_cog(Alch(bot))

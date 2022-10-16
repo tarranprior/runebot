@@ -39,7 +39,7 @@ class Examine(commands.Cog, name='examine'):
 
     @commands.command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.')
     async def examine(self, ctx: Context, *, query: str) -> None:
-        embed = self.fetch_examine_text(query)
+        embed = self.fetch_examine_text(query.lower())
         await ctx.send(embed=embed)
 
     @commands.slash_command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.', options=[
@@ -52,8 +52,9 @@ class Examine(commands.Cog, name='examine'):
         ]
     )
     async def examine_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
-        embed = self.fetch_examine_text(query)
-        await inter.response.send_message(embed=embed)
+        await inter.response.defer()
+        embed = self.fetch_examine_text(query.lower())
+        await inter.followup.send(embed=embed)
 
 def setup(bot) -> None:
     bot.add_cog(Examine(bot))

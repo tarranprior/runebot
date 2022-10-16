@@ -27,12 +27,11 @@ class Toggle(commands.Cog, name='toggle'):
         if mode == 'colours':
             toggle = self.toggle_mode('colour_mode')
             embed = EmbedFactory().create(
-                                    title='Toggle colour mode',
+                                    title=f'Toggle colour mode set to {toggle}',
                                     description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
                                     thumbnail_url=COLOUR_ICO
             )
             embed.timestamp = ctx.message.created_at
-            embed.set_footer(text=f'{ctx.message.author.name} • {ctx.message.author.id}')
             return await ctx.send(embed=embed)
 
         else:
@@ -54,12 +53,11 @@ class Toggle(commands.Cog, name='toggle'):
         await inter.response.defer()
         toggle = self.toggle_mode('colour_mode')
         embed = EmbedFactory().create(
-                                title='Toggle colour mode',
+                                title=f'Toggle colour mode set to {toggle}',
                                 description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
                                 thumbnail_url=COLOUR_ICO
         )
         embed.timestamp = inter.created_at
-        embed.set_footer(text=f'{inter.author.name} • {inter.author.id}')
         return await inter.followup.send(embed=embed)
 
 def setup(bot) -> None:
