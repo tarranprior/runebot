@@ -32,6 +32,10 @@ class Toggle(commands.Cog, name='toggle'):
                                     description=f"Colour mode has been set to **{toggle}**. If you'd like to reverse this change, simpy use the buttons below or use `toggle colours` again.",
                                     thumbnail_url=LEVER_ICO
             )
+            if toggle == True:
+                embed.colour = embed.colour.blurple()
+            else:
+                embed.colour = embed.colour.red()
             embed.timestamp = ctx.message.created_at
             view=View()
             toggle_on = Button(label='Toggle on', emoji='⚙️', style=disnake.ButtonStyle.grey)
@@ -49,16 +53,44 @@ class Toggle(commands.Cog, name='toggle'):
         async def toggle_option_on(interaction_1):
             await interaction_1.response.defer()
             if check_mode('colour_mode') == True:
-                return await interaction_1.followup.send('Colour mode already set to **True**!')
+                embed = EmbedFactory().create(
+                                title=f'Toggle colour mode already set to True!',
+                                description=f"Colour mode is already set to **True**!",
+                                thumbnail_url=LEVER_ICO
+                )
+                embed.colour = embed.colour.blurple()
+                embed.timestamp = interaction_1.created_at
+                return await interaction_1.followup.send(embed=embed)
             update_configuration(key='colour_mode', value='True')
-            return await interaction_1.followup.send('Colour mode set to **True**.')
-        
+            embed = EmbedFactory().create(
+                                title=f'Toggle colour mode set to True.',
+                                description=f"Colour mode set to **True**.",
+                                thumbnail_url=LEVER_ICO
+            )
+            embed.colour = embed.colour.blurple()
+            embed.timestamp = interaction_1.created_at
+            return await interaction_1.followup.send(embed=embed)
+
         async def toggle_option_off(interaction_2):
             await interaction_2.response.defer()
             if check_mode('colour_mode') == False:
-                return await interaction_2.followup.send('Colour mode already set to **False**!')
+                embed = EmbedFactory().create(
+                                title=f'Toggle colour mode already set to False!',
+                                description=f"Colour mode is already set to **False**!",
+                                thumbnail_url=LEVER_ICO
+                )
+                embed.colour = embed.colour.red()
+                embed.timestamp = interaction_2.created_at
+                return await interaction_2.followup.send(embed=embed)
             update_configuration(key='colour_mode', value='False')
-            return await interaction_2.followup.send('Colour mode set to **False**.')
+            embed = EmbedFactory().create(
+                                title=f'Toggle colour mode set to False.',
+                                description=f"Colour mode set to **False**.",
+                                thumbnail_url=LEVER_ICO
+            )
+            embed.colour = embed.colour.red()
+            embed.timestamp = interaction_2.created_at
+            return await interaction_2.followup.send(embed=embed)
 
         view.children[0].callback = toggle_option_on
         view.children[1].callback = toggle_option_off
@@ -77,7 +109,10 @@ class Toggle(commands.Cog, name='toggle'):
                                 description=f"Colour mode has been set to **{toggle}**. If you'd like to reverse this change, simpy use the buttons below or use `toggle colours` again.",
                                 thumbnail_url=LEVER_ICO
         )
-        embed.colour = 0x61585D
+        if toggle == True:
+            embed.colour = embed.colour.blurple()
+        else:
+            embed.colour = embed.colour.red()
         embed.timestamp = inter.created_at
         view=View()
         toggle_on = Button(label='Toggle on', emoji='⚙️', style=disnake.ButtonStyle.grey)
@@ -89,16 +124,44 @@ class Toggle(commands.Cog, name='toggle'):
         async def toggle_option_on(interaction_1):
             await interaction_1.response.defer()
             if check_mode('colour_mode') == True:
-                return await inter.followup.send('Colour mode already set to **True**!')
+                embed = EmbedFactory().create(
+                                title=f'Toggle colour mode already set to True!',
+                                description=f"Colour mode is already set to **True**!",
+                                thumbnail_url=LEVER_ICO
+                )
+                embed.colour = embed.colour.blurple()
+                embed.timestamp = inter.created_at
+                return await inter.followup.send(embed=embed)
             update_configuration(key='colour_mode', value='True')
-            return await interaction_1.followup.send('Colour mode set to **True**.')
+            embed = EmbedFactory().create(
+                                title=f'Toggle colour mode set to True.',
+                                description=f"Colour mode set to **True**.",
+                                thumbnail_url=LEVER_ICO
+            )
+            embed.colour = embed.colour.blurple()
+            embed.timestamp = inter.created_at
+            return await inter.followup.send(embed=embed)
 
         async def toggle_option_off(interaction_2):
             await interaction_2.response.defer()
             if check_mode('colour_mode') == False:
-                return await inter.followup.send('Colour mode already set to **False**!')
+                embed = EmbedFactory().create(
+                                title=f'Toggle colour mode already set to False!',
+                                description=f"Colour mode is already set to **False**!",
+                                thumbnail_url=LEVER_ICO
+                )
+                embed.colour = embed.colour.red()
+                embed.timestamp = inter.created_at
+                return await inter.followup.send(embed=embed)
             update_configuration(key='colour_mode', value='False')
-            return await interaction_2.followup.send('Colour mode set to **False**.')
+            embed = EmbedFactory().create(
+                                title=f'Toggle colour mode set to False.',
+                                description=f"Colour mode set to **False**.",
+                                thumbnail_url=LEVER_ICO
+            )
+            embed.colour = embed.colour.red()
+            embed.timestamp = inter.created_at
+            return await inter.followup.send(embed=embed)
 
         view.children[0].callback = toggle_option_on
         view.children[1].callback = toggle_option_off
