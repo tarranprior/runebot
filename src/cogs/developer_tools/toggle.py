@@ -1,5 +1,6 @@
 from disnake.ext import commands
 from disnake.ext.commands import Context
+from disnake.ui import View, Button
 from disnake import ApplicationCommandInteraction
 
 from templates.bot import Bot
@@ -28,20 +29,39 @@ class Toggle(commands.Cog, name='toggle'):
             toggle = self.toggle_mode('colour_mode')
             embed = EmbedFactory().create(
                                     title=f'Toggle colour mode set to {toggle}',
-                                    description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
-                                    thumbnail_url=COLOUR_ICO
+                                    description=f"Colour mode has been set to **{toggle}**. If you'd like to reverse this change, simpy use the buttons below or use `toggle colours` again.",
+                                    thumbnail_url=LEVER_ICO
             )
             embed.timestamp = ctx.message.created_at
-            return await ctx.send(embed=embed)
-
+            view=View()
+            toggle_on = Button(label='Toggle on', emoji='⚙️', style=disnake.ButtonStyle.grey)
+            toggle_off = Button(label='Toggle off', emoji='⚙️', style=disnake.ButtonStyle.grey)
+            view.add_item(toggle_on)
+            view.add_item(toggle_off)
+            await ctx.send(embed=embed, view=view)
         else:
             embed = EmbedFactory().create(
                                     title='Usage',
                                     description=f'```\ntoggle <colours>```'
             )
-            embed.timestamp = ctx.message.created_at
-            embed.set_footer(text=f'{ctx.message.author.name} (ID: {ctx.message.author.id})')
-            return await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
+
+        async def toggle_option_on(interaction_1):
+            await interaction_1.response.defer()
+            if check_mode('colour_mode') == True:
+                return await interaction_1.followup.send('Colour mode already set to **True**!')
+            update_configuration(key='colour_mode', value='True')
+            return await interaction_1.followup.send('Colour mode set to **True**.')
+        
+        async def toggle_option_off(interaction_2):
+            await interaction_2.response.defer()
+            if check_mode('colour_mode') == False:
+                return await interaction_2.followup.send('Colour mode already set to **False**!')
+            update_configuration(key='colour_mode', value='False')
+            return await interaction_2.followup.send('Colour mode set to **False**.')
+
+        view.children[0].callback = toggle_option_on
+        view.children[1].callback = toggle_option_off
 
     @commands.slash_command(name='toggle', description='📏 Developer-only. Toggles configuration modes on/off.')
     @commands.is_owner()
@@ -54,11 +74,34 @@ class Toggle(commands.Cog, name='toggle'):
         toggle = self.toggle_mode('colour_mode')
         embed = EmbedFactory().create(
                                 title=f'Toggle colour mode set to {toggle}',
-                                description=f"Colour mode has been set to `{toggle}`. If you'd like to reverse this change at any time, simpy use `toggle colours` again.",
-                                thumbnail_url=COLOUR_ICO
+                                description=f"Colour mode has been set to **{toggle}**. If you'd like to reverse this change, simpy use the buttons below or use `toggle colours` again.",
+                                thumbnail_url=LEVER_ICO
         )
+        embed.colour = 0x61585D
         embed.timestamp = inter.created_at
-        return await inter.followup.send(embed=embed)
+        view=View()
+        toggle_on = Button(label='Toggle on', emoji='⚙️', style=disnake.ButtonStyle.grey)
+        toggle_off = Button(label='Toggle off', emoji='⚙️', style=disnake.ButtonStyle.grey)
+        view.add_item(toggle_on)
+        view.add_item(toggle_off)
+        await inter.followup.send(embed=embed, view=view)
+
+        async def toggle_option_on(interaction_1):
+            await interaction_1.response.defer()
+            if check_mode('colour_mode') == True:
+                return await inter.followup.send('Colour mode already set to **True**!')
+            update_configuration(key='colour_mode', value='True')
+            return await interaction_1.followup.send('Colour mode set to **True**.')
+
+        async def toggle_option_off(interaction_2):
+            await interaction_2.response.defer()
+            if check_mode('colour_mode') == False:
+                return await inter.followup.send('Colour mode already set to **False**!')
+            update_configuration(key='colour_mode', value='False')
+            return await interaction_2.followup.send('Colour mode set to **False**.')
+
+        view.children[0].callback = toggle_option_on
+        view.children[1].callback = toggle_option_off
 
 def setup(bot) -> None:
     bot.add_cog(Toggle(bot))
