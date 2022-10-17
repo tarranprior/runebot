@@ -91,7 +91,7 @@ class Monsters(commands.Cog, name='monsters'):
     async def monster_slash(self, inter: ApplicationCommandInteraction, *, query) -> None:
         await inter.response.defer()
         embed, view = self.fetch_monster_data(query.lower())
-        await inter.follow.send(embed=embed, view=view)
+        await inter.followup.send(embed=embed, view=view)
 
 def setup(bot) -> None:
     bot.add_cog(Monsters(bot))

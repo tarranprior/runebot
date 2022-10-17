@@ -73,7 +73,7 @@ class Wiki(commands.Cog, name='wiki'):
     @commands.slash_command(name="wiki", description="Look up an entry from the official Old School RuneScape wikipedia.", options=[
             Option(
                 name="query",
-                description="Search for an article.",
+                description='Search for an article. Type "Random" to search for a random article!',
                 type=OptionType.string,
                 required=True
             )
