@@ -1,7 +1,7 @@
 {
     "configuration": {
         "activity": "!help Runebot",
-        "colour_mode": "False",
+        "colour_mode": "True",
         "prefix": "!"
     },
     "urls": {
