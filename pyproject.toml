@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "runebot"
-version = "1.0.2"
+version = "1.0.3"
 description = ""
 authors = ["Tarran Prior <Tarranprior@protonmail.com>"]
 
