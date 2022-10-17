@@ -1,3 +1,5 @@
+import asyncio
+
 from disnake.ext import commands
 from disnake.ext.commands import Context
 from disnake.ui import View, Button
@@ -60,7 +62,9 @@ class Toggle(commands.Cog, name='toggle'):
                 )
                 embed.colour = embed.colour.blurple()
                 embed.timestamp = interaction_1.created_at
-                return await interaction_1.followup.send(embed=embed)
+                toggle_message = await interaction_1.followup.send(embed=embed)
+                await asyncio.sleep(3)
+                return await toggle_message.delete()
             update_configuration(key='colour_mode', value='True')
             embed = EmbedFactory().create(
                                 title=f'Toggle colour mode set to True.',
@@ -81,7 +85,9 @@ class Toggle(commands.Cog, name='toggle'):
                 )
                 embed.colour = embed.colour.red()
                 embed.timestamp = interaction_2.created_at
-                return await interaction_2.followup.send(embed=embed)
+                toggle_message = await interaction_2.followup.send(embed=embed)
+                await asyncio.sleep(3)
+                return await toggle_message.delete()
             update_configuration(key='colour_mode', value='False')
             embed = EmbedFactory().create(
                                 title=f'Toggle colour mode set to False.',
@@ -131,11 +137,13 @@ class Toggle(commands.Cog, name='toggle'):
                 )
                 embed.colour = embed.colour.blurple()
                 embed.timestamp = inter.created_at
-                return await inter.followup.send(embed=embed)
+                toggle_message = await inter.followup.send(embed=embed)
+                await asyncio.sleep(3)
+                return await toggle_message.delete()
             update_configuration(key='colour_mode', value='True')
             embed = EmbedFactory().create(
                                 title=f'Toggle colour mode set to True.',
-                                description=f"Colour mode set to **True**.",
+                                description=f"Colour mode set to **True**. If you'd like to reverse this change, simpy use the buttons on the original message or use `toggle colours` again.",
                                 thumbnail_url=LEVER_ICO
             )
             embed.colour = embed.colour.blurple()
@@ -152,11 +160,13 @@ class Toggle(commands.Cog, name='toggle'):
                 )
                 embed.colour = embed.colour.red()
                 embed.timestamp = inter.created_at
-                return await inter.followup.send(embed=embed)
+                toggle_message = await inter.followup.send(embed=embed)
+                await asyncio.sleep(3)
+                return await toggle_message.delete()
             update_configuration(key='colour_mode', value='False')
             embed = EmbedFactory().create(
                                 title=f'Toggle colour mode set to False.',
-                                description=f"Colour mode set to **False**.",
+                                description=f"Colour mode set to **False**. If you'd like to reverse this change, simpy use the buttons on the original message or use `toggle colours` again.",
                                 thumbnail_url=LEVER_ICO
             )
             embed.colour = embed.colour.red()
