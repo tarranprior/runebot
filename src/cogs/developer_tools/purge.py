@@ -24,6 +24,9 @@ class Purge(commands.Cog, name='purge'):
         except:
             embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter an integer.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
             return await ctx.reply(embed=embed)
+        if number > 100:
+            embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter a maximum of 100.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
+            return await ctx.reply(embed=embed)
         await ctx.message.delete()
         messages = await ctx.channel.purge(limit=int(number))
         purge_message = await ctx.send(f'{len(messages)} messages have been purged.')
@@ -41,6 +44,9 @@ class Purge(commands.Cog, name='purge'):
     )
     @commands.is_owner()
     async def purge_slash(self, inter: ApplicationCommandInteraction, number: int):
+        if number > 100:
+            embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter a maximum of 100.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
+            return await inter.response.send_message(embed=embed, ephemeral=True)
         messages = await inter.channel.purge(limit=int(number))
         await inter.send(f'{len(messages)} messages have been purged.')
         await asyncio.sleep(1)
