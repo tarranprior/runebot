@@ -23,20 +23,20 @@ class Alch(commands.Cog, name='alch'):
         thumbnail_url = parse_thumbnail(page_content)
 
         try:
-            value = info['Value']
-            low_alch = info['Low alch']
-            high_alch = info['High alch']
-            item_id = info['Item ID']
+            info['Low alch']
+            info['High alch']
         except KeyError:
             raise exceptions.NoAlchData
-        
+
         embed = EmbedFactory().create(
-            title=f'{title} (ID: {item_id})',
+            title=f"{title} (ID: {info.get('Item ID')})",
             thumbnail_url=thumbnail_url
         )
-        embed.add_field(name='Value', value=value, inline=True)
-        embed.add_field(name='High alch', value=high_alch, inline=True)
-        embed.add_field(name='Low alch', value=low_alch, inline=True)
+
+        alch_properties = ['Value', 'High alch', 'Low alch']
+        
+        for prop in alch_properties:
+            embed.add_field(name=prop, value=info.get(prop), inline=True)
         return(embed)
 
     @commands.command(name='alch', description='Fetch alchemy price data from the official Old School RuneScape wikipedia.')

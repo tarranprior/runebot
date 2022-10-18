@@ -118,7 +118,8 @@ Parses a minigame icon from 'https://oldschool.runescape.wiki/w/Minigames'.
 def parse_minigame_icon(page_content, query: str) -> None:
     for table in page_content.find_all('table', class_='wikitable'):
         for icon in table.find_all('img'):
-            if query in search_query(icon['alt']):
+            if query.lower() in search_query(icon['alt']).lower():
+                print(icon['src'])
                 icon_url = icon['src']
                 return(f'https://oldschool.runescape.wiki{icon_url}')
 

@@ -26,9 +26,8 @@ class Quests(commands.Cog, name='quests'):
         title = parse_title(page_content)
 
         try:
-            quest_series = info['Quest series']
-            difficulty = info['Official difficulty']
-            members = info['Members']
+            info['Quest series']
+            info['Official difficulty']
         except KeyError:
             raise exceptions.NoQuestData
 
@@ -42,12 +41,15 @@ class Quests(commands.Cog, name='quests'):
             button_label='Quick Guide',
             button_url=f"{BASE_URL}{title.replace(' ', '_')}/Quick_guide"
         )
-        embed.add_field(name='Quest series', value=quest_series, inline=True)
-        embed.add_field(name='Difficulty', value=difficulty, inline=True)
-        embed.add_field(name='Members', value=members, inline=True)
+
+        quest_properties = [
+            'Quest series', 'Official difficulty', 'Members'
+        ]
+
+        for prop in quest_properties:
+            embed.add_field(name=prop, value=info.get(prop), inline=True)
 
         embed.add_field(name='Start point', value=quest_details['Start point'], inline=False)
-
         embed.add_field(name='Requirements', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Details) for a full list of requirements.", inline=True)
         embed.add_field(name='Rewards', value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Rewards) for a full list of rewards.", inline=True)
 

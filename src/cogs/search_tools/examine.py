@@ -23,18 +23,14 @@ class Examine(commands.Cog, name='examine'):
         thumbnail_url = parse_thumbnail(page_content)
 
         try:
-            examine_text = info['Examine']
+            info['Examine']
         except KeyError:
             raise exceptions.NoExamineText
-        try:
-            item_id = info['Item ID']
-        except KeyError:
-            item_id = None            
  
-        if item_id:
-            embed = EmbedFactory().create(title=f'{title} (ID: {item_id})', description=f'**Examine**: {examine_text}', thumbnail_url=thumbnail_url)
+        if info.get('Item ID'):
+            embed = EmbedFactory().create(title=f"{title} (ID: {info.get('Item ID')})", description=f"**Examine**: {info.get('Examine')}", thumbnail_url=thumbnail_url)
             return(embed)
-        embed = EmbedFactory().create(title=title, description=f'**Examine**: {examine_text}', thumbnail_url=thumbnail_url)
+        embed = EmbedFactory().create(title=title, description=f"**Examine**: {info.get('Examine')}", thumbnail_url=thumbnail_url)
         return(embed)
 
     @commands.command(name='examine', description='Fetch the examine text from the official Old School RuneScape wikipedia.')

@@ -32,14 +32,7 @@ class Minigames(commands.Cog, name='minigames'):
             thumbnail_url = MINIGAME_ICO
 
         try:
-            release_date = info['Released']
-            game_type = info['Type']
-            members = info['Members']
-            location = info['Location']
-            participants = info['Participants']
-            skills = info['Skills']
-            reward_currency = info['Reward currency']
-
+            info['Type']
         except KeyError:
             raise exceptions.NoMinigameData
 
@@ -51,26 +44,14 @@ class Minigames(commands.Cog, name='minigames'):
             button_url=f'{BASE_URL}{query}'
         )
 
-        embed.add_field(name='Release Date', value=release_date, inline=True)
-        embed.add_field(name='Type', value=game_type, inline=True)
-        embed.add_field(name='Members', value=members, inline=True)
+        minigame_properties = [
+            'Released', 'Type', 'Members', 'Location', 'Participants', 'Reward currency', 'Tutorial'
+        ]
 
-        embed.add_field(name='Location', value=location, inline=True)
-        embed.add_field(name='Participants', value=participants, inline=True)
-
-        try:
-            tutorial = info['Tutorial']
-            embed.add_field(name='Tutorial', value=tutorial, inline=True)
-        except KeyError:
-            pass
-
-        embed.add_field(name='Skills', value=skills, inline=False)
-
-        try:
-            requirements = info['Requirements']
-            embed.add_field(name='Requirements', value=requirements, inline=False)
-        except KeyError:
-            pass
+        for prop in minigame_properties:
+            embed.add_field(name=prop, value=info.get(prop), inline=True)
+        embed.add_field(name='Skills', value=info.get('Skills'), inline=False)
+        embed.add_field(name='Requirements', value=info.get('Requirements'), inline=False)
 
         return(embed, view)
 

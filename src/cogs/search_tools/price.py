@@ -26,27 +26,28 @@ class Price(commands.Cog, name='price'):
         title = parse_title(page_content)
 
         try:
-            value_price = info['Value']
-            exchange_price = info['Exchange']
-            buy_limit = info['Buy limit']
-            item_id = info['Item ID']
+            info['Value']
+            info['Exchange']
+            info['Buy limit']
         except KeyError:
             raise exceptions.NoPriceData
 
-        api_data = parse_price_data(f'{PRICEAPI_URL}{item_id}', HEADERS)
-        graphapi_data = parse_price_data(f'{GRAPHAPI_URL}{item_id}.json', HEADERS)
+        api_data = parse_price_data(f"{PRICEAPI_URL}{info['Item ID']}", HEADERS)
+        graphapi_data = parse_price_data(f"{GRAPHAPI_URL}{info['Item ID']}.json", HEADERS)
         generate_graph(graphapi_data)
 
         embed, view = EmbedFactory().create(
-            title=f'{title} (ID: {item_id})',
+            title=f"{title} (ID: {info['Item ID']})",
             description=api_data['item']['description'],
             thumbnail_url=api_data['item']['icon_large'],
             button_label='Real-Time Prices',
-            button_url=f'https://prices.runescape.wiki/osrs/item/{item_id}'
+            button_url=f"https://prices.runescape.wiki/osrs/item/{info['Item ID']}"
         )
-        embed.add_field(name='Current Value', value=value_price, inline=True)
-        embed.add_field(name='Exchange Price', value=exchange_price, inline=True)
-        embed.add_field(name='Buy Limit', value=buy_limit, inline=True)
+
+        price_properties = ['Value', 'Exchange', 'Buy limit']
+
+        for prop in price_properties:
+            embed.add_field(name=prop, value=info.get(prop), inline=True)
 
         embed.add_field(name='Today', value=f"{api_data['item']['today']['price']} coins ({api_data['item']['today']['trend'].title()})", inline=False)
 
