@@ -23,9 +23,9 @@ bot.load_extensions(exts=[
     'cogs.developer_tools.purge',
     'cogs.developer_tools.toggle',
     'cogs.search_tools.alch',
+    'cogs.search_tools.bestiary',
     'cogs.search_tools.examine',
     'cogs.search_tools.minigames',
-    'cogs.search_tools.monsters',
     'cogs.search_tools.price',
     'cogs.search_tools.quests',
     'cogs.search_tools.wiki'

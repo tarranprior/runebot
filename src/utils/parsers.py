@@ -1,4 +1,6 @@
+import random, string
 import requests
+
 import matplotlib.pyplot as plotter
 from urllib.error import HTTPError
 from bs4 import BeautifulSoup
@@ -85,28 +87,28 @@ An infobox includes various properties about an asset - such as release date, va
 '''
 def parse_infobox(page_content) -> None:
     infobox = {}
-    infobox_content = page_content.find('table', class_='infobox')
+    infobox_content = page_content.find_all('table', class_='infobox')
 
     if infobox_content:
-        for row in infobox_content.find_all('tr'):
-            try:
-                property_name = row.find('th').getText().rstrip('\n').strip()
-                property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').replace('[1]', '').replace('[2]', '').replace('[3]', '').rstrip('\n').strip()
-                if property_name == 'Icon' or property_name == 'Minimap icon':
-                    property_value = row.find('img')['src']
-                    continue
-                infobox.update({property_name: property_value})
-            except AttributeError:
+        for tab in infobox_content:
+            for row in tab.find_all('tr'):
                 try:
-                    property_name = 'Image'
-                    property_value = row.find('td', class_="infobox-image infobox-full-width-content").find('img')['src']
+                    property_name = row.find('th').getText().rstrip('\n').strip()
+                    property_value = row.find('td').getText().replace('(info)', '').replace('(Update)', '').replace('[1]', '').replace('[2]', '').replace('[3]', '').rstrip('\n').strip()
+                    if property_name == 'Icon' or property_name == 'Minimap icon':
+                        property_value = row.find('img')['src']
+                        continue
                     infobox.update({property_name: property_value})
                 except AttributeError:
+                    try:
+                        property_name = 'Image'
+                        property_value = row.find('td', class_="infobox-image infobox-full-width-content").find('img')['src']
+                        infobox.update({property_name: property_value})
+                    except AttributeError:
+                        pass
+                    except TypeError:
+                        pass
                     pass
-                except TypeError:
-                    pass
-                pass
-
     return(infobox)
 
 '''
@@ -189,6 +191,21 @@ def parse_quick_guide(page_content, page_hyperlink) -> None:
         quickguide_details.append(f"Part {count}: [{header.getText()}]({page_hyperlink}#{header.getText().replace(' ', '_')})\n")
         count+=1
     return(''.join(quickguide_details))
+
+'''
+Parses a random page from a list of monsters from the official Bestiary (https://oldschool.runescape.wiki/w/Bestiary) page.
+:param url: (String) - Represents the full URL with an item_id.
+:param headers: (Dictionary) - Represents a series of request headers.
+'''
+def parse_random_bestiary(url: str, headers: dict) -> None:
+    request = Request(f'{url}Category:Monsters?pagefrom={random.choice(string.ascii_letters).upper()}', headers=headers)
+    page = urlopen(request)
+    page_content = BeautifulSoup(page, 'html.parser')
+    mw_content = page_content.find_all('div', class_='mw-content-ltr')
+    mw_list = []
+    for item in mw_content[2].find_all('a'):
+        mw_list.append(item.attrs['href'].replace('/w/', ''))
+    return(random.choice(mw_list))
 
 '''
 Parses a thumbnail URL from an Old School RuneScape wikipedia page.
