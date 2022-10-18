@@ -21,7 +21,8 @@ class Monsters(commands.Cog, name='monsters'):
         query = search_query(query)
 
         if query == str('random') or query == str("i'm_feeling_lucky"):
-            page_content = parse_page(BASE_URL, parse_random_bestiary(BASE_URL, HEADERS), HEADERS)
+            query = parse_random_bestiary(BASE_URL, HEADERS)
+            page_content = parse_page(BASE_URL, query, HEADERS)
         else:
             page_content = parse_page(BASE_URL, query, HEADERS)
 
