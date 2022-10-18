@@ -68,8 +68,8 @@ class Monsters(commands.Cog, name='monsters'):
 
     @commands.slash_command(name='bestiary', description='Fetch monster information from the official Old School RuneScape wikipedia.', options=[
             Option(
-                name="query",
-                description="Search for a monster.",
+                name='query',
+                description='Search for a monster. Type "Random" to search for a random monster!',
                 type=OptionType.string,
                 required=True
             )
