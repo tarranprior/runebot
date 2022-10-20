@@ -6,6 +6,7 @@ from disnake import ApplicationCommandInteraction, Option, OptionType
 
 from templates.bot import Bot
 from utils import *
+from config import *
 
 
 class Purge(commands.Cog, name='purge'):
@@ -13,7 +14,7 @@ class Purge(commands.Cog, name='purge'):
         self.bot = bot
 
     '''
-    📏 DEVELOPER-ONLY. Deletes a specified number of messages in the context channel.
+    📏 DEVELOPER-ONLY (Owner.) Deletes a specified number of messages in the context channel.
     :param number: (Integer) - Represents the number of messages to delete.
     '''
     @commands.command(name='purge', description='📏 Developer-only. Deletes a specified number of messages.')
@@ -24,7 +25,7 @@ class Purge(commands.Cog, name='purge'):
         except:
             embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter an integer.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
             return await ctx.reply(embed=embed)
-        if number > 100:
+        if number > MAX_PURGE:
             embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter a maximum of 100.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
             return await ctx.reply(embed=embed)
         await ctx.message.delete()
@@ -44,7 +45,7 @@ class Purge(commands.Cog, name='purge'):
     )
     @commands.is_owner()
     async def purge_slash(self, inter: ApplicationCommandInteraction, number: int):
-        if number > 100:
+        if number > MAX_PURGE:
             embed = EmbedFactory().create(title='Value Error', description=f"Value error. Please enter a maximum of 100.\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.", colour=disnake.Colour.red())
             return await inter.response.send_message(embed=embed, ephemeral=True)
         messages = await inter.channel.purge(limit=int(number))

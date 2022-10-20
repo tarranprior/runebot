@@ -15,7 +15,7 @@ class Toggle(commands.Cog, name='toggle'):
         self.bot = bot    
 
     '''
-    📏 DEVELOPER-ONLY. Toggle function for toggling configuration modes on/off (such as `colour_mode`, `hide_scrolls` etc.)
+    📏 DEVELOPER-ONLY (Owner.) Toggle function for toggling configuration modes on/off (such as `colour_mode`, `hide_scrolls` etc.)
     :param mode: (String) - Represents the mode to toggle.
     '''
     def toggle_mode(self, mode: str) -> None:

@@ -11,6 +11,7 @@ HEADERS = load_configuration()['headers']
 
 # MISC
 FEELING_LUCKY = 'Special:Random/main'
+MAX_PURGE = 100
 
 # COMMON THUMBNAILS
 BUCKET_ICO = 'https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png?94769'

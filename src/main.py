@@ -20,8 +20,9 @@ if __name__ == '__main__':
     )
 
 bot.load_extensions(exts=[
-    'cogs.developer_tools.purge',
-    'cogs.developer_tools.toggle',
+    'cogs.developer.ping',
+    'cogs.developer.purge',
+    'cogs.developer.toggle',
     'cogs.search_tools.alch',
     'cogs.search_tools.bestiary',
     'cogs.search_tools.examine',
