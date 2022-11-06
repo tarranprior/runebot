@@ -77,37 +77,25 @@ Preferably, you should use Poetry to run this bot for local development:
    }
    ```
 
-## Usage
-
-### 📏 Developer Tools
-
-- `purge` - Deletes a specified number of messages.
-- `toggle` - Toggles configuration values on/off. (`colour_mode` etc.)
-
-### 🔎 Search Tools
-
-- `alch` - Fetches the latest alchemy price data from the official [Old School wiki](https://oldschool.runescape.wiki/).
-- `examine` - Displays examine text from the official [Old School wiki](https://oldschool.runescape.wiki/).
-- `minigame` - Grabs minigame information from the official [Old School wiki](https://oldschool.runescape.wiki/).
-- `monster` - Fetches monster data from the official [Old School wiki](https://oldschool.runescape.wiki/).
-- `price` - Displays price data from the official API and generates data visualisation.
-- `quest` - Fetches quest information from the official [Old School wiki](https://oldschool.runescape.wiki/).
-- `wiki` - Looks up an entry from the official [Old School wiki](https://oldschool.runescape.wiki/).
-
-## Screenshots
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo1.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo2.png" />
-> <br/><br/>
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo3.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo4.png" />
-> <br/><br/>
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo5.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo6.png" />
-> <br /><br />
-> <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo7.png" />
+## Showcase
+<details>
+    <summary>Screenshots</summary>
+    <br />
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo1.png" />
+    <br /><br />
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo2.png" />
+    <br/><br/>
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo3.png" />
+    <br /><br />
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo4.png" />
+    <br/><br/>
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo5.png" />
+    <br /><br />
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo6.png" />
+    <br /><br />
+    <img src="https://github.com/tarranprior/runebot/blob/main/assets/screenshots/demo7.png" />
+    
+</details>
 
 ## Support
 If you have any questions about this project, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>
