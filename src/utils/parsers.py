@@ -1,7 +1,3 @@
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
-from bs4 import BeautifulSoup
-import matplotlib.pyplot as plotter
 import exceptions
 from config import *
 from utils.helpers import *
@@ -11,6 +7,10 @@ import uuid
 
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plotter
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from bs4 import BeautifulSoup
 
 
 '''

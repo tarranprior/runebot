@@ -110,7 +110,7 @@ class Bot(commands.Bot):
             elif 'StubArticle' in str(error.__str__()):
                 embed = EmbedFactory().create(title='This project page is a stub.', description=str(error.__cause__),
                                                     thumbnail_url=STUB_ICO, colour=0x60533E, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
-                return await inter.followup.send(embed=embed)
+                return await inter.followup.send(embed=embed, view=view)
 
         logger.error(
             f'Ignoring exception in slash command {inter.application_command.name}: {error}')
