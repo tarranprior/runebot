@@ -9,14 +9,15 @@
 <p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a> • <a href="#references">References</a></p>
 
 ## Introduction
-Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python and Beautiful Soup 4.
+Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python, SQLite and Beautiful Soup 4.
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
 - Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
 - Get the most up to date information - directly from the official api(s) and wiki.
 - Supports slash commands.
-- Data visualisation for displaying the latest trends.
+- Full autocomplete support for all appliable slash interactions.
+- Data visualisation for displaying the latest price analytics and trends.
 - User interface components (buttons, dropdowns etc.) for usability.
 
 ## Prerequisites
@@ -28,6 +29,8 @@ Runebot is a feature-rich Discord tool which scrapes, pulls and displays informa
 - [Beautiful Soup 4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
 - [Color-thief-py](https://github.com/fengsp/color-thief-py)
 - [Matplotlib - Data Visualisation](https://matplotlib.org/)
+- [aiosqlite](https://pypi.org/project/aiosqlite/)
+- [Humanfriendly](https://github.com/xolox/python-humanfriendly)
 
 ## Disclaimer
 The Old School RuneScape Wiki, also known as the OSRS Wiki and previously known as the 2007Scape Wiki, is the official wiki for the MMORPG game Old School RuneScape developed and published by Jagex Ltd.
@@ -72,8 +75,7 @@ Preferably, you should use Poetry to run this bot for local development:
 
    ```json
    {
-       "activity": "Old School RuneScape",
-       "prefix": "!"
+       "activity": "RuneBot",
    }
    ```
 
