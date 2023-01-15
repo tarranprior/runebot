@@ -1,18 +1,21 @@
 [tool.poetry]
 name = "runebot"
-version = "1.0.3"
-description = ""
+version = "v1.0.4"
+description = "Runebot is a feature rich Discord tool which scrapes, pulls and displays information about the popular MMORPG Old School RuneScape."
 authors = ["Tarran Prior <Tarranprior@protonmail.com>"]
+license = "CC BY-NC-SA 3.0"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-disnake = "2.4.0"
-loguru = "0.6.0"
-python-dotenv = "0.20.0"
-colorthief = "0.2.1"
-beautifulsoup4 = "4.11.1"
-requests = "^2.28.0"
-matplotlib = "^3.5.2"
+disnake = "^2.7.0"
+loguru = "^0.6.0"
+python-dotenv = "^0.21.0"
+colorthief = "^0.2.1"
+beautifulsoup4 = "^4.11.1"
+requests = "^2.28.1"
+matplotlib = "^3.6.2"
+aiosqlite = "^0.17.0"
+humanfriendly = "^10.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

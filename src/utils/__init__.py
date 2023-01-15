@@ -1,3 +1,4 @@
+from .database import *
 from .embeds import *
-from .general import *
+from .helpers import *
 from .parsers import *

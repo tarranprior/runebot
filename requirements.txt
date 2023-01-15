@@ -1,7 +1,9 @@
+aiosqlite==0.18.0
 beautifulsoup4==4.11.1
 colorthief==0.2.1
 disnake==2.4.0
+humanfriendly==10.0
 loguru==0.6.0
-matplotlib==3.5.2
-python-dotenv==0.20.0
+matplotlib==3.6.3
+python-dotenv==0.21.0
 requests==2.24.0

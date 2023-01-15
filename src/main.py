@@ -1,9 +1,10 @@
-from os import environ as env
-from dotenv import load_dotenv
+from templates.bot import Bot
+from utils.helpers import configuration
 
 import disnake
-from templates.bot import Bot
-from utils.general import load_configuration
+
+from dotenv import load_dotenv
+from os import environ as env
 
 
 load_dotenv()
@@ -11,25 +12,22 @@ load_dotenv()
 if __name__ == '__main__':
 
     bot = Bot(
-        activity=disnake.Game(name=load_configuration()['configuration']['activity']),
+        activity=disnake.Game(
+            name=f"{configuration()['configuration']['activity']}"),
         case_insensitive=True,
-        command_prefix=load_configuration()['configuration']['prefix'],
         help_command=None,
-        intents=disnake.Intents.all(),
-        owner_id=int(env['BOT_OWNER'])
-    )
+        intents=disnake.Intents.all())
 
 bot.load_extensions(exts=[
-    'cogs.developer.ping',
-    'cogs.developer.purge',
-    'cogs.developer.toggle',
-    'cogs.search_tools.alch',
+    'cogs.administrator.ping',
+    'cogs.administrator.purge',
+    'cogs.administrator.toggle',
+    'cogs.search_tools.alchemy',
     'cogs.search_tools.bestiary',
-    'cogs.search_tools.examine',
     'cogs.search_tools.minigames',
     'cogs.search_tools.price',
     'cogs.search_tools.quests',
-    'cogs.search_tools.wiki'
+    'cogs.search_tools.wikipedia'
 ])
 
 bot.run(env['BOT_TOKEN'])

@@ -1,19 +1,21 @@
-import os, platform
-from loguru import logger
-
-import disnake
-from disnake.ext import commands, tasks
-from disnake import ApplicationCommandInteraction
-
 from config import *
 from utils import *
 
+import aiosqlite
+import disnake
+import platform
+import os
+
+from disnake.ext import commands, tasks
+from disnake import ApplicationCommandInteraction
+from loguru import logger
+
 
 class Bot(commands.Bot):
-    def __init__(self, config=None, base_url=None, headers=None, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.config = config or load_configuration()
+    def __init__(self, config=None, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs, command_prefix='/')
         self.bot = Bot
+        self.config = config or configuration()
 
     def load_extensions(self, exts: list):
         count = 0
@@ -35,158 +37,83 @@ class Bot(commands.Bot):
         logger.info(f'API Version: {disnake.__version__}')
         logger.info(f'Platform: {platform.system()} {platform.release()} {os.name}\n')
 
+        setattr(self.bot, 'runebotdb', await aiosqlite.connect('runebot.db'))
+        async with self.bot.runebotdb.cursor() as cursor:
+            await cursor.execute(
+                f'''
+                CREATE TABLE IF NOT EXISTS all_guilds (
+                    guild_id INTEGER NOT NULL,
+                    guild_owner_id INTEGER NOT NULL,
+                    colour_mode BOOLEAN NOT NULL
+                )
+                '''
+            )
+            await cursor.execute(
+                f'''
+                CREATE TABLE IF NOT EXISTS all_articles (
+                    article_title TEXT NOT NULL,
+                    article_category TEXT NOT NULL
+                )
+                '''
+            )
+
     async def on_ready(self) -> None:
         logger.success('Runebot is ready.')
         logger.info('For more information on usage, see the README.')
 
-    async def on_command_error(self, ctx: disnake.ext.commands.Context, error) -> None:
-        if isinstance(error, commands.errors.CommandNotFound):
-            return
-
-        elif isinstance(error, commands.errors.MissingRequiredArgument):
-            embed = EmbedFactory().create(
-                                    title='Missing required argument',
-                                    description=f"{str(error).capitalize()}\nFor more information on usage and parameters, use `{load_configuration()['configuration']['prefix']}help <command>`.",
-                                    thumbnail_url=BUCKET_ICO
-            )
-            return await ctx.reply(embed=embed)
-
-        elif isinstance(error, commands.errors.CommandInvokeError):
-
-            if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-
-            elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-
-            elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-            
-            elif 'NoMinigameData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-
-            elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-
-            elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-            
-            elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await ctx.reply(embed=embed)
-
-            elif 'StubArticle' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='This project page is a stub.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=STUB_ICO
-                )
-                return await ctx.send(embed=embed)
-
-        logger.error(f'Ignoring exception in command {ctx.command}: {error}')
+    async def on_guild_join(self, guild) -> None:
+        await add_guild(guild.id, guild.owner_id, True)
 
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
 
             if 'Nonexistence' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
-            elif 'NoAlchData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+            elif 'NoAlchemyData' in str(error.__str__()):
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoExamineText' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoMinigameData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoMonsterData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoPriceData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
-            
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
+
             elif 'NoQuestData' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='Nothing interesting happens.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=BUCKET_ICO
-                )
-                return await inter.followup.send(embed=embed)
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
+
+            elif 'NoAdministratorPermissions' in str(error.__str__()):
+                embed, view = EmbedFactory().create(title='This command is for server administrators only.', description=str(error.__cause__),
+                                                    colour=disnake.Colour.red(), button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.followup.send(embed=embed, view=view)
 
             elif 'StubArticle' in str(error.__str__()):
-                embed = EmbedFactory().create(
-                                        title='This project page is a stub.',
-                                        description=str(error.__cause__),
-                                        thumbnail_url=STUB_ICO
-                )
+                embed = EmbedFactory().create(title='This project page is a stub.', description=str(error.__cause__),
+                                                    thumbnail_url=STUB_ICO, colour=0x60533E, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
                 return await inter.followup.send(embed=embed)
 
-        logger.error(f'Ignoring exception in slash command {inter.application_command.name}: {error}')
+        logger.error(
+            f'Ignoring exception in slash command {inter.application_command.name}: {error}')
 
     @tasks.loop(minutes=10.0)
     async def status() -> None:
