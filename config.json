@@ -12,10 +12,10 @@
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
     },
     "icons": {
-        "bucket_ico": "'https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png'",
-        "lever_ico": "'https://oldschool.runescape.wiki/images/Lever.png'",
-        "quest_ico": "'https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png'",
-        "minigame_ico": "'https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png'",
-        "stub_ico": "'https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png'"
+        "bucket_ico": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
+        "lever_ico": "https://oldschool.runescape.wiki/images/Lever.png",
+        "quest_ico": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
+        "minigame_ico": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
+        "stub_ico": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
     }
 }

@@ -20,7 +20,6 @@ if __name__ == '__main__':
 
 bot.load_extensions(exts=[
     'cogs.administrator.ping',
-    'cogs.administrator.purge',
     'cogs.administrator.toggle',
     'cogs.search_tools.alchemy',
     'cogs.search_tools.bestiary',
