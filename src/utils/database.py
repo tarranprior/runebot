@@ -10,7 +10,7 @@ Database function which adds a new guild to the 'all_guilds' table.
 async def add_guild(self, guild_id: int, guild_owner_id: int, toggle: bool) -> None:
     async with self.bot.runebotdb.cursor() as cursor:
         await cursor.execute('INSERT INTO all_guilds (guild_id, guild_owner_id, colour_mode) VALUES (?, ?, ?)', (guild_id, guild_owner_id, toggle,))
-        await self.bot.runebotdb.commit()
+        return (await self.bot.runebotdb.commit())
 
 
 '''
@@ -87,6 +87,19 @@ async def get_colour_mode(self, guild_id: int, guild_owner_id: int) -> None:
         except TypeError:
             await add_guild(self, guild_id, guild_owner_id, True)
             return (True)
+
+
+'''
+Database function which removes a guild from the `all_guilds` table.
+:param self:
+:param guild_id: (Integer) - Represents the guild id.
+'''
+
+
+async def remove_guild(self, guild_id: int) -> None:
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute('DELETE FROM all_guilds WHERE guild_id = ?', (guild_id,))
+        return (await self.bot.runebotdb.commit())
 
 
 '''

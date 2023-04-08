@@ -44,14 +44,20 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         colour = disnake.Colour.from_rgb(*await extract_colour(self, inter.guild_id, inter.guild.owner_id, thumbnail_url, HEADERS))
 
         if description:
-            embed, view = EmbedFactory().create(title=title, description=description.pop(), colour=colour, infobox=infobox,
-                                                thumbnail_url=thumbnail_url, button_url=f'{BASE_URL}{attributes["title"].replace(" ", "_")}')
+            embed, view = EmbedFactory().create(
+                title=title,
+                description=description.pop(),
+                colour=colour, infobox=infobox,
+                thumbnail_url=thumbnail_url,
+                button_url=f'{BASE_URL}{attributes["title"].replace(" ", "_")}')
             if len(embed.description) < 84:
                 embed.set_footer(
                     text='To view more information about this page, click the button below.')
             return (embed, view)
-        embed, view = EmbedFactory().create(title=title,
-                                            description=f'{title} may refer to several articles. Use the dropdown below to select an option.', options=options)
+        embed, view = EmbedFactory().create(
+            title=title,
+            description=f'{title} may refer to several articles. Use the dropdown below to select an option.',
+            options=options)
         return (embed, view)
 
     '''

@@ -1,6 +1,6 @@
 {
     "configuration": {
-        "activity": "RuneBot"
+        "activity": "/help | RuneBot"
     },
     "urls": {
         "osrswiki_url": "https://oldschool.runescape.wiki/w/",

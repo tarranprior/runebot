@@ -155,6 +155,7 @@ def parse_infobox(page_content) -> None:
 '''
 Parser function which parses a minigame icon from 'https://oldschool.runescape.wiki/w/Minigames'.
 :param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+:param query: (String) - Represents the query given by the user. (Ex: 'firecape'.)
 '''
 
 
@@ -207,6 +208,7 @@ def parse_levelup_table(page_content) -> None:
 Parser function which parses price data using the official API.
 :param url: (String) - Represents the full URL with an item_id.
 :param headers: (Dictionary) - Represents a series of request headers.
+:param query: (String) - Represents the query given by the user. (Ex: 'Rune scimitar'.)
 '''
 
 

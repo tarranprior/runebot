@@ -62,7 +62,10 @@ class Bot(commands.Bot):
         logger.info('For more information on usage, see the README.')
 
     async def on_guild_join(self, guild) -> None:
-        await add_guild(guild.id, guild.owner_id, True)
+        await add_guild(self, guild.id, guild.owner_id, True)
+
+    async def on_guild_remove(self, guild) -> None:
+        await remove_guild(self, guild.id)
 
     async def on_slash_command_error(self, inter: ApplicationCommandInteraction, error) -> None:
         if isinstance(error, commands.errors.CommandInvokeError):
