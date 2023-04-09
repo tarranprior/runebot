@@ -55,7 +55,7 @@ class Minigames(commands.Cog, name='minigames'):
         try:
             info['Type']
         except KeyError:
-            raise exceptions.NoMinigameData(query)
+            raise exceptions.NoMinigameData
 
         embed, view = EmbedFactory().create(
             title=title,

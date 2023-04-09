@@ -29,7 +29,7 @@ Thrown when a player doesn't exist on the Hiscores, or if the Hiscores are unava
 
 
 class NoHiscoreData(Exception):
-    def __init__(self, message: str = f'The player you have searched for doesn\'t appear to exist on the **Hiscores**, or the **Hiscores** are currently unavailable.\n\n**Usage**: `/stats <USERNAME> [GAME_MODE (optional)]`'):
+    def __init__(self, message: str = f'The player you have searched for doesn\'t appear to exist on the **Hiscores**, or the **API** is currently unavailable. Please try another username or try again later.\n\n**Usage**: `/stats <USERNAME> [GAME_MODE (optional)]`'):
         self.message = message
         super().__init__(self.message)
 

@@ -48,7 +48,7 @@ class Price(commands.Cog, name='price'):
             info['Exchange']
             info['Buy limit']
         except KeyError:
-            raise exceptions.NoPriceData(title)
+            raise exceptions.NoPriceData
 
         api_data = parse_price_data(
             f"{PRICEAPI_URL}{info['Item ID']}", HEADERS, query)
@@ -115,7 +115,7 @@ class Price(commands.Cog, name='price'):
             low_date_diff = convert_date_to_duration(present_time, low_time)
 
         except KeyError:
-            raise exceptions.NoPriceData(title)
+            raise exceptions.NoPriceData
 
         embed.add_field(
             name='Buy price',

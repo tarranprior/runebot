@@ -46,7 +46,7 @@ class Quests(commands.Cog, name='quests'):
             info['Quest series']
             info['Official difficulty']
         except KeyError:
-            raise exceptions.NoQuestData(query)
+            raise exceptions.NoQuestData
 
         quest_details = parse_quest_details(page_content)
 

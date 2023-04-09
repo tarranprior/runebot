@@ -45,7 +45,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             info['Low alch']
             info['High alch']
         except KeyError:
-            raise exceptions.NoAlchemyData(query)
+            raise exceptions.NoAlchemyData
 
         embed = EmbedFactory().create(
             title=f'{title} (ID: {info.get("Item ID")})',

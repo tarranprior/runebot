@@ -47,7 +47,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         try:
             info['Combat level']
         except KeyError:
-            raise exceptions.NoMonsterData(query)
+            raise exceptions.NoMonsterData
 
         embed, view = EmbedFactory().create(
             title=title,

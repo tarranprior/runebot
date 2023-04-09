@@ -56,7 +56,7 @@ def parse_page(url: str, query: str, headers: dict) -> None:
         page = urlopen(request)
         page_content = BeautifulSoup(page, 'html.parser')
     except HTTPError:
-        raise exceptions.Nonexistence(query)
+        raise exceptions.Nonexistence
     return (page_content)
 
 
@@ -71,7 +71,7 @@ def parse_description(page_content, query: str) -> None:
     page_div = page_content.find('div', class_='mw-parser-output')
 
     if str('This page doesn\'t exist on the wiki.') in page_div.getText():
-        raise exceptions.Nonexistence(query)
+        raise exceptions.Nonexistence
 
     for paragraph in page_content.find_all('p'):
         description = paragraph.getText().replace(
@@ -218,7 +218,7 @@ def parse_price_data(url: str, headers: dict, query: str) -> None:
         request = requests.get(url, headers=headers)
         data = request.json()
     except BaseException:
-        raise exceptions.NoPriceData(query)
+        raise exceptions.NoPriceData
     return (data)
 
 
