@@ -56,16 +56,16 @@ HISCORES_ORDER = [
     'Tombs of Amascut: Expert Mode', 'TzKal-Zuk', 'TzTok-Jad', 'Venenatis', 'Vet\'ion', 'Vorkath',
     'Wintertodt', 'Zalcano', 'Zulrah'
 ]
-
 STAT_ORDER = [
     'Attack', 'Hitpoints', 'Mining', 'Strength', 'Agility', 'Smithing', 'Defence', 'Herblore', 'Fishing',
     'Ranged', 'Thieving', 'Cooking', 'Prayer', 'Crafting', 'Firemaking', 'Magic', 'Fletching', 'Woodcutting',
     'Runecraft', 'Slayer', 'Farming', 'Construction', 'Hunter', 'Overall'
 ]
-
 COMBAT_SKILLS = [
     'Attack', 'Defence', 'Hitpoints', 'Magic', 'Prayer', 'Ranged', 'Strength'
 ]
-
 CLUE_SCROLL_ORDER = HISCORES_ORDER[28:34]
 BOSS_ORDER = HISCORES_ORDER[39:89]
+
+# BLACKLISTS
+BLACKLIST_ITEMS = ['Burnt', '(burnt)', 'Ensouled', 'Sigil of', 'The great divide']

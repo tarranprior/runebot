@@ -27,7 +27,8 @@ class Price(commands.Cog, name='price'):
         # Checks if the query is equal to the "I'm feeling lucky" special query
         # and returns a random item if True.
         if query == 'I\'m feeling lucky ':
-            page_content = parse_page(BASE_URL, replace_spaces(random.choice(await get_suggestions(self, ['Tradeable items']))), HEADERS)
+            tradeable_items = await get_suggestions(self, ['Tradeable items'])
+            page_content = parse_page(BASE_URL, replace_spaces(random.choice([i for i in tradeable_items if not any(w in i for w in BLACKLIST_ITEMS)])), HEADERS)
 
         # Autocomplete suggestions all have a space (character) at the end of the query.
         # This determines whether the query is an autocomplete suggestion, and
@@ -114,7 +115,7 @@ class Price(commands.Cog, name='price'):
             low_date_diff = convert_date_to_duration(present_time, low_time)
 
         except KeyError:
-            raise exceptions.NoPriceData
+            raise exceptions.NoPriceData(title)
 
         embed.add_field(
             name='Buy price',
@@ -189,7 +190,8 @@ class Price(commands.Cog, name='price'):
 
     @price.autocomplete('query')
     async def query_autocomplete(self, query: str):
-        autocomplete_suggestions = await get_suggestions(self, ['Tradeable items'])
+        tradeable_items = await get_suggestions(self, ['Tradeable items'])
+        autocomplete_suggestions = [i for i in tradeable_items if not any(w in i for w in BLACKLIST_ITEMS)]
         if len(query) > 0:
             return (
                 [f'{a} ' for a in autocomplete_suggestions if query.lower() in a.lower()][:25])
