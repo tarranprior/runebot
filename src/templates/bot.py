@@ -59,7 +59,7 @@ class Bot(commands.Bot):
 
     async def on_ready(self) -> None:
         logger.success('Runebot is ready.')
-        logger.info('For more information on usage, see the README.')
+        logger.info('For more information on usage, see the README.\n\n')
 
     async def on_guild_join(self, guild) -> None:
         await add_guild(self, guild.id, guild.owner_id, True)
@@ -84,6 +84,11 @@ class Bot(commands.Bot):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
                                                     thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
                 return await inter.followup.send(embed=embed, view=view)
+
+            elif 'NoHiscoreData' in str(error.__str__()):
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                return await inter.response.send_message(embed=embed, view=view)
 
             elif 'NoMinigameData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),

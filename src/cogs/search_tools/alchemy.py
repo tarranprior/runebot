@@ -12,6 +12,7 @@ class Alchemy(commands.Cog, name='alchemy'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes a search query and returns alchemy data from the official OldSchool RuneScape wikipedia.
     :param self:
@@ -47,7 +48,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             raise exceptions.NoAlchemyData(query)
 
         embed = EmbedFactory().create(
-            title=f"{title} (ID: {info.get('Item ID')})",
+            title=f'{title} (ID: {info.get("Item ID")})',
             description=info.get('Examine'),
             thumbnail_url=thumbnail_url,
             colour=colour)
@@ -64,15 +65,15 @@ class Alchemy(commands.Cog, name='alchemy'):
         try:
             # Calculating the profit margin.
             price_data = parse_price_data(
-                f"{WIKIAPI_URL}{info['Item ID']}", HEADERS, query)
+                f'{WIKIAPI_URL}{info["Item ID"]}', HEADERS, query)
             high_price = price_data['data'][info['Item ID']]['high']
             # Fetches latest price of Nature Runes
-            nature_data = parse_price_data(f"{WIKIAPI_URL}561", HEADERS, query)
+            nature_data = parse_price_data(f'{WIKIAPI_URL}561', HEADERS, query)
             nature_price = nature_data['data']['561']['high']
             def operator(i): return (
                 '+' if int(i.replace(',', '')) >= 0 else '') + str(i)
             profit_margin = operator(
-                f"{int(info.get('High alch').replace(' coins', '').replace(' coin', '').replace(',', '')) +- high_price +- nature_price:,}")
+                f'{int(info.get("High alch").replace(" coins", "").replace(" coin", "").replace(",", "")) +- high_price +- nature_price:,}')
             embed.add_field(
                 name='Margin',
                 value=str(profit_margin),
@@ -81,6 +82,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             embed.add_field(name='Margin', value='None', inline=True)
 
         return (embed)
+
 
     '''
     Creates an alchemy slash command which uses the `parse_alchemy_data` function for user interaction.
@@ -101,6 +103,7 @@ class Alchemy(commands.Cog, name='alchemy'):
         await inter.response.defer()
         embed = await self.parse_alchemy_data(inter, query)
         await inter.followup.send(embed=embed)
+
 
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.

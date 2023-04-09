@@ -13,12 +13,14 @@ class Price(commands.Cog, name='price'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes the given search query and returns exchange and value prices.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     async def parse_price_data(self, inter: ApplicationCommandInteraction, query: str) -> None:
 
@@ -62,19 +64,19 @@ class Price(commands.Cog, name='price'):
             thumbnail_url=thumbnail_url,
             colour=colour,
             button_label='Real-Time Prices',
-            button_url=f"https://prices.runescape.wiki/osrs/item/{info['Item ID']}"
+            button_url=f'https://prices.runescape.wiki/osrs/item/{info["Item ID"]}'
         )
 
         # Creates a button which redirects to the corresponding GE Tracker
         # (https://ge-tracker.com) page.
         ge_tracker = create_link_button(
-            'GE Tracker', f"https://ge-tracker.com/item/{info['Item ID']}")
+            'GE Tracker', f'https://ge-tracker.com/item/{info["Item ID"]}')
         view.add_item(ge_tracker)
         # Creates a button which redirects to the corresponding OSRS Exchange
         # page.
         osrs_exchange = create_link_button(
             'OSRS Exchange',
-            f"https://secure.runescape.com/m=itemdb_oldschool/Watermelon/viewitem?obj={info['Item ID']}")
+            f'https://secure.runescape.com/m=itemdb_oldschool/Watermelon/viewitem?obj={info["Item ID"]}')
         view.add_item(osrs_exchange)
 
         price_properties = ['Value', 'Exchange', 'Buy limit']
@@ -85,7 +87,7 @@ class Price(commands.Cog, name='price'):
 
             # Calculating the profit margin.
             price_data = parse_price_data(
-                f"{WIKIAPI_URL}{info['Item ID']}", HEADERS, query)
+                f'{WIKIAPI_URL}{info["Item ID"]}', HEADERS, query)
             high_price = price_data['data'][info['Item ID']]['high']
             low_price = price_data['data'][info['Item ID']]['low']
             # Insert a + or - depending on positive or negative profit.
@@ -95,12 +97,12 @@ class Price(commands.Cog, name='price'):
             try:
                 # Represents buy limit * profit margin.
                 potential_profit = operator(
-                    f"{int(info.get('Buy limit').replace(',', '')) * (int(low_price) +- int(high_price)):,}")
+                    f'{int(info.get("Buy limit").replace(",", "")) * (int(low_price) +- int(high_price)):,}')
             except ValueError:
                 # Sets the potential profit to profit margin if buy limit is
                 # currently unknown.
                 potential_profit = operator(
-                    f"{int(profit_margin.replace('-', '').replace('+', '').replace(',', ''))}")
+                    f'{int(profit_margin.replace("-", "").replace("+", "").replace(",", ""))}')
 
             # Gets the last trade date/time.
             high_time = datetime.datetime.fromtimestamp(
@@ -129,25 +131,26 @@ class Price(commands.Cog, name='price'):
 
         embed.add_field(
             name='Today',
-            value=f"{api_data['item']['today']['price']} coins ({api_data['item']['today']['trend'].title()})".replace(
+            value=f'{api_data["item"]["today"]["price"]} coins ({api_data["item"]["today"]["trend"].title()})'.replace(
                 '- ',
                 '-'),
             inline=False)
         embed.add_field(
             name='30 Days',
-            value=f"{api_data['item']['day30']['change']}",
+            value=f'{api_data["item"]["day30"]["change"]}',
             inline=True)
         embed.add_field(
             name='90 Days',
-            value=f"{api_data['item']['day90']['change']}",
+            value=f'{api_data["item"]["day90"]["change"]}',
             inline=True)
         embed.add_field(
             name='180 Days',
-            value=f"{api_data['item']['day180']['change']}",
+            value=f'{api_data["item"]["day180"]["change"]}',
             inline=True)
         embed.set_footer(
             text='Exchange data from OSRS Exchange. For more analytics, use the buttons below.')
         return (embed, view, filename)
+
 
     '''
     Creates the price slash command for user interaction.
@@ -155,6 +158,7 @@ class Price(commands.Cog, name='price'):
     :param inter_1: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     @commands.slash_command(
         name='price',
@@ -174,12 +178,14 @@ class Price(commands.Cog, name='price'):
         file.close()
         os.remove(f'assets/{filename}')
 
+
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.
     Returns a max. list of 25 item suggestions.
     :param self:
     :param query: (String) - Represents a search query.
     '''
+
 
     @price.autocomplete('query')
     async def query_autocomplete(self, query: str):

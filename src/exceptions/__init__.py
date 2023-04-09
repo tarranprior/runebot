@@ -27,6 +27,19 @@ class NoAlchemyData(Exception):
 
 
 '''
+No Hiscore data.
+Thrown when a player doesn't exist on the Hiscores, or if the Hiscores are unavailable.
+:param self:
+'''
+
+
+class NoHiscoreData(Exception):
+    def __init__(self):
+        self.message = f'The player you have searched for doesn\'t appear to exist on the Hiscores, or the Hiscores are currently unavailable.'
+        super().__init__(self.message)
+
+
+'''
 No minigame data.
 Thrown when a user's search query doesn't return any minigame data.
 :param self:

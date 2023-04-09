@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 Parser function which parses all attributes (title, description, thumbnail etc.) from an Old School RuneScape wikipedia page
 and returns a dictionary.
 :param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
+:param query: (String) - Represents the search query given by the user. (Ex: 'firecape'.)
 '''
 
 
@@ -44,7 +45,7 @@ def parse_all(page_content, query: str):
 '''
 Parser function whichs parses all page content from an Old School RuneScape wikipedia page.
 :param url: (String) - Represents the base URL.
-:param query: (String) - Represents the search query. Ex: Firecape.
+:param query: (String) - Represents the search query given by the user. (Ex: 'firecape'.)
 :param headers: (Dictionary) - Represents a series of request headers.
 '''
 
@@ -62,7 +63,7 @@ def parse_page(url: str, query: str, headers: dict) -> None:
 '''
 Parser function which parses a description from an Old School RuneScape wikipedia page.
 :param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
-:param query: (String) - Represents the query given by the user. (Ex: 'firecape'.)
+:param query: (String) - Represents the search query given by the user. (Ex: 'firecape'.)
 '''
 
 
@@ -155,7 +156,7 @@ def parse_infobox(page_content) -> None:
 '''
 Parser function which parses a minigame icon from 'https://oldschool.runescape.wiki/w/Minigames'.
 :param page_content: (BeautifulSoup object) - Represents the document as a nested data structure.
-:param query: (String) - Represents the query given by the user. (Ex: 'firecape'.)
+:param query: (String) - Represents the search query given by the user. (Ex: 'firecape'.)
 '''
 
 
@@ -208,7 +209,7 @@ def parse_levelup_table(page_content) -> None:
 Parser function which parses price data using the official API.
 :param url: (String) - Represents the full URL with an item_id.
 :param headers: (Dictionary) - Represents a series of request headers.
-:param query: (String) - Represents the query given by the user. (Ex: 'Rune scimitar'.)
+:param query: (String) - Represents the search query given by the user. (Ex: 'Rune scimitar'.)
 '''
 
 
@@ -320,3 +321,23 @@ async def generate_graph(data) -> None:
     plotter.savefig(f'assets/{filename}', transparent=True)
     plotter.close()
     return (f'{filename}.png')
+
+
+'''
+Parser function which parses values from the official OSRS Hiscores API
+:param url: (String) - Represents the full URL with an item_id.
+:param headers: (Dictionary) - Represents a series of request headers.
+:param hiscores_order: (List) - Represents a list of the hiscores in order (from 'config.py').
+:param usernames: (List) - Represents a list of usernames.
+'''
+
+
+def parse_hiscores(url: str, headers: dict, hiscores_order: list, usernames: list) -> None:
+    responses = []
+    for user in usernames:
+        request = requests.get(f'{url}{user}', headers=headers)
+        player_info = request.text[:-1]
+        responses.append(player_info.split('\n'))
+    for response in responses:
+        hiscore_data = {hiscores_order[i]: response[i] for i in range(len(hiscores_order))}
+    return (hiscore_data)

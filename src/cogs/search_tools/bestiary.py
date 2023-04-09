@@ -13,12 +13,14 @@ class Bestiary(commands.Cog, name='bestiary'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes the given search query and returns corresponding monster data.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     async def parse_monster_data(self, inter: ApplicationCommandInteraction, query: str) -> None:
 
@@ -50,13 +52,13 @@ class Bestiary(commands.Cog, name='bestiary'):
         embed, view = EmbedFactory().create(
             title=title,
             description=description,
-            thumbnail_url=f"https://oldschool.runescape.wiki{info['Image']}",
+            thumbnail_url=f'https://oldschool.runescape.wiki{info["Image"]}',
             button_label='Visit Page',
             button_url=f'{BASE_URL}{new_query}'
         )
 
         try:
-            colour = disnake.Colour.from_rgb(*await extract_colour(self, inter.guild_id, inter.guild.owner_id, f"https://oldschool.runescape.wiki{info['Image']}", HEADERS))
+            colour = disnake.Colour.from_rgb(*await extract_colour(self, inter.guild_id, inter.guild.owner_id, f'https://oldschool.runescape.wiki{info["Image"]}', HEADERS))
             embed.colour = colour
         except KeyError:
             pass
@@ -94,9 +96,10 @@ class Bestiary(commands.Cog, name='bestiary'):
 
         embed.add_field(
             name='Monster ID(s)',
-            value=f"```\n{', '.join(info.get('Monster ID').split(','))}```",
+            value=f'```\n{", ".join(info.get("Monster ID").split(","))}```',
             inline=False)
         return (embed, view)
+
 
     '''
     Creates the bestiary slash command for user interaction.
@@ -104,6 +107,7 @@ class Bestiary(commands.Cog, name='bestiary'):
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     @commands.slash_command(
         name='bestiary',
@@ -119,12 +123,14 @@ class Bestiary(commands.Cog, name='bestiary'):
         embed, view = await self.parse_monster_data(inter, query)
         await inter.followup.send(embed=embed, view=view)
 
+
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.
     Returns a max. list of 25 item suggestions.
     :param self:
     :param query: (String) - Represents a search query.
     '''
+
 
     @bestiary.autocomplete('query')
     async def query_autocomplete(self, query: str):

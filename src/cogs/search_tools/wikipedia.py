@@ -10,12 +10,14 @@ class Wikipedia(commands.Cog, name='wikipedia'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes a search query and returns data from the official OldSchool RuneScape wikipedia.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     async def parse_wikipedia_data(self, inter: ApplicationCommandInteraction, query: str) -> None:
 
@@ -60,12 +62,14 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             options=options)
         return (embed, view)
 
+
     '''
     Creates a wikipedia slash command which uses the `parse_wikipedia_data` function for user interaction.
     :param self:
     :param inter_1: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     @commands.slash_command(
         name='wikipedia',
@@ -96,6 +100,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
 
         view_1.children[0].callback = select_option_1
 
+
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.
     Returns a max. list of 25 suggestions.
@@ -103,6 +108,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
     :param self:
     :param query: (String) - Represents a search query.
     '''
+
 
     @wikipedia.autocomplete('query')
     async def query_autocomplete(self, query: str):

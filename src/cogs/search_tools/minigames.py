@@ -13,12 +13,14 @@ class Minigames(commands.Cog, name='minigames'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes the given search query and returns corresponding minigame data.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     async def parse_minigame_data(self, inter: ApplicationCommandInteraction, query: str) -> None:
 
@@ -82,12 +84,14 @@ class Minigames(commands.Cog, name='minigames'):
             inline=False)
         return (embed, view)
 
+
     '''
     Creates the minigame slash command for user interaction.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     @commands.slash_command(
         name='minigames',
@@ -103,12 +107,14 @@ class Minigames(commands.Cog, name='minigames'):
         embed, view = await self.parse_minigame_data(inter, query)
         await inter.followup.send(embed=embed, view=view)
 
+
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.
     Returns a max. list of 25 item suggestions.
     :param self:
     :param query: (String) - Represents a search query.
     '''
+
 
     @minigames.autocomplete('query')
     async def query_autocomplete(self, query: str):

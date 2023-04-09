@@ -6,7 +6,14 @@
         "osrswiki_url": "https://oldschool.runescape.wiki/w/",
         "priceapi_wikipedia": "https://prices.runescape.wiki/api/v1/osrs/latest?id=",
         "priceapi_official": "https://secure.runescape.com/m=itemdb_oldschool/api/catalogue/detail.json?item=",
-        "graphapi_official": "https://secure.runescape.com/m=itemdb_oldschool/api/graph/"
+        "graphapi_official": "https://secure.runescape.com/m=itemdb_oldschool/api/graph/",
+        "hiscores_api_regular": "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=",
+        "hiscores_api_ironman": "https://secure.runescape.com/m=hiscore_oldschool_ironman/index_lite.ws?player=",
+        "hiscores_api_hardcore_ironman": "https://secure.runescape.com/m=hiscore_oldschool_hardcore_ironman/index_lite.ws?player=",
+        "hiscores_api_ultimate": "https://secure.runescape.com/m=hiscore_oldschool_ultimate/index_lite.ws?player=",
+        "hiscores_api_skiller": "https://secure.runescape.com/m=hiscore_oldschool_skiller/index_lite.ws?player=",
+        "hiscores_api_skiller_defence": "https://secure.runescape.com/m=hiscore_oldschool_skiller_defence/index_lite.ws?player=",
+        "hiscores_api_fresh_start": "https://secure.runescape.com/m=hiscore_oldschool_fresh_start/index_lite.ws?player="
     },
     "headers": {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
@@ -17,5 +24,32 @@
         "quest_ico": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
         "minigame_ico": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
         "stub_ico": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
+    },
+    "skill_emotes": {
+        "overall": "<:Overall:1094026091611562024>",
+        "combat": "<:Combat:1094028300231381033>",
+        "agility": "<:Agility:1094021497300975666>",
+        "attack": "<:Attack:1094021499196801115>",
+        "construction": "<:Construction:1094021500471889950>",
+        "cooking": "<:Cooking:1094022574347911178>",
+        "crafting": "<:Crafting:1094022576092741702>",
+        "defence": "<:Defence:1094022577330065558>",
+        "farming": "<:Farming:1094022578642890762>",
+        "firemaking": "<:Firemaking:1094022580412887100>",
+        "fishing": "<:Fishing:1094022581444677733>",
+        "fletching": "<:Fletching:1094022582665236532>",
+        "herblore": "<:Herblore:1094022583726383124>",
+        "hitpoints": "<:Hitpoints:1094022585202782289>",
+        "hunter": "<:Hunter:1094022625484881971>",
+        "magic": "<:Magic:1094022626525073529>",
+        "mining": "<:Mining:1094022656006832169>",
+        "prayer": "<:Prayer:1094022657751654420>",
+        "ranged": "<:Ranged:1094022658858950796>",
+        "runecraft": "<:Runecraft:1094022659953655839>",
+        "slayer": "<:Slayer:1094022661002248212>",
+        "smithing": "<:Smithing:1094022686197415987>",
+        "strength": "<:Strength:1094022688009375895>",
+        "thieving": "<:Thieving:1094022689263456296>",
+        "woodcutting": "<:Woodcutting:1094022690349785098>"
     }
 }

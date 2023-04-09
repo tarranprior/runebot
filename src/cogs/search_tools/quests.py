@@ -13,12 +13,14 @@ class Quests(commands.Cog, name='quests'):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
+
     '''
     General function which takes the given search query and returns corresponding quest data.
     :param self:
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     async def parse_quest_data(self, inter: ApplicationCommandInteraction, query: str) -> None:
 
@@ -54,7 +56,7 @@ class Quests(commands.Cog, name='quests'):
             colour=disnake.Colour.og_blurple(),
             thumbnail_url=QUEST_ICO,
             button_label='Quick Guide',
-            button_url=f"{BASE_URL}{title.replace(' ', '_')}/Quick_guide"
+            button_url=f'{BASE_URL}{title.replace(" ", "_")}/Quick_guide'
         )
 
         quest_properties = [
@@ -70,13 +72,14 @@ class Quests(commands.Cog, name='quests'):
             inline=False)
         embed.add_field(
             name='Requirements',
-            value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Details) for a full list of requirements.",
+            value=f'Click [here]({BASE_URL}{title.replace(" ", "_")}#Details) for a full list of requirements.',
             inline=True)
         embed.add_field(
             name='Rewards',
-            value=f"Click [here]({BASE_URL}{title.replace(' ', '_')}#Rewards) for a full list of rewards.",
+            value=f'Click [here]({BASE_URL}{title.replace(" ", "_")}#Rewards) for a full list of rewards.',
             inline=True)
         return (embed, view)
+
 
     '''
     Creates the quest slash command for user interaction.
@@ -84,6 +87,7 @@ class Quests(commands.Cog, name='quests'):
     :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
     :param query: (String) - Represents a search query.
     '''
+
 
     @commands.slash_command(
         name='quests',
@@ -99,12 +103,14 @@ class Quests(commands.Cog, name='quests'):
         embed, view = await self.parse_quest_data(inter, query)
         await inter.followup.send(embed=embed, view=view)
 
+
     '''
     Creates a basic selection of autocomplete suggestions (from runebot database) once the user begins typing.
     Returns a max. list of 25 item suggestions.
     :param self:
     :param query: (String) - Represents a search query.
     '''
+
 
     @quests.autocomplete('query')
     async def query_autocomplete(self, query: str):
