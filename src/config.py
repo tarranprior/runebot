@@ -6,6 +6,7 @@ BASE_URL = configuration()['urls']['osrswiki_url']
 WIKIAPI_URL = configuration()['urls']['priceapi_wikipedia']
 PRICEAPI_URL = configuration()['urls']['priceapi_official']
 GRAPHAPI_URL = configuration()['urls']['graphapi_official']
+SUPPORT_SERVER = configuration()['configuration']['support_server']
 
 # HISCORE URLs
 HISCORES_API_REGULAR = configuration()['urls']['hiscores_api_regular']
@@ -15,6 +16,13 @@ HISCORES_API_ULTIMATE = configuration()['urls']['hiscores_api_ultimate']
 HISCORES_API_SKILLER = configuration()['urls']['hiscores_api_skiller']
 HISCORES_API_SKILLER_DEFENCE = configuration()['urls']['hiscores_api_skiller_defence']
 HISCORES_API_FRESH_START = configuration()['urls']['hiscores_api_fresh_start']
+
+GAME_MODE_URLS = {
+    'Ironman': HISCORES_API_IRONMAN, 'Hardcore Ironman': HISCORES_API_HARDCORE_IRONMAN,
+    'Ultimate Ironman': HISCORES_API_ULTIMATE, 'Skiller': HISCORES_API_SKILLER,
+    '1 Defence': HISCORES_API_SKILLER_DEFENCE, 'Fresh Start Worlds': HISCORES_API_FRESH_START,
+    'Regular Mode': HISCORES_API_REGULAR
+}
 
 # HEADERS
 HEADERS = configuration()['headers']
@@ -26,11 +34,19 @@ FEELING_LUCKY = 'Special:Random/main'
 SKILL_EMOTES = configuration()['skill_emotes']
 
 # THUMBNAILS
-BUCKET_ICO = configuration()['icons']['bucket_ico']
-LEVER_ICO = configuration()['icons']['lever_ico']
-MINIGAME_ICO = configuration()['icons']['minigame_ico']
-QUEST_ICO = configuration()['icons']['quest_ico']
-STUB_ICO = configuration()['icons']['stub_ico']
+BANK_FILLER_ICO = configuration()['thumbnails']['bank_filler_ico']
+BUCKET_ICO = configuration()['thumbnails']['bucket_ico']
+LEVER_ICO = configuration()['thumbnails']['lever_ico']
+MINIGAME_ICO = configuration()['thumbnails']['minigame_ico']
+QUEST_ICO = configuration()['thumbnails']['quest_ico']
+STUB_ICO = configuration()['thumbnails']['stub_ico']
+
+# GRAYSCALE THUMBNAILS
+BANK_FILLER_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['bank_filler_ico_grayscale']
+BUCKET_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['bucket_ico_grayscale']
+GOBLIN_GRAYSCALE = configuration()['grayscale_thumbnails']['goblin_grayscale']
+GRAND_EXCHANGE_PILLAR_GRAYSCALE = configuration()['grayscale_thumbnails']['grand_exchange_pillar_grayscale']
+MINIGAME_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['minigame_ico_grayscale']
 
 # HISCORES
 HISCORES_ORDER = [

@@ -1,6 +1,7 @@
 {
     "configuration": {
-        "activity": "/help | RuneBot"
+        "activity": "/help | RuneBot",
+        "support_server": "https://discord.gg/FWjNkNuTzv"
     },
     "urls": {
         "osrswiki_url": "https://oldschool.runescape.wiki/w/",
@@ -18,12 +19,20 @@
     "headers": {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
     },
-    "icons": {
+    "thumbnails": {
+        "bank_filler_ico": "https://oldschool.runescape.wiki/images/Bank_filler_detail.png",
         "bucket_ico": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
         "lever_ico": "https://oldschool.runescape.wiki/images/Lever.png",
         "quest_ico": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
         "minigame_ico": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
         "stub_ico": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
+    },
+    "grayscale_thumbnails": {
+        "bank_filler_ico_grayscale": "https://i.imgur.com/crxQibA.png",
+        "bucket_ico_grayscale": "https://i.imgur.com/TElZtHn.png",
+        "goblin_grayscale": "https://i.imgur.com/kamcA2U.png",
+        "grand_exchange_pillar_grayscale": "https://i.imgur.com/884Ec1X.png",
+        "minigame_ico_grayscale": "https://i.imgur.com/rcJ98ai.png"
     },
     "skill_emotes": {
         "overall": "<:Overall:1094026091611562024>",

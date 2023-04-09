@@ -21,41 +21,26 @@ class Stats(commands.Cog, name='stats'):
 
 
     async def parse_hiscores(self, inter: ApplicationCommandInteraction, game_mode: str, username: str) -> None:
-        if game_mode == 'Ironman':
+        if len(username) > 12:
+            raise exceptions.UsernameInvalid
+
+        if type(game_mode) == type(None):
+            game_mode = 'Regular Mode'
             try:
-                hiscore_data = parse_hiscores(HISCORES_API_IRONMAN, HEADERS, HISCORES_ORDER, [username])
+                hiscore_data = parse_hiscores(GAME_MODE_URLS.get(game_mode), HEADERS, HISCORES_ORDER, [username])
             except IndexError:
                 raise exceptions.NoHiscoreData
-        elif game_mode == 'Hardcore Ironman':
-            try:
-                hiscore_data = parse_hiscores(HISCORES_API_HARDCORE_IRONMAN, HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
-        elif game_mode == 'Ultimate Ironman':
-            try:
-                hiscore_data = parse_hiscores(HISCORES_API_ULTIMATE, HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
-        elif game_mode == 'Skiller':
-            try:
-                hiscore_data = parse_hiscores(HISCORES_API_SKILLER, HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
-        elif game_mode == '1 Defence':
-            try:
-                hiscore_data = parse_hiscores(HISCORES_API_SKILLER_DEFENCE, HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
-        elif game_mode == 'Fresh Start Worlds':
-            try:
-                hiscore_data = parse_hiscores(HISCORES_API_FRESH_START, HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
+
         else:
             try:
-                hiscore_data = parse_hiscores(HISCORES_API_REGULAR, HEADERS, HISCORES_ORDER, [username])
+                hiscore_data = parse_hiscores(GAME_MODE_URLS.get(game_mode), HEADERS, HISCORES_ORDER, [username])
             except IndexError:
-                raise exceptions.NoHiscoreData
+                # Check whether the username exists on the regualr Hiscores before throwing Game Mode error.
+                try:
+                    hiscore_data = parse_hiscores(HISCORES_API_REGULAR, HEADERS, HISCORES_ORDER, [username])
+                except IndexError:
+                    raise exceptions.NoHiscoreData
+                raise exceptions.NoGameModeData
 
         combat_levels = {}
         for skill in COMBAT_SKILLS:
@@ -111,9 +96,6 @@ class Stats(commands.Cog, name='stats'):
             {SKILL_EMOTES.get('farming')} {hiscore_data.get('Farming').split(',')[1]}
             {SKILL_EMOTES.get('overall')} {hiscore_data.get('Overall').split(',')[1]}\n\u200b\n
         '''
-
-        if type(game_mode) == type(None):
-            game_mode = 'Regular'
 
         embed = EmbedFactory().create(
             description=f'Personal Hiscores for **{username}**\n({game_mode})\n\u200b\n'

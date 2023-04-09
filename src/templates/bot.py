@@ -72,53 +72,58 @@ class Bot(commands.Bot):
 
             if 'Nonexistence' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=BUCKET_ICO_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoAlchemyData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
-                return await inter.followup.send(embed=embed, view=view)
-
-            elif 'NoExamineText' in str(error.__str__()):
-                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=BUCKET_ICO_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoHiscoreData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=BANK_FILLER_ICO, colour=0xB72615, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.response.send_message(embed=embed, view=view)
 
             elif 'NoMinigameData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=MINIGAME_ICO_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoMonsterData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=GOBLIN_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoPriceData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=GRAND_EXCHANGE_PILLAR_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoQuestData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
-                                                    thumbnail_url=BUCKET_ICO, colour=0x7E6E4D, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=MINIGAME_ICO_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'NoAdministratorPermissions' in str(error.__str__()):
                 embed, view = EmbedFactory().create(title='This command is for server administrators only.', description=str(error.__cause__),
-                                                    colour=disnake.Colour.red(), button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                                                    thumbnail_url=BANK_FILLER_ICO, colour=0xB72615, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
 
             elif 'StubArticle' in str(error.__str__()):
-                embed = EmbedFactory().create(title='This project page is a stub.', description=str(error.__cause__),
-                                                    thumbnail_url=STUB_ICO, colour=0x60533E, button_label='Support Server', button_url='https://discord.gg/FWjNkNuTzv')
+                embed, view = EmbedFactory().create(title='This project page is a stub.', description=str(error.__cause__),
+                                                thumbnail_url=STUB_ICO, colour=0x60533E, button_label='Support Server', button_url=SUPPORT_SERVER)
                 return await inter.followup.send(embed=embed, view=view)
+
+            elif 'UsernameInvalid' in str(error.__str__()):
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BANK_FILLER_ICO, colour=0xB72615, button_label='Support Server', button_url=SUPPORT_SERVER)
+                return await inter.response.send_message(embed=embed, view=view)
+
+            elif 'NoGameModeData' in str(error.__str__()):
+                embed, view = EmbedFactory().create(title='Nothing interesting happens.', description=str(error.__cause__),
+                                                    thumbnail_url=BANK_FILLER_ICO_GRAYSCALE, colour=0x8B8B8B, button_label='Support Server', button_url=SUPPORT_SERVER)
+                return await inter.response.send_message(embed=embed, view=view)
 
         logger.error(
             f'Ignoring exception in slash command {inter.application_command.name}: {error}')
