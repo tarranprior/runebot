@@ -1,6 +1,6 @@
 {
     "configuration": {
-        "activity": "/help | RuneBot",
+        "activity": "/wikipedia | RuneBot",
         "support_server": "https://discord.gg/FWjNkNuTzv"
     },
     "urls": {
