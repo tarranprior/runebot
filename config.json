@@ -28,11 +28,11 @@
         "stub_ico": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
     },
     "grayscale_thumbnails": {
-        "bank_filler_ico_grayscale": "https://i.imgur.com/crxQibA.png",
-        "bucket_ico_grayscale": "https://i.imgur.com/TElZtHn.png",
-        "goblin_grayscale": "https://i.imgur.com/kamcA2U.png",
-        "grand_exchange_pillar_grayscale": "https://i.imgur.com/884Ec1X.png",
-        "minigame_ico_grayscale": "https://i.imgur.com/rcJ98ai.png"
+        "bank_filler_ico_grayscale": "https://runebot.org/thumbs/crxQibA.png",
+        "bucket_ico_grayscale": "https://runebot.org/thumbs/TElZtHn.png",
+        "goblin_grayscale": "https://runebot.org/thumbs/kamcA2U.png",
+        "grand_exchange_pillar_grayscale": "https://runebot.org/thumbs/884Ec1X.png",
+        "minigame_ico_grayscale": "https://runebot.org/thumbs/rcJ98ai.png"
     },
     "skill_emotes": {
         "overall": "<:Overall:1094026091611562024>",
