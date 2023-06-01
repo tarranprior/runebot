@@ -4,39 +4,58 @@
         "support_server": "https://discord.gg/FWjNkNuTzv"
     },
     "urls": {
-        "osrswiki_url": "https://oldschool.runescape.wiki/w/",
+        "osrswiki": "https://oldschool.runescape.wiki/w/",
+        "hiscores": "https://secure.runescape.com/m=",
         "priceapi_wikipedia": "https://prices.runescape.wiki/api/v1/osrs/latest?id=",
         "priceapi_official": "https://secure.runescape.com/m=itemdb_oldschool/api/catalogue/detail.json?item=",
-        "graphapi_official": "https://secure.runescape.com/m=itemdb_oldschool/api/graph/",
-        "hiscores_api_regular": "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=",
-        "hiscores_api_ironman": "https://secure.runescape.com/m=hiscore_oldschool_ironman/index_lite.ws?player=",
-        "hiscores_api_hardcore_ironman": "https://secure.runescape.com/m=hiscore_oldschool_hardcore_ironman/index_lite.ws?player=",
-        "hiscores_api_ultimate": "https://secure.runescape.com/m=hiscore_oldschool_ultimate/index_lite.ws?player=",
-        "hiscores_api_skiller": "https://secure.runescape.com/m=hiscore_oldschool_skiller/index_lite.ws?player=",
-        "hiscores_api_skiller_defence": "https://secure.runescape.com/m=hiscore_oldschool_skiller_defence/index_lite.ws?player=",
-        "hiscores_api_fresh_start": "https://secure.runescape.com/m=hiscore_oldschool_fresh_start/index_lite.ws?player="
+        "graphapi": "https://secure.runescape.com/m=itemdb_oldschool/api/graph/",
+        "normal": {
+            "h": "hiscore_oldschool/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool/index_lite.ws?player="
+        },
+        "ironman": {
+            "h": "hiscore_oldschool_ironman/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_ironman/index_lite.ws?player="
+        },
+        "hardcore_ironman": {
+            "h": "hiscore_oldschool_hardcore_ironman/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_hardcore_ironman/index_lite.ws?player="
+        },
+        "ultimate": {
+            "h": "hiscore_oldschool_ultimate/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_ultimate/index_lite.ws?player="
+        },
+        "skiller": {
+            "h": "hiscore_oldschool_skiller/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_skiller/index_lite.ws?player="
+        },
+        "skiller_defence": {
+            "h": "hiscore_oldschool_skiller_defence/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_skiller_defence/index_lite.ws?player="
+        },
+        "fresh_start": {
+            "h": "hiscore_oldschool_fresh_start/hiscorepersonal?user1=",
+            "a": "hiscore_oldschool_fresh_start/index_lite.ws?player="
+        }
     },
     "headers": {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
     },
-    "thumbnails": {
-        "bank_filler_ico": "https://oldschool.runescape.wiki/images/Bank_filler_detail.png",
-        "bucket_ico": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
-        "lever_ico": "https://oldschool.runescape.wiki/images/Lever.png",
-        "quest_ico": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
-        "minigame_ico": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
-        "stub_ico": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
+    "thumbs": {
+        "filler": "https://oldschool.runescape.wiki/images/Bank_filler_detail.png",
+        "bucket": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
+        "lever": "https://oldschool.runescape.wiki/images/Lever.png",
+        "quest": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
+        "minigame": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
+        "stub": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
     },
-    "grayscale_thumbnails": {
-        "bank_filler_ico_grayscale": "https://runebot.org/thumbs/crxQibA.png",
-        "bucket_ico_grayscale": "https://runebot.org/thumbs/TElZtHn.png",
-        "goblin_grayscale": "https://runebot.org/thumbs/kamcA2U.png",
-        "grand_exchange_pillar_grayscale": "https://runebot.org/thumbs/884Ec1X.png",
-        "minigame_ico_grayscale": "https://runebot.org/thumbs/rcJ98ai.png"
+    "grayscale_thumbs": {
+        "filler": "https://runebot.org/thumbs/crxQibA.png",
+        "bucket": "https://runebot.org/thumbs/TElZtHn.png"
     },
     "skill_emotes": {
-        "overall": "<:Overall:1094026091611562024>",
-        "combat": "<:Combat:1094028300231381033>",
+        "overall": "<:Overall:1112166119265026149>",
+        "combat": "<:Combat:1112167707786358834>",
         "agility": "<:Agility:1094021497300975666>",
         "attack": "<:Attack:1094021499196801115>",
         "construction": "<:Construction:1094021500471889950>",
@@ -58,7 +77,63 @@
         "slayer": "<:Slayer:1094022661002248212>",
         "smithing": "<:Smithing:1094022686197415987>",
         "strength": "<:Strength:1094022688009375895>",
-        "thieving": "<:Thieving:1094022689263456296>",
-        "woodcutting": "<:Woodcutting:1094022690349785098>"
+        "thieving": "<:Thieving:1112165929065914459>",
+        "woodcutting": "<:Woodcutting:1112165931037233183>"
+    },
+    "boss_emotes": {
+        "abyssalsire": "<:abyssalsire:1112173324970250401>",
+        "alchemicalhydra": "<:alchemicalhydra:1112173326291447920>",
+        "artio": "<:artio:1112173327893680168>",
+        "barrowschests": "<:barrowschest:1112173328984178738>",
+        "bryophyta": "<:bryophyta:1112173330087301230>",
+        "callisto": "<:callisto:1112173332125712464>",
+        "calvarion": "<:calvarion:1112173333375635546>",
+        "cerberus": "<:cerberus:1112173334512283848>",
+        "cox": "<:cox:1112173336190009384>",
+        "coxchallengemode": "<:coxchallengemode:1112173420617154611>",
+        "chaoselemental": "<:chaoselemental:1112173465479430175>",
+        "chaosfanatic": "<:chaosfanatic:1112173482852233287>",
+        "commanderzilyana": "<:commanderzilyana:1112173517392330762>",
+        "corporealbeast": "<:corporealbeast:1112173519233626164>",
+        "crazyarchaeologist": "<:crazyarchaeologist:1112173806446968872>",
+        "dagannothprime": "<:dagannothprime:1112173808309248062>",
+        "dagannothrex": "<:daggonothrex:1112173809458483240>",
+        "dagannothsupreme": "<:daggonothsupreme:1112173810473500672>",
+        "derangedarchaeologist": "<:derangedarchaeologist:1112173811576619090>",
+        "generalgraardor": "<:generalgraardor:1112173840047546388>",
+        "giantmole": "<:giantmole:1112173841163243661>",
+        "grotesqueguardians": "<:grotesqueguardians:1112173889439678545>",
+        "hespori": "<:hespori:1112173891314520114>",
+        "kalphitequeen": "<:kalphitequeen:1112173892337926176>",
+        "kbd": "<:kbd:1112173893772398602>",
+        "kraken": "<:kraken:1112173895173283852>",
+        "kreearra": "<:kreearra:1112173922230730812>",
+        "kriltsutsaroth": "<:kriltsutsaroth:1112173924319506462>",
+        "mimic": "<:mimic:1112173978048532550>",
+        "nex": "<:nex:1112173979889832006>",
+        "nightmare": "<:nightmare:1112173981060051005>",
+        "phantommuspah": "<:phantommuspah:1112173984331604050>",
+        "phosanisnightmare": "<:phosanisnightmare:1112174035552452628>",
+        "obor": "<:obor:1112173982528061541>",
+        "sarachnis": "<:sarachnis:1112174036638769182>",
+        "scorpia": "<:scorpia:1112174070964961290>",
+        "skotizo": "<:skotizo:1112174072042889346>",
+        "spindel": "<:spindel:1112174074127458374>",
+        "tempoross": "<:tempoross:1112174075503202405>",
+        "tob": "<:tob:1112174077164130315>",
+        "tobhardmode": "<:tobhardmode:1112174110924087459>",
+        "thegauntlet": "<:thegauntlet:1112174184546717857>",
+        "thecorruptedgauntlet": "<:thecorruptedgauntlet:1112174113029636136>",
+        "thermonuclearsmokedevil": "<:thermonuclearsmokedevil:1112174185607868516>",
+        "tombsofamascut": "<:tombsofamascut:1112174187470127145>",
+        "tombsofamascutexpertmode": "<:tombsofamascutexpertmode:1112174188803915796>",
+        "tzkalzuk": "<:tzkalzuk:1112174190804602930>",
+        "tztokjad": "<:tztokjad:1112174237130686574>",
+        "venenatis": "<:venenatis:1112174239013937162>",
+        "vetion": "<:vetion:1112179588324405300>",
+        "vorkath": "<:vorkath:1112179615402823721>",
+        "wintertodt": "<:wintertodt:1112179616480776244>",
+        "zalcano": "<:zalcano:1112179618103971860>",
+        "zulrah": "<:zulrah:1112179619211268156>"
     }
 }

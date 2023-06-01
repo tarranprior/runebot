@@ -1,137 +1,239 @@
-from templates.bot import Bot
-from config import *
-from utils import *
+#! /usr/bin/env python3
+
+'''
+This module contains the functionality and logic for the `stats`
+command, allowing users to search for player stats from the official API.
+
+Classes:
+    - `Stats`:
+            A class for handling the `stats` command.
+    - `Dropdown`:
+            A class for creating dropdown options that can be added
+            to a `DropdownView` instance.
+    - `DropdownView`:
+            A view class for creating dropdowns in the response.
+
+Key Functions:
+    - `search_hiscores(...)`, `stats(...)`, and
+      `search_query_autocomplete(...)`:
+            Functions for searching and retrieving Hiscore data, as well as
+            creating a slash command and autocomplete query for the `stats`
+            command.
+    - `callback(self, inter: disnake.MessageInteraction)`:
+            A callback function for dropdown selection.
+    - `setup(bot: Bot)`:
+            A function for defining the bot setup for the `stats` command.
+
+Each class and function has an associated docstring, providing details
+about its functionality, parameters, and return values.
+
+For more information about each function and its usage, refer to the
+docstrings.
+'''
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
+from templates.bot import Bot
+from config import *
+from utils import *
+
 
 class Stats(commands.Cog, name='stats'):
+    '''
+    A class which represents the Stats cog.
+    '''
+
     def __init__(self, bot: Bot) -> None:
+        '''
+        Initialises the Stats cog.
+
+        :param self: -
+            Represents this object.
+        :param bot: (Bot) -
+            An instance of the Bot class.
+
+        return: (None)
+        '''
         self.bot = bot
 
 
-    '''
-    General function which takes a username and returns hiscore values from the official API in a structured format.
-    :param self:
-    :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
-    :param game_mode: (String) - Represents a specified game mode (Ex: Ironman, 1 Defence etc.)
-    :param username: (String) - Represents a player's username.
-    '''
+    async def search_hiscores(
+        self,
+        inter: ApplicationCommandInteraction,
+        hiscore_category: str,
+        account_type: str,
+        ephemeral: bool,
+        xp: bool,
+        username: str
+    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        '''
+        General function which takes a username and returns hiscore
+        values from the official API in a structured format.
 
+        :param self: -
+            Represents this object.
+        :param hiscore_category: (String) -
+            Represents the Hiscore category (Ex: Bosses, Skills etc.)
+        :param account_type: (String) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+        :param ephemeral: (Boolean) -
+            Represents the ephemeral value. Defaults to False.
+        :param xp: (Boolean) -
+            Represents the xp value. Defaults to False.
+        :param username: (String) -
+            Represents a player's username.
 
-    async def parse_hiscores(self, inter: ApplicationCommandInteraction, game_mode: str, username: str) -> None:
+        :return: Tuple[disnake.Embed, disnake.ui.View] -
+            An embed and view containing the hiscore information.
+        '''
+
+        # Data validation which throws an error if the length of a username
+        # exceeds 12 characters (max limit.)
         if len(username) > 12:
             raise exceptions.UsernameInvalid
 
-        if type(game_mode) == type(None):
-            game_mode = 'Regular Mode'
+        if account_type == 'Normal':
             try:
-                hiscore_data = parse_hiscores(GAME_MODE_URLS.get(game_mode), HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                raise exceptions.NoHiscoreData
+                hiscore_data = parse_hiscores(
+                    HISCORE_API_URLS.get(account_type),
+                    HEADERS,
+                    HISCORES_ORDER,
+                    [username]
+                )
+            except IndexError as exc:
+                raise exceptions.NoHiscoreData from exc
 
         else:
             try:
-                hiscore_data = parse_hiscores(GAME_MODE_URLS.get(game_mode), HEADERS, HISCORES_ORDER, [username])
-            except IndexError:
-                # Check whether the username exists on the regualr Hiscores before throwing Game Mode error.
+                hiscore_data = parse_hiscores(
+                    HISCORE_API_URLS.get(account_type),
+                    HEADERS,
+                    HISCORES_ORDER,
+                    [username]
+                )
+            except IndexError as exc1:
                 try:
-                    hiscore_data = parse_hiscores(HISCORES_API_REGULAR, HEADERS, HISCORES_ORDER, [username])
-                except IndexError:
-                    raise exceptions.NoHiscoreData
-                raise exceptions.NoGameModeData
-
-        combat_levels = {}
-        for skill in COMBAT_SKILLS:
-            combat_levels.update({skill: int(hiscore_data.get(skill).split(',')[1])})
-
-        if int(hiscore_data.get('Hitpoints').split(',')[1]) < 10:
-            hiscore_data.update({'Hitpoints': f'{hiscore_data.get("Hitpoints").split(",")[0]},{int(10)},{hiscore_data.get("Hitpoints").split(",")[2]}'})
-            combat_levels.update({'Hitpoints': int(10)})
-
-        combat_level = await calculate_combat_level(self, combat_levels)
-        combat_experience = await calculate_combat_exp(self, COMBAT_SKILLS, hiscore_data)
-
-        if combat_experience == int(-7):
-            combat_experience = 'N/A'
-        else:
-            combat_experience = f'{int(combat_experience):,}'
-
-        overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
-        if overall_rank == '-1':
-            overall_rank = 'N/A'
-
-        overall_exp = f'{int(hiscore_data.get("Overall").split(",")[2]):,}'
-        if overall_exp == '0':
-            overall_exp = 'N/A'
-
-        skills_column_one = f'''
-            {SKILL_EMOTES.get('attack')} {hiscore_data.get('Attack').split(',')[1]}
-            {SKILL_EMOTES.get('strength')} {hiscore_data.get('Strength').split(',')[1]}
-            {SKILL_EMOTES.get('defence')} {hiscore_data.get('Defence').split(',')[1]}
-            {SKILL_EMOTES.get('ranged')} {hiscore_data.get('Ranged').split(',')[1]}
-            {SKILL_EMOTES.get('prayer')} {hiscore_data.get('Prayer').split(',')[1]}
-            {SKILL_EMOTES.get('magic')} {hiscore_data.get('Magic').split(',')[1]}
-            {SKILL_EMOTES.get('runecraft')} {hiscore_data.get('Runecraft').split(',')[1]}
-            {SKILL_EMOTES.get('construction')} {hiscore_data.get('Construction').split(',')[1]}\n\u200b\n
-        '''
-        skills_column_two = f'''
-            {SKILL_EMOTES.get('hitpoints')} {hiscore_data.get('Hitpoints').split(',')[1]}
-            {SKILL_EMOTES.get('agility')} {hiscore_data.get('Agility').split(',')[1]}
-            {SKILL_EMOTES.get('herblore')} {hiscore_data.get('Herblore').split(',')[1]}
-            {SKILL_EMOTES.get('thieving')} {hiscore_data.get('Thieving').split(',')[1]}
-            {SKILL_EMOTES.get('crafting')} {hiscore_data.get('Crafting').split(',')[1]}
-            {SKILL_EMOTES.get('fletching')} {hiscore_data.get('Fletching').split(',')[1]}
-            {SKILL_EMOTES.get('slayer')} {hiscore_data.get('Slayer').split(',')[1]}
-            {SKILL_EMOTES.get('hunter')} {hiscore_data.get('Hunter').split(',')[1]}\n\u200b\n
-        '''
-        skills_column_three = f'''
-            {SKILL_EMOTES.get('mining')} {hiscore_data.get('Mining').split(',')[1]}
-            {SKILL_EMOTES.get('smithing')} {hiscore_data.get('Smithing').split(',')[1]}
-            {SKILL_EMOTES.get('fishing')} {hiscore_data.get('Fishing').split(',')[1]}
-            {SKILL_EMOTES.get('cooking')} {hiscore_data.get('Cooking').split(',')[1]}
-            {SKILL_EMOTES.get('firemaking')} {hiscore_data.get('Firemaking').split(',')[1]}
-            {SKILL_EMOTES.get('woodcutting')} {hiscore_data.get('Woodcutting').split(',')[1]}
-            {SKILL_EMOTES.get('farming')} {hiscore_data.get('Farming').split(',')[1]}
-            {SKILL_EMOTES.get('overall')} {hiscore_data.get('Overall').split(',')[1]}\n\u200b\n
-        '''
+                    hiscore_data = parse_hiscores(
+                        NORMAL_API,
+                        HEADERS,
+                        HISCORES_ORDER,
+                        [username]
+                    )
+                except IndexError as exc2:
+                    raise exceptions.NoHiscoreData from exc2
+                raise exceptions.NoGameModeData from exc1
 
         embed = EmbedFactory().create(
-            description=f'Personal Hiscores for **{username}**\n({game_mode})\n\u200b\n'
+            title=f'Personal Hiscores',
+            description=(
+                f'Personal Hiscores for **{username}**\n'
+                f'Account Type: `{account_type}`\n\u200b\n'
+            ),
         )
 
-        embed.add_field(name='\u200a', value=skills_column_one, inline=True)
-        embed.add_field(name='\u200a', value=skills_column_two, inline=True)
-        embed.add_field(name='\u200a', value=skills_column_three, inline=True)
+        if hiscore_category == 'Skills':
 
-        embed.add_field(
-            name=f'{SKILL_EMOTES.get("overall")} Overall',
-            value=f'''
-                **Rank**: {overall_rank}
-                **XP**: {overall_exp}
-            '''
+            # Gets all combat levels of the player with the provided
+            # Hiscore data.
+            combat_levels = {}
+            for skill in COMBAT_SKILLS:
+                combat_levels.update(
+                    {skill: int(hiscore_data.get(skill).split(',')[1])}
+                )
+
+            # Corrects Hitpoints level if the player has no experience.
+            # (Replace Level 1 with Level 10.)
+            hp_rank = hiscore_data.get('Hitpoints').split(',')[0]
+            hp_level = hiscore_data.get('Hitpoints').split(',')[1]
+            hp_experience = hiscore_data.get('Hitpoints').split(',')[2]
+            if int(hp_level) < 10:
+                hiscore_data.update(
+                    {'Hitpoints':f'{hp_rank},{int(10)},{hp_experience}'}
+                )
+                combat_levels.update({'Hitpoints': int(10)})
+
+            # Calculates combat level and experience of the player.
+            combat_level = await calculate_combat_level(combat_levels)
+            combat_experience = await calculate_combat_exp(COMBAT_SKILLS, hiscore_data)
+
+            # Gets the overall rank of the player.
+            overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
+            if overall_rank == '-1':
+                overall_rank = 'N/A'
+
+            # Gets the overall experience of the player.
+            overall_exp = f'{int(hiscore_data.get("Overall").split(",")[2]):,}'
+            if overall_exp == '0':
+                overall_exp = 'N/A'
+
+            for column_data in STAT_COLUMNS:
+                column_text = "\n".join([
+                    f"{SKILL_EMOTES.get(skill)} "
+                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '-')}"
+                    + (f"\n{hiscore_data.get(data).split(',')[2].replace('-1', '-')}" if xp else "")
+                    for skill, data in column_data
+                ]) + '\n\u200b\n'
+                embed.add_field(name="\u200a", value=column_text, inline=True)
+
+            embed.add_field(
+                name=f'{SKILL_EMOTES.get("overall")} Overall',
+                value=f'''
+                    **Rank**: {overall_rank}
+                    **XP**: {overall_exp}
+                '''
+            )
+
+            embed.add_field(
+                name=f'{SKILL_EMOTES.get("combat")} Combat',
+                value=f'''
+                    **Level**: {combat_level}
+                    **XP**: {combat_experience}
+                '''
+            )
+
+            view = DropdownView(
+                inter,
+                ["Bosses"],
+                account_type,
+                ephemeral,
+                xp,
+                username
+            )
+
+        elif hiscore_category == 'Bosses':
+
+            for column_data in BOSS_COLUMNS:
+                column_text = "\n".join([
+                    f"{BOSS_EMOTES.get(boss)} "
+                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '-')}"
+                    for boss, data in column_data
+                ]) + '\n\u200b\n'
+                embed.add_field(name="\u200a", value=column_text, inline=True)
+
+            view = DropdownView(
+                inter,
+                ["Skills"],
+                account_type,
+                ephemeral,
+                xp,
+                username
+            )
+
+        view.add_item(Button(
+            label='Visit Hiscores',
+            url=f'{HISCORE_URLS.get(account_type)}{slugify(username)}'
+        ))
+
+        embed.set_footer(
+            text=(
+                'Experience data from the official Hiscores API.\n'
+                f'Runebot {VER}'
+            )
         )
+        embed.timestamp = inter.created_at
 
-        embed.add_field(
-            name=f'{SKILL_EMOTES.get("combat")} Combat',
-            value=f'''
-                **Level**: {combat_level}
-                **XP**: {combat_experience}
-            '''    
-        )
-
-        embed.set_footer(text='Experience data from the official Hiscores API.')
-        return (embed)
-
-
-    '''
-    Creates a stats slash command which uses the `parse_hiscores` function for user interaction.
-    :param self:
-    :param inter: (ApplicationCommandInteraction) - Represents an interaction with an application command.
-    :param game_mode: (String) - Represents a specified game mode (Ex: Ironman, 1 Defence etc.)
-    :param username: (String) - Represents a player's username.
-    '''
+        return embed, view
 
 
     @commands.slash_command(
@@ -142,30 +244,222 @@ class Stats(commands.Cog, name='stats'):
                 name='username',
                 description='Search for a Player.',
                 type=OptionType.string,
-                required=True),
+                required=True
+            ),
             Option(
-                name='game_mode',
-                description='Select a Game Mode.',
+                name='account_type',
+                description='Select an Account Type.',
                 type=OptionType.string,
-                required=False)
-            ])
+                required=False
+            ),
+            Option(
+                name='xp',
+                description='Toggle if you\'d like to display total xp for each skill.',
+                type=OptionType.boolean,
+                required=False
+            ),
+            Option(
+                name='ephemeral',
+                description='Toggle if you\'d like the response to be hidden to others.',
+                type=OptionType.boolean,
+                required=False
+            )
+        ]
+    )
+    async def stats(
+        self,
+        inter: ApplicationCommandInteraction,
+        account_type: str = 'Normal',
+        ephemeral: bool = False,
+        xp: bool = False,
+        *,
+        username: str
+    ) -> None:
+        '''
+        Creates a slash command for the `search_hiscores` function.
 
-    async def stats(self, inter: ApplicationCommandInteraction, game_mode = None, *, username: str) -> None:
-        embed = await self.parse_hiscores(inter, game_mode, username)
-        await inter.response.send_message(embed=embed)
+        :param self: -
+            Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
+        :param account_type: (String[Optional]) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+        :param ephemeral: (Boolean) -
+            Represents the ephemeral value. Defaults to False.
+        :param xp: (Boolean) -
+            Represents the xp value. Defaults to False.
+        :param username: (String) -
+            Represents a player's username.
+
+        :return: (None)
+        '''
+
+        embed, view = await self.search_hiscores(
+            inter,
+            'Skills',
+            account_type,
+            ephemeral,
+            xp,
+            username
+        )
+        await inter.send(
+            embed=embed,
+            view=view,
+            ephemeral=ephemeral
+        )
 
 
+    @stats.autocomplete('account_type')
+    async def account_type_autocomplete(self, account_type: str) -> List[str]:
+        '''
+        Creates a selection of autocomplete suggestions once the user begins
+        typing.
+
+        :param self: -
+            Represents this object.
+        :param account_type: (String) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+
+        :return: (List[String]) -
+            A list of autocomplete suggestions.
+        '''
+
+        _ = account_type
+        return [
+            'Ironman',
+            'Hardcore Ironman',
+            'Ultimate Ironman',
+            'Skiller',
+            '1 Defence',
+            'Fresh Start Worlds'
+        ]
+
+
+class Dropdown(disnake.ui.StringSelect):
     '''
-    Creates a selection of autocomplete suggestions for the 'game-mode' option.
-    :param self:
-    :param game_mode: (String) - Represents a specified game mode (Ex: Ironman, 1 Defence etc.)
+    A class which contains logic for the dropdown options (Select Menu.)
     '''
 
+    def __init__(
+        self,
+        inter: ApplicationCommandInteraction,
+        options: list,
+        account_type: str,
+        ephemeral: bool,
+        xp: bool,
+        username: str
+    ) -> None:
+        '''
+        Initialises the Dropdown object.
 
-    @stats.autocomplete('game_mode')
-    async def game_mode_autocomplete(self, game_mode: str):
-        return (['Ironman', 'Hardcore Ironman', 'Ultimate Ironman', 'Skiller', '1 Defence', 'Fresh Start Worlds'])
+        :param self: -
+            Represents this object.
+        :param options: (List) -
+            Represents a list of strings representing the dropdown options.
+        :param account_type: (String) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+        :param ephemeral: (Boolean) -
+            Represents the ephemeral value.
+        :param xp: (Boolean) -
+            Represents the xp value. Defaults to False.
+        :param username: (String) -
+            Represents a player's username.
+
+        :return: (None)
+        '''
+
+        self.bot = Bot
+        self.inter = inter
+        self.account_type = account_type
+        self.ephemeral = ephemeral
+        self.xp = xp
+        self.username = username
+
+        super().__init__(
+            placeholder='Select another category.',
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+
+    async def callback(self, inter: disnake.MessageInteraction):
+        '''
+        The callback function for dropdown selection (Select Menu.)
+
+        :param self: -
+            Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
+
+        :return: (None)
+        '''
+
+        await inter.response.defer()
+        embed, view = await Stats.search_hiscores(
+            self,
+            self.inter,
+            self.values[0],
+            self.account_type,
+            self.ephemeral,
+            self.xp,
+            self.username
+        )
+        await inter.followup.send(
+            embed=embed,
+            view=view,
+            ephemeral=self.ephemeral
+        )
+
+
+class DropdownView(disnake.ui.View):
+    '''
+    A class which contains logic for displaying a dropdown view.
+    '''
+
+    def __init__(
+        self,
+        inter: ApplicationCommandInteraction,
+        options: list,
+        account_type: str,
+        ephemeral: bool,
+        xp: bool,
+        username: str,
+        timeout=None
+    ) -> None:
+        '''
+        :param self: -
+            Represents this object.
+        :param options: (List) -
+            Represents a list of strings representing the dropdown options.
+        :param account_type: (String) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+        :param username: (String) -
+            Represents a player's username.
+        :param ephemeral: (Boolean) -
+            Represents the ephemeral value.
+        :param xp: (Boolean) -
+            Represents the xp value. Defaults to False.
+        :param timeout: Optional([Integer]) -
+            Represents the amount of time that the view remains active before
+            timing out.
+
+        :return: (None)
+        '''
+
+        self.bot = Bot
+        super().__init__(timeout=timeout)
+        self.add_item(Dropdown(
+            inter, options, account_type, ephemeral, xp, username
+        ))
 
 
 def setup(bot) -> None:
+    '''
+    Defines the bot setup function for the `stats` command.
+
+    :param bot: (Bot) -
+        An instance of the Bot class.
+
+    :return: (None)
+    '''
     bot.add_cog(Stats(bot))

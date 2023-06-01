@@ -1,87 +1,366 @@
+#! /usr/bin/env python3
+
+'''
+This module contains configuration data for the RuneBot
+application.
+
+Most configuration data is read from the `config.json` file,
+which should be stored on the root of the project directory.
+'''
+
 from utils.helpers import configuration
 
 
-# URLs
-BASE_URL = configuration()['urls']['osrswiki_url']
-WIKIAPI_URL = configuration()['urls']['priceapi_wikipedia']
-PRICEAPI_URL = configuration()['urls']['priceapi_official']
-GRAPHAPI_URL = configuration()['urls']['graphapi_official']
-SUPPORT_SERVER = configuration()['configuration']['support_server']
-
-# HISCORE URLs
-HISCORES_API_REGULAR = configuration()['urls']['hiscores_api_regular']
-HISCORES_API_IRONMAN = configuration()['urls']['hiscores_api_ironman']
-HISCORES_API_HARDCORE_IRONMAN = configuration()['urls']['hiscores_api_hardcore_ironman']
-HISCORES_API_ULTIMATE = configuration()['urls']['hiscores_api_ultimate']
-HISCORES_API_SKILLER = configuration()['urls']['hiscores_api_skiller']
-HISCORES_API_SKILLER_DEFENCE = configuration()['urls']['hiscores_api_skiller_defence']
-HISCORES_API_FRESH_START = configuration()['urls']['hiscores_api_fresh_start']
-
-GAME_MODE_URLS = {
-    'Ironman': HISCORES_API_IRONMAN, 'Hardcore Ironman': HISCORES_API_HARDCORE_IRONMAN,
-    'Ultimate Ironman': HISCORES_API_ULTIMATE, 'Skiller': HISCORES_API_SKILLER,
-    '1 Defence': HISCORES_API_SKILLER_DEFENCE, 'Fresh Start Worlds': HISCORES_API_FRESH_START,
-    'Regular Mode': HISCORES_API_REGULAR
-}
+# CURRENT VERSION
+VER = 'v1.0.4'
 
 # HEADERS
 HEADERS = configuration()['headers']
+URLS = configuration()['urls']
+
+# URLs (API)
+BASE_URL = URLS['osrswiki']
+HISCORES_URL = URLS['hiscores']
+WIKIAPI_URL = URLS['priceapi_wikipedia']
+PRICEAPI_URL = URLS['priceapi_official']
+GRAPHAPI_URL = URLS['graphapi']
+
+# HISCORE URLs
+NORMAL_HISCORES = HISCORES_URL + URLS['normal']['h']
+IRONMAN_HISCORES = HISCORES_URL + URLS['ironman']['h']
+HARDCORE_IRONMAN_HISCORES = HISCORES_URL + URLS['hardcore_ironman']['h']
+ULTIMATE_HISCORES = HISCORES_URL + URLS['ultimate']['h']
+SKILLER_HISCORES = HISCORES_URL + URLS['skiller']['h']
+SKILLER_DEFENCE_HISCORES = HISCORES_URL + URLS['skiller_defence']['h']
+FRESH_START_HISCORES = HISCORES_URL + URLS['fresh_start']['h']
+
+HISCORE_URLS = {
+    'Ironman': IRONMAN_HISCORES,
+    'Hardcore Ironman': HARDCORE_IRONMAN_HISCORES,
+    'Ultimate Ironman': ULTIMATE_HISCORES,
+    'Skiller': SKILLER_HISCORES,
+    '1 Defence': SKILLER_DEFENCE_HISCORES,
+    'Fresh Start Worlds': FRESH_START_HISCORES,
+    'Normal': NORMAL_HISCORES
+}
+
+# HISCORE API URLs
+NORMAL_API = HISCORES_URL + URLS['normal']['a']
+IRONMAN_API = HISCORES_URL + URLS['ironman']['a']
+HARDCORE_IRONMAN_API = HISCORES_URL + URLS['hardcore_ironman']['a']
+ULTIMATE_API = HISCORES_URL + URLS['ultimate']['a']
+SKILLER_API = HISCORES_URL + URLS['skiller']['a']
+SKILLER_DEFENCE_API = HISCORES_URL + URLS['skiller_defence']['a']
+FRESH_START_API = HISCORES_URL + URLS['fresh_start']['a']
+
+HISCORE_API_URLS = {
+    'Ironman': IRONMAN_API,
+    'Hardcore Ironman': HARDCORE_IRONMAN_API,
+    'Ultimate Ironman': ULTIMATE_API,
+    'Skiller': SKILLER_API,
+    '1 Defence': SKILLER_DEFENCE_API,
+    'Fresh Start Worlds': FRESH_START_API,
+    'Normal': NORMAL_API
+}
+
+HISCORES_ORDER = [
+    'Overall',
+    'Attack',
+    'Defence',
+    'Strength',
+    'Hitpoints',
+    'Ranged',
+    'Prayer',
+    'Magic',
+    'Cooking',
+    'Woodcutting',
+    'Fletching',
+    'Fishing',
+    'Firemaking',
+    'Crafting',
+    'Smithing',
+    'Mining',
+    'Herblore',
+    'Agility',
+    'Thieving',
+    'Slayer',
+    'Farming',
+    'Runecraft',
+    'Hunter',
+    'Construction',
+    'TBC',
+    'Bounty Hunter - Hunter',
+    'Bounty Hunter - Rogue',
+    'Bounty Hunter (Legacy) - Hunter',
+    'Bounty Hunter (Legacy) - Rogue',
+    'Clue Scrolls (All)',
+    'Clue Scrolls (Beginner)',
+    'Clue Scrolls (Easy)',
+    'Clue Scrolls (Medium)',
+    'Clue Scrolls (Hard)',
+    'Clue Scrolls (Elite)',
+    'Clue Scrolls (Master)',
+    'LMS - Rank',
+    'PvP Arena - Rank',
+    'Soul Wars Zeal',
+    'Rifts Closed',
+    'Abyssal Sire',
+    'Alchemical Hydra',
+    'Artio',
+    'Barrows Chests',
+    'Bryophyta',
+    'Callisto',
+    'Calvar\'ion',
+    'Cerberus',
+    'Chambers of Xeric',
+    'Chambers of Xeric: Challenge Mode',
+    'Chaos Elemental',
+    'Chaos Fanatic',
+    'Commander Zilyana',
+    'Corporeal Beast',
+    'Crazy Archaeologist',
+    'Dagannoth Prime',
+    'Dagannoth Rex',
+    'Dagannoth Supreme',
+    'Deranged Archaeologist',
+    'General Graardor',
+    'Giant Mole',
+    'Grotesque Guardians',
+    'Hespori',
+    'Kalphite Queen',
+    'King Black Dragon',
+    'Kraken',
+    'Kree\'Arra',
+    'K\'ril Tsutsaroth',
+    'Mimic',
+    'Nex',
+    'Nightmare',
+    'Phosani\'s Nightmare',
+    'Obor',
+    'Phantom Muspah',
+    'Sarachnis',
+    'Scorpia',
+    'Skotizo',
+    'Spindel',
+    'Tempoross',
+    'The Gauntlet',
+    'The Corrupted Gauntlet',
+    'Theatre of Blood',
+    'Theatre of Blood: Hard Mode',
+    'Thermonuclear Smoke Devil',
+    'Tombs of Amascut',
+    'Tombs of Amascut: Expert Mode',
+    'TzKal-Zuk',
+    'TzTok-Jad',
+    'Venenatis',
+    'Vet\'ion',
+    'Vorkath',
+    'Wintertodt',
+    'Zalcano',
+    'Zulrah'
+]
+
+STAT_ORDER = [
+    'Attack',
+    'Hitpoints',
+    'Mining',
+    'Strength',
+    'Agility',
+    'Smithing',
+    'Defence',
+    'Herblore',
+    'Fishing',
+    'Ranged',
+    'Thieving',
+    'Cooking',
+    'Prayer',
+    'Crafting',
+    'Firemaking',
+    'Magic',
+    'Fletching',
+    'Woodcutting',
+    'Runecraft',
+    'Slayer',
+    'Farming',
+    'Construction',
+    'Hunter',
+    'Overall'
+]
+
+STAT_COLUMNS = [
+    [
+        (col.lower(), col) for col in [
+            'Attack',
+            'Strength',
+            'Defence',
+            'Ranged',
+            'Prayer',
+            'Magic',
+            'Runecraft',
+            'Construction'
+        ]
+    ],
+    [
+        (col.lower(), col) for col in [
+            'Hitpoints',
+            'Agility',
+            'Herblore',
+            'Thieving',
+            'Crafting',
+            'Fletching',
+            'Slayer',
+            'Hunter'
+        ]
+    ],
+    [
+        (col.lower(), col) for col in [
+            'Mining',
+            'Smithing',
+            'Fishing',
+            'Cooking',
+            'Firemaking',
+            'Woodcutting',
+            'Farming',
+            'Overall'
+        ]
+    ]
+]
+
+BOSS_COLUMNS = [
+    [
+        ('abyssalsire', 'Abyssal Sire'),
+        ('barrowschests', 'Barrows Chests'),
+        ('calvarion', "Calvar'ion"),
+        ('coxchallengemode', 'Chambers of Xeric: Challenge Mode'),
+        ('commanderzilyana', 'Commander Zilyana'),
+        ('dagannothrex', 'Dagannoth Rex'),
+        ('derangedarchaeologist', 'Deranged Archaeologist'),
+        ('grotesqueguardians', 'Grotesque Guardians'),
+        ('kbd', 'King Black Dragon'),
+        ('kriltsutsaroth', "K'ril Tsutsaroth"),
+        ('nightmare', 'Nightmare'),
+        ('phantommuspah', 'Phantom Muspah'),
+        ('skotizo', 'Skotizo'),
+        ('thegauntlet', 'The Gauntlet'),
+        ('tobhardmode', 'Theatre of Blood: Hard Mode'),
+        ('tombsofamascutexpertmode', 'Tombs of Amascut: Expert Mode'),
+        ('venenatis', 'Venenatis'),
+        ('wintertodt', 'Wintertodt')
+    ],
+    [
+        ('alchemicalhydra', 'Alchemical Hydra'),
+        ('bryophyta', 'Bryophyta'),
+        ('cerberus', 'Cerberus'),
+        ('chaoselemental', 'Chaos Elemental'),
+        ('corporealbeast', 'Corporeal Beast'),
+        ('dagannothsupreme', 'Dagannoth Supreme'),
+        ('generalgraardor', 'General Graardor'),
+        ('hespori', 'Hespori'),
+        ('kraken', 'Kraken'),
+        ('mimic', 'Mimic'),
+        ('phosanisnightmare', "Phosani's Nightmare"),
+        ('sarachnis', 'Sarachnis'),
+        ('spindel', 'Spindel'),
+        ('thecorruptedgauntlet', 'The Corrupted Gauntlet'),
+        ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
+        ('tzkalzuk', 'TzKal-Zuk'),
+        ('vetion', "Vet'ion"),
+        ('zalcano', 'Zalcano')
+    ],
+    [
+        ('artio', 'Artio'),
+        ('callisto', 'Callisto'),
+        ('cox', 'Chambers of Xeric'),
+        ('chaosfanatic', 'Chaos Fanatic'),
+        ('dagannothprime', 'Dagannoth Prime'),
+        ('crazyarchaeologist', 'Crazy Archaeologist'),
+        ('giantmole', 'Giant Mole'),
+        ('kalphitequeen', 'Kalphite Queen'),
+        ('kreearra', "Kree'Arra"),
+        ('nex', 'Nex'),
+        ('obor', 'Obor'),
+        ('scorpia', 'Scorpia'),
+        ('tempoross', 'Tempoross'),
+        ('tob', 'Theatre of Blood'),
+        ('tombsofamascut', 'Tombs of Amascut'),
+        ('tztokjad', 'TzTok-Jad'),
+        ('vorkath', 'Vorkath'),
+        ('zulrah', 'Zulrah')
+    ]
+]
+
+COMBAT_SKILLS = [
+    'Attack',
+    'Defence',
+    'Hitpoints',
+    'Magic',
+    'Prayer',
+    'Ranged',
+    'Strength'
+]
+
+CLUE_SCROLL_ORDER = HISCORES_ORDER[28:34]
+BOSS_ORDER = HISCORES_ORDER[39:89]
+
+# URLs (Misc)
+SUPPORT_SERVER = configuration()['configuration']['support_server']
 
 # SPECIAL QUERIES
 FEELING_LUCKY = 'Special:Random/main'
 
 # EMOTES / EMOJIS
 SKILL_EMOTES = configuration()['skill_emotes']
+BOSS_EMOTES = configuration()['boss_emotes']
 
 # THUMBNAILS
-BANK_FILLER_ICO = configuration()['thumbnails']['bank_filler_ico']
-BUCKET_ICO = configuration()['thumbnails']['bucket_ico']
-LEVER_ICO = configuration()['thumbnails']['lever_ico']
-MINIGAME_ICO = configuration()['thumbnails']['minigame_ico']
-QUEST_ICO = configuration()['thumbnails']['quest_ico']
-STUB_ICO = configuration()['thumbnails']['stub_ico']
+FILLER = configuration()['thumbs']['filler']
+BUCKET = configuration()['thumbs']['bucket']
+LEVER = configuration()['thumbs']['lever']
+MINIGAME = configuration()['thumbs']['minigame']
+QUEST = configuration()['thumbs']['quest']
+STUB = configuration()['thumbs']['stub']
 
 # GRAYSCALE THUMBNAILS
-BANK_FILLER_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['bank_filler_ico_grayscale']
-BUCKET_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['bucket_ico_grayscale']
-GOBLIN_GRAYSCALE = configuration()['grayscale_thumbnails']['goblin_grayscale']
-GRAND_EXCHANGE_PILLAR_GRAYSCALE = configuration()['grayscale_thumbnails']['grand_exchange_pillar_grayscale']
-MINIGAME_ICO_GRAYSCALE = configuration()['grayscale_thumbnails']['minigame_ico_grayscale']
+FILLER_GRAYSCALE = configuration()['grayscale_thumbs']['filler']
+BUCKET_GRAYSCALE = configuration()['grayscale_thumbs']['bucket']
 
-# HISCORES
-HISCORES_ORDER = [
-    'Overall', 'Attack', 'Defence', 'Strength', 'Hitpoints', 'Ranged', 'Prayer',
-    'Magic', 'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking',
-    'Crafting', 'Smithing', 'Mining', 'Herblore', 'Agility', 'Thieving', 'Slayer',
-    'Farming', 'Runecraft', 'Hunter', 'Construction',
-    'TBC', 'Bounty Hunter (Hunter)', 'Bounty Hunter (Rogue)',
-    'Clue Scrolls (All)', 'Clue Scrolls (Beginner)', 'Clue Scrolls (Easy)',
-    'Clue Scrolls (Medium)', 'Clue Scrolls (Hard)', 'Clue Scrolls (Elite)',
-    'Clue Scrolls (Master)',
-    'LMS - Rank', 'PvP Arena - Rank',
-    'Soul Wars Zeal', 'Rifts Closed',
-    'Abyssal Sire', 'Alchemical Hydra', 'Barrows Chests', 'Bryophyta', 'Callisto',
-    'Cerberus', 'Chambers of Xeric', 'Chambers of Xeric: Challenge Mode', 'Chaos Elemental',
-    'Chaos Fanatic', 'Commander Zilyana', 'Corporeal Beast', 'Dagannoth Prime',
-    'Daggonoth Rex', 'Daggonoth Supreme', 'Crazy Archaeologist', 'Deranged Archaeologist',
-    'General Graardor', 'Giant Mole', 'Grotesque Guardians', 'Hespori', 'Kalphite Queen', 
-    'King Black Dragon', 'Kraken', 'Kree\'Arra', 'K\'ril Tsutsaroth', 'Mimic', 'Nex', 'Nightmare',
-    'Phosani\'s Nightmare', 'Obor', 'Phantom Muspah', 'Sarachnis', 'Scorpia', 'Skotizo',
-    'Tempoross', 'The Gauntlet', 'The Corrupted Gauntlet', 'Theatre of Blood',
-    'Theatre of Blood: Hard Mode', 'Thermonuclear Smoke Devil', 'Tombs of Amascut',
-    'Tombs of Amascut: Expert Mode', 'TzKal-Zuk', 'TzTok-Jad', 'Venenatis', 'Vet\'ion', 'Vorkath',
-    'Wintertodt', 'Zalcano', 'Zulrah'
-]
-STAT_ORDER = [
-    'Attack', 'Hitpoints', 'Mining', 'Strength', 'Agility', 'Smithing', 'Defence', 'Herblore', 'Fishing',
-    'Ranged', 'Thieving', 'Cooking', 'Prayer', 'Crafting', 'Firemaking', 'Magic', 'Fletching', 'Woodcutting',
-    'Runecraft', 'Slayer', 'Farming', 'Construction', 'Hunter', 'Overall'
-]
-COMBAT_SKILLS = [
-    'Attack', 'Defence', 'Hitpoints', 'Magic', 'Prayer', 'Ranged', 'Strength'
-]
-CLUE_SCROLL_ORDER = HISCORES_ORDER[28:34]
-BOSS_ORDER = HISCORES_ORDER[39:89]
+# THUMBNAIL DICT
+THUMBNAILS = {
+    'filler': FILLER,
+    'bucket': BUCKET,
+    'lever': LEVER,
+    'minigame': MINIGAME,
+    'quest': QUEST,
+    'stub': STUB
+}
+
+# GRAYSCALE THUMBNAIL DICT
+GRAYSCALE_THUMBNAILS = {
+    'filler': FILLER_GRAYSCALE,
+    'bucket': BUCKET_GRAYSCALE
+}
 
 # BLACKLISTS
-BLACKLIST_ITEMS = ['Burnt', '(burnt)', 'Ensouled', 'Sigil of', 'The great divide']
+BLACKLIST_ITEMS = [
+    '(+)',
+    '(-)',
+    '(burnt)',
+    'Anchovy paste',
+    'Burning',
+    'Burnt',
+    'Cabbage (Draynor Manor)',
+    'Ensouled',
+    'Guthix balance (unf)',
+    'Sigil of',
+    'The great divide',
+]
+
+BLACKLIST_QUESTS = [
+    'Cutscene',
+    'Quest items/',
+    'Quest Difficulties',
+    'Quest experience rewards',
+    'Quests',
+    'Quests/',
+    'Quick guide',
+]
