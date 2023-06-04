@@ -4,10 +4,11 @@
 This module contains database logic for managing data and interacting
 with the SQLite Runebot database.
 
-
 Functions:
     - `add_guild()`:
             Adds a new guild to the 'all_guilds' table.
+    - `add_username()`:
+            Adds a new username to the 'all_users' table.
     - `get_all_articles()`:
             Retrieves all articles from the `all_articles` table.
     - `get_all_guilds()`:
@@ -21,6 +22,8 @@ Functions:
             identifier.
     - `remove_guild()`:
             Removes a guild from the `all_guilds` table.
+    - `remove_username()`:
+            Removes a username from the `all_users` table.
     - `update_colour_mode()`:
             Toggles `colour_mode` for a given guild.
 
@@ -31,7 +34,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
-from typing import List
+from typing import List, Optional
 
 
 async def add_guild(
@@ -66,6 +69,42 @@ async def add_guild(
             VALUES (?, ?, ?)
             ''',
             (guild_id, guild_owner_id, toggle,)
+        )
+
+        return await self.bot.runebotdb.commit()
+
+
+async def add_username(
+    self,
+    user_id: int,
+    username: str,
+    account_type: str
+) -> None:
+    '''
+    Database function which adds a new user to the `all_users`
+    table.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+    :param username: (String) -
+        Represents a player's username.
+
+    :return: (None)
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            INSERT INTO all_users (
+                user_id,
+                username,
+                account_type
+            )
+            VALUES (?, ?, ?)
+            ''',
+            (user_id, username, account_type,)
         )
 
         return await self.bot.runebotdb.commit()
@@ -201,6 +240,33 @@ async def get_colour_mode(self, guild_id: int, guild_owner_id: int) -> bool:
             return True
 
 
+async def get_username(self, user_id: int) -> Optional[str]:
+    '''
+    Database function which retrieves a username with a given user_id.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+
+    :return: (Optional[String]) -
+        The respective username of the Discord user_id.
+    '''
+    async with self.bot.runebotdb.cursor() as cursor:
+        try:
+            await cursor.execute(
+                '''
+                SELECT username, account_type FROM all_users WHERE user_id = ?
+                ''',
+                (user_id,)
+            )
+            username, account_type = await cursor.fetchone()
+            return username, account_type
+
+        except TypeError:
+            return None, None
+
+
 async def remove_guild(self, guild_id: int) -> None:
     '''
     Database function which removes a guild from the `all_guilds` table.
@@ -219,6 +285,29 @@ async def remove_guild(self, guild_id: int) -> None:
             DELETE FROM all_guilds WHERE guild_id = ?
             ''',
             (guild_id,)
+        )
+
+        return await self.bot.runebotdb.commit()
+
+
+async def remove_username(self, user_id: int):
+    '''
+    Database function which removes a username from the `all_users` table.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+
+    :return: (None)
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            DELETE FROM all_users WHERE user_id = ?
+            ''',
+            (user_id,)
         )
 
         return await self.bot.runebotdb.commit()

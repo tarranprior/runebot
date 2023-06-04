@@ -123,6 +123,14 @@ class Bot(commands.Bot):
         async with self.bot.runebotdb.cursor() as cursor:
             await cursor.execute(
                 '''
+                CREATE TABLE IF NOT EXISTS all_articles (
+                    article_title TEXT NOT NULL,
+                    article_category TEXT NOT NULL
+                )
+                '''
+            )
+            await cursor.execute(
+                '''
                 CREATE TABLE IF NOT EXISTS all_guilds (
                     guild_id INTEGER NOT NULL,
                     guild_owner_id INTEGER NOT NULL,
@@ -132,9 +140,10 @@ class Bot(commands.Bot):
             )
             await cursor.execute(
                 '''
-                CREATE TABLE IF NOT EXISTS all_articles (
-                    article_title TEXT NOT NULL,
-                    article_category TEXT NOT NULL
+                CREATE TABLE IF NOT EXISTS all_users (
+                    user_id INTEGER NOT NULL,
+                    username STRING NOT NULL,
+                    account_type STRING NOT NULL
                 )
                 '''
             )
@@ -185,6 +194,10 @@ class Bot(commands.Bot):
         await remove_guild(self, guild.id)
 
 
+    async def on_slash_command_completion(self, inter: ApplicationCommandInteraction) -> None:
+        logger.info(f'{inter.user} ran the `{inter.application_command.name}` slash command.')
+
+
     async def on_slash_command_error(
         self,
         inter: ApplicationCommandInteraction,
@@ -215,6 +228,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -230,6 +244,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -245,6 +260,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.response.send_message(
                     embed=embed,
@@ -261,6 +277,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -276,6 +293,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -291,6 +309,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -306,6 +325,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -321,6 +341,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -337,6 +358,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.followup.send(
                     embed=embed,
@@ -352,6 +374,24 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
+                embed.set_footer(text=f'Runebot {VER}')
+                return await inter.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+
+            elif 'UsernameNonexistent' in str(error.__str__()):
+                embed, view = EmbedFactory().create(
+                    title='Nothing interesting happens.',
+                    description=str(error.__cause__),
+                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    colour=0x8B8B8B,
+                    button_label='Support Server',
+                    button_url=SUPPORT_SERVER
+                )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.response.send_message(
                     embed=embed,
@@ -368,6 +408,7 @@ class Bot(commands.Bot):
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
                 )
+                embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {VER}')
                 return await inter.response.send_message(
                     embed=embed,

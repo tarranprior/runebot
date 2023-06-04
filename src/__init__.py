@@ -10,4 +10,4 @@ changes to the application.
 Note: This module doesn't define any classes or functions of its own.
 '''
 
-__version__ = '1.0.4'
+__version__ = '1.0.5'

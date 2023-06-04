@@ -16,7 +16,9 @@ help command, and all available `Intents`.
 The `bot.load_extensions` method loads the following cogs:
 
     - `administrator.ping`
+    - `player_utilities.setrsn`
     - `player_utilities.stats`
+    - `player_utilities.unsetrsn`
     - `search_tools.alchemy`
     - `search_tools.bestiary`
     - `search_tools.minigames`
@@ -50,7 +52,9 @@ if __name__ == '__main__':
 
     bot.load_extensions(exts=[
         'cogs.administrator.ping',
+        'cogs.player_utilities.setrsn',
         'cogs.player_utilities.stats',
+        'cogs.player_utilities.unsetrsn',
         'cogs.search_tools.alchemy',
         'cogs.search_tools.bestiary',
         'cogs.search_tools.minigames',

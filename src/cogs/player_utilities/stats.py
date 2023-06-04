@@ -65,14 +65,16 @@ class Stats(commands.Cog, name='stats'):
         account_type: str,
         ephemeral: bool,
         xp: bool,
-        username: str
+        username: str = None
     ) -> Tuple[disnake.Embed, disnake.ui.View]:
         '''
-        General function which takes a username and returns hiscore
+        Function which takes a username and returns hiscore
         values from the official API in a structured format.
 
         :param self: -
             Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
         :param hiscore_category: (String) -
             Represents the Hiscore category (Ex: Bosses, Skills etc.)
         :param account_type: (String) -
@@ -81,17 +83,35 @@ class Stats(commands.Cog, name='stats'):
             Represents the ephemeral value. Defaults to False.
         :param xp: (Boolean) -
             Represents the xp value. Defaults to False.
-        :param username: (String) -
+        :param username: (String[Optional]) -
             Represents a player's username.
 
         :return: Tuple[disnake.Embed, disnake.ui.View] -
             An embed and view containing the hiscore information.
         '''
 
-        # Data validation which throws an error if the length of a username
-        # exceeds 12 characters (max limit.)
-        if len(username) > 12:
+        if not username: # If a username wasn't provided...
+            # Try to get a username from Runebot database.
+            username, default_account_type = await get_username(self, inter.author.id)
+            if username == None:
+                raise exceptions.UsernameNonexistent
+            if account_type == None:
+                account_type = default_account_type
+
+        # If the provided username is a Discord user...
+        # Try to get a username from Runebot database.
+        if username.startswith('<@') and username.endswith('>'):
+            username, account_type = await get_username(
+                self, username.replace('<@', '').replace('>', '')
+            )
+            if not username:
+                raise exceptions.UsernameNonexistent
+
+        if len(username) > MAX_CHARS or any(char in username for char in BLACKLIST_CHARS):
             raise exceptions.UsernameInvalid
+
+        if not account_type:
+            account_type = 'Normal'
 
         if account_type == 'Normal':
             try:
@@ -124,11 +144,11 @@ class Stats(commands.Cog, name='stats'):
                     raise exceptions.NoHiscoreData from exc2
                 raise exceptions.NoGameModeData from exc1
 
+        emote = ACCOUNT_EMOTES.get(account_type, '')
         embed = EmbedFactory().create(
             title=f'Personal Hiscores',
             description=(
-                f'Personal Hiscores for **{username}**\n'
-                f'Account Type: `{account_type}`\n\u200b\n'
+                f'Personal Hiscores for {emote} **{username}**\n\u200b\n'
             ),
         )
 
@@ -180,7 +200,7 @@ class Stats(commands.Cog, name='stats'):
                 name=f'{SKILL_EMOTES.get("overall")} Overall',
                 value=f'''
                     **Rank**: {overall_rank}
-                    **XP**: {overall_exp}
+                    **XP**: {overall_exp}\n\u200b\n
                 '''
             )
 
@@ -188,13 +208,17 @@ class Stats(commands.Cog, name='stats'):
                 name=f'{SKILL_EMOTES.get("combat")} Combat',
                 value=f'''
                     **Level**: {combat_level}
-                    **XP**: {combat_experience}
+                    **XP**: {combat_experience}\n\u200b\n
                 '''
             )
 
             view = DropdownView(
                 inter,
-                ["Bosses"],
+                [
+                    'Bounty Hunter',
+                    'Clue Scrolls',
+                    'Bosses'
+                ],
                 account_type,
                 ephemeral,
                 xp,
@@ -205,19 +229,88 @@ class Stats(commands.Cog, name='stats'):
 
             for column_data in BOSS_COLUMNS:
                 column_text = "\n".join([
-                    f"{BOSS_EMOTES.get(boss)} "
-                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '-')}"
+                    f"{BOSS_EMOTES.get(boss)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                    if hiscore_data.get(data).split(',')[1] != '-1' 
+                    else f"{BOSS_EMOTES.get(boss)} -"
                     for boss, data in column_data
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
             view = DropdownView(
                 inter,
-                ["Skills"],
+                [
+                    'Skills',
+                    'Bounty Hunter',
+                    'Clue Scrolls'
+                ],
                 account_type,
                 ephemeral,
                 xp,
                 username
+            )
+
+        elif hiscore_category == 'Bounty Hunter':
+
+            for column_data in BOUNTY_COLUMNS:
+                column_text = "\n".join([
+                    f"{BOUNTY_EMOTES.get(bounty)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                    if hiscore_data.get(data).split(',')[1] != '-1' 
+                    else f"{BOUNTY_EMOTES.get(bounty)} -"
+                    for bounty, data in column_data
+                ]) + '\n\u200b\n'
+                embed.add_field(name="\u200a", value=column_text, inline=True)
+
+            view = DropdownView(
+                inter,
+                [
+                    'Skills',
+                    'Clue Scrolls',
+                    'Bosses'
+                ],
+                account_type,
+                ephemeral,
+                xp,
+                username
+            )
+
+        elif hiscore_category == 'Clue Scrolls':
+
+            for column_data in CLUE_COLUMNS:
+                column_text = "\n".join([
+                    f"{CLUE_EMOTES.get(clue)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                    if hiscore_data.get(data).split(',')[1] != '-1' 
+                    else f"{CLUE_EMOTES.get(clue)} -"
+                    for clue, data in column_data
+                ]) + '\n\u200b\n'
+                embed.add_field(name="\u200a", value=column_text, inline=True)
+
+            view = DropdownView(
+                inter,
+                [
+                    'Skills',
+                    'Bounty Hunter',
+                    'Bosses'
+                ],
+                account_type,
+                ephemeral,
+                xp,
+                username
+            )
+
+            cluescroll_rank, cluescroll_total = [
+                '-' if (value := hiscore_data.get(
+                    'Clue Scrolls (All)'
+                ).split(',')[index].replace('-1', '-')) == '-'
+                else f'{int(value):,}'
+                for index in range(2)
+            ]
+
+            embed.add_field(
+                name=f'{CLUE_EMOTES.get("cluescrolls_all")} Clue Scrolls (all)',
+                value=f'''
+                    **Count**: {cluescroll_total}
+                    **Rank**: {cluescroll_rank}\n\u200b\n
+                '''
             )
 
         view.add_item(Button(
@@ -232,7 +325,6 @@ class Stats(commands.Cog, name='stats'):
             )
         )
         embed.timestamp = inter.created_at
-
         return embed, view
 
 
@@ -244,11 +336,11 @@ class Stats(commands.Cog, name='stats'):
                 name='username',
                 description='Search for a Player.',
                 type=OptionType.string,
-                required=True
+                required=False
             ),
             Option(
                 name='account_type',
-                description='Select an Account Type.',
+                description='Select an Account Type (optional.)',
                 type=OptionType.string,
                 required=False
             ),
@@ -269,11 +361,11 @@ class Stats(commands.Cog, name='stats'):
     async def stats(
         self,
         inter: ApplicationCommandInteraction,
-        account_type: str = 'Normal',
+        account_type: str = None,
         ephemeral: bool = False,
         xp: bool = False,
         *,
-        username: str
+        username: str = None
     ) -> None:
         '''
         Creates a slash command for the `search_hiscores` function.
@@ -288,7 +380,7 @@ class Stats(commands.Cog, name='stats'):
             Represents the ephemeral value. Defaults to False.
         :param xp: (Boolean) -
             Represents the xp value. Defaults to False.
-        :param username: (String) -
+        :param username: (String[Optional]) -
             Represents a player's username.
 
         :return: (None)
@@ -325,14 +417,8 @@ class Stats(commands.Cog, name='stats'):
         '''
 
         _ = account_type
-        return [
-            'Ironman',
-            'Hardcore Ironman',
-            'Ultimate Ironman',
-            'Skiller',
-            '1 Defence',
-            'Fresh Start Worlds'
-        ]
+
+        return ACCOUNT_TYPES
 
 
 class Dropdown(disnake.ui.StringSelect):
@@ -354,6 +440,8 @@ class Dropdown(disnake.ui.StringSelect):
 
         :param self: -
             Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
         :param options: (List) -
             Represents a list of strings representing the dropdown options.
         :param account_type: (String) -
@@ -429,6 +517,8 @@ class DropdownView(disnake.ui.View):
         '''
         :param self: -
             Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
         :param options: (List) -
             Represents a list of strings representing the dropdown options.
         :param account_type: (String) -
@@ -453,7 +543,7 @@ class DropdownView(disnake.ui.View):
         ))
 
 
-def setup(bot) -> None:
+def setup(bot: Bot) -> None:
     '''
     Defines the bot setup function for the `stats` command.
 

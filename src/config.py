@@ -12,9 +12,12 @@ from utils.helpers import configuration
 
 
 # CURRENT VERSION
-VER = 'v1.0.4'
+VER = 'v1.0.5'
 
-# HEADERS
+# GENERAL
+MAX_CHARS = 12 # Represents maximum character limit for usernames.
+
+# URL / HEADERS
 HEADERS = configuration()['headers']
 URLS = configuration()['urls']
 
@@ -24,6 +27,17 @@ HISCORES_URL = URLS['hiscores']
 WIKIAPI_URL = URLS['priceapi_wikipedia']
 PRICEAPI_URL = URLS['priceapi_official']
 GRAPHAPI_URL = URLS['graphapi']
+
+# ACCOUNT TYPES
+ACCOUNT_TYPES = [
+    'Normal',
+    'Ironman',
+    'Hardcore Ironman',
+    'Ultimate Ironman',
+    'Skiller',
+    '1 Defence',
+    'Fresh Start Worlds'
+]
 
 # HISCORE URLs
 NORMAL_HISCORES = HISCORES_URL + URLS['normal']['h']
@@ -88,7 +102,7 @@ HISCORES_ORDER = [
     'Runecraft',
     'Hunter',
     'Construction',
-    'TBC',
+    '----',
     'Bounty Hunter - Hunter',
     'Bounty Hunter - Rogue',
     'Bounty Hunter (Legacy) - Hunter',
@@ -289,6 +303,32 @@ BOSS_COLUMNS = [
     ]
 ]
 
+BOUNTY_COLUMNS = [
+    [
+        ('bh_legacyhunter', 'Bounty Hunter (Legacy) - Hunter'),
+        ('bh_hunter', 'Bounty Hunter - Hunter')
+    ],
+    [
+        ('bh_legacyrogue', 'Bounty Hunter (Legacy) - Rogue'),
+        ('bh_rogue', 'Bounty Hunter - Rogue')
+    ]
+]
+
+CLUE_COLUMNS = [
+    [
+        ('cluescrolls_beginner', 'Clue Scrolls (Beginner)'),
+        ('cluescrolls_hard', 'Clue Scrolls (Hard)')
+    ],
+    [
+        ('cluescrolls_easy', 'Clue Scrolls (Easy)'),
+        ('cluescrolls_elite', 'Clue Scrolls (Elite)')
+    ],
+    [
+        ('cluescrolls_medium', 'Clue Scrolls (Medium)'),
+        ('cluescrolls_master', 'Clue Scrolls (Master)')
+    ]
+]
+
 COMBAT_SKILLS = [
     'Attack',
     'Defence',
@@ -308,9 +348,12 @@ SUPPORT_SERVER = configuration()['configuration']['support_server']
 # SPECIAL QUERIES
 FEELING_LUCKY = 'Special:Random/main'
 
-# EMOTES / EMOJIS
-SKILL_EMOTES = configuration()['skill_emotes']
+# EMOTES (EMOJIS)
+ACCOUNT_EMOTES = configuration()['account_emotes']
 BOSS_EMOTES = configuration()['boss_emotes']
+BOUNTY_EMOTES = configuration()['bounty_emotes']
+CLUE_EMOTES = configuration()['clue_emotes']
+SKILL_EMOTES = configuration()['skill_emotes']
 
 # THUMBNAILS
 FILLER = configuration()['thumbs']['filler']
@@ -341,6 +384,25 @@ GRAYSCALE_THUMBNAILS = {
 }
 
 # BLACKLISTS
+BLACKLIST_CHARS = [
+    ',',
+    '!',
+    ':',
+    ';',
+    '[',
+    ']',
+    '{',
+    '}',
+    '?',
+    '#',
+    '@',
+    '\\',
+    '/',
+    '¬',
+    '`',
+    '~',
+]
+
 BLACKLIST_ITEMS = [
     '(+)',
     '(-)',

@@ -135,5 +135,25 @@
         "wintertodt": "<:wintertodt:1112179616480776244>",
         "zalcano": "<:zalcano:1112179618103971860>",
         "zulrah": "<:zulrah:1112179619211268156>"
+    },
+    "bounty_emotes": {
+        "bh_hunter": "<:bh_hunter:1114546976076341329>",
+        "bh_rogue": "<:bh_rogue:1114546980987867187>",
+        "bh_legacyhunter": "<:bh_legacyhunter:1114546978429358081>",
+        "bh_legacyrogue": "<:bh_legacyrogue:1114546979775721562>"
+    },
+    "clue_emotes": {
+        "cluescrolls_all": "<:cluescrolls_all:1114218506876108872>",
+        "cluescrolls_beginner": "<:cluescrolls_beginner:1114218508474134580>",
+        "cluescrolls_easy": "<:cluescrolls_easy:1114218510067961987>",
+        "cluescrolls_medium": "<:cluescrolls_medium:1114218515411505232>",
+        "cluescrolls_hard": "<:cluescrolls_hard:1114218511993163798>",
+        "cluescrolls_elite": "<:cluescrolls_elite:1114218511120736386>",
+        "cluescrolls_master": "<:cluescrolls_master:1114218514132242512>"
+    },
+    "account_emotes": {
+        "Ironman": "<:ironman_helmet:1114634831976996926>",
+        "Hardcore Ironman": "<:hardcore_helmet:1114634828223102986>",
+        "Ultimate Ironman": "<:ultimate_helmet:1114634834208366733>"
     }
 }

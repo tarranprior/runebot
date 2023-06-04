@@ -306,8 +306,39 @@ class UsernameInvalid(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The username provided appears to be **invalid** or **doesn\'t exist**. '
-        'Please try a different username.\n\n'
+        'The username provided appears to be **incorrect** or **doesn\'t exist**. '
+        'Please try a different username.'
+    )) -> None:
+        '''
+        Initialises a new instance of the UsernameInvalid class.
+
+        :param message: (Optional[String]) -
+            A custom message to display when the exception is raised.
+            Defaults to a pre-defined message.
+
+        :return: (None)
+        '''
+
+        self.message = message
+        super().__init__(self.message)
+
+
+class UsernameNonexistent(Exception):
+    '''
+    Thrown when a username doesn't exist in the Runebot database.
+
+    :param message: (String) -
+        A custom message to display when the exception is raised.
+        Defaults to a pre-defined message.
+
+    :return: (None)
+    '''
+
+    def __init__(self, message: str = (
+        'Oops! You haven\'t yet setup a username for this account. You can '
+        'use `/setrsn` to set one up.\n\n> Note: If you\'d rather '
+        'not set a username, use the `username` argument under `/stats`. '
+        'See the usage info below for more details.\n\n'
         '**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''
