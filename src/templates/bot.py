@@ -194,10 +194,6 @@ class Bot(commands.Bot):
         await remove_guild(self, guild.id)
 
 
-    async def on_slash_command_completion(self, inter: ApplicationCommandInteraction) -> None:
-        logger.info(f'{inter.user} ran the `{inter.application_command.name}` slash command.')
-
-
     async def on_slash_command_error(
         self,
         inter: ApplicationCommandInteraction,
