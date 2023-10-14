@@ -111,8 +111,7 @@ class Bot(commands.Bot):
         '''
 
         logger.success(f'Runebot ({VER}) is connected to the gateway.')
-        logger.info(f'Connected to {len(self.guilds)} guild(s.)')
-        logger.info(f'Logged in as {self.user.name} ({self.user.id})')
+        logger.info(f'Logged in as {self.user.name} ({self.user.id}.)')
         logger.info(f'API Version: {disnake.__version__}')
         logger.info(
             f'Platform: {platform.system()} '
@@ -160,7 +159,17 @@ class Bot(commands.Bot):
         :return: (None)
         '''
 
+        await self.wait_until_ready()
+        total_users = 0
+        total_channels = 0
+        for guild in self.guilds:
+            total_users += guild.member_count
+            accessible_channels = [channel for channel in guild.channels]
+            total_channels += len(accessible_channels)
+
         logger.success('Runebot is ready.')
+        logger.info(f'Connected to {total_users} users in {len(self.guilds)} guild(s.)')
+        logger.info(f'Speaking in {total_channels} total channels.')
         logger.info('For more information on usage, see the README.\n\n')
 
 

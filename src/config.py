@@ -5,7 +5,7 @@ This module contains configuration data for the RuneBot
 application.
 
 Most configuration data is read from the `config.json` file,
-which should be stored on the root of the project directory.
+which should be stored in the root of the project directory.
 '''
 
 from utils.helpers import configuration
@@ -103,6 +103,7 @@ HISCORES_ORDER = [
     'Hunter',
     'Construction',
     '----',
+    '----',
     'Bounty Hunter - Hunter',
     'Bounty Hunter - Rogue',
     'Bounty Hunter (Legacy) - Hunter',
@@ -137,6 +138,7 @@ HISCORES_ORDER = [
     'Dagannoth Rex',
     'Dagannoth Supreme',
     'Deranged Archaeologist',
+    'Duke Sucellus',
     'General Graardor',
     'Giant Mole',
     'Grotesque Guardians',
@@ -159,6 +161,8 @@ HISCORES_ORDER = [
     'Tempoross',
     'The Gauntlet',
     'The Corrupted Gauntlet',
+    'The Leviathan',
+    'The Whisperer',
     'Theatre of Blood',
     'Theatre of Blood: Hard Mode',
     'Thermonuclear Smoke Devil',
@@ -166,6 +170,7 @@ HISCORES_ORDER = [
     'Tombs of Amascut: Expert Mode',
     'TzKal-Zuk',
     'TzTok-Jad',
+    'Vardorvis',
     'Venenatis',
     'Vet\'ion',
     'Vorkath',
@@ -247,19 +252,21 @@ BOSS_COLUMNS = [
         ('calvarion', "Calvar'ion"),
         ('coxchallengemode', 'Chambers of Xeric: Challenge Mode'),
         ('commanderzilyana', 'Commander Zilyana'),
-        ('dagannothrex', 'Dagannoth Rex'),
+        ('dagannothprime', 'Dagannoth Prime'),
         ('derangedarchaeologist', 'Deranged Archaeologist'),
-        ('grotesqueguardians', 'Grotesque Guardians'),
-        ('kbd', 'King Black Dragon'),
-        ('kriltsutsaroth', "K'ril Tsutsaroth"),
-        ('nightmare', 'Nightmare'),
-        ('phantommuspah', 'Phantom Muspah'),
-        ('skotizo', 'Skotizo'),
-        ('thegauntlet', 'The Gauntlet'),
+        ('giantmole', 'Giant Mole'),
+        ('kalphitequeen', 'Kalphite Queen'),
+        ('kreearra', "Kree'Arra"),
+        ('nex', 'Nex'),
+        ('obor', 'Obor'),
+        ('scorpia', 'Scorpia'),
+        ('tempoross', 'Tempoross'),
+        ('theleviathan', 'The Leviathan'),
         ('tobhardmode', 'Theatre of Blood: Hard Mode'),
         ('tombsofamascutexpertmode', 'Tombs of Amascut: Expert Mode'),
-        ('venenatis', 'Venenatis'),
-        ('wintertodt', 'Wintertodt')
+        ('vardorvis', 'Vardorvis'),
+        ('vorkath', 'Vorkath'),
+        ('zulrah', 'Zulrah')
     ],
     [
         ('alchemicalhydra', 'Alchemical Hydra'),
@@ -267,6 +274,27 @@ BOSS_COLUMNS = [
         ('cerberus', 'Cerberus'),
         ('chaoselemental', 'Chaos Elemental'),
         ('corporealbeast', 'Corporeal Beast'),
+        ('dagannothrex', 'Dagannoth Rex'),
+        ('dukesucellus', 'Duke Sucellus'),
+        ('grotesqueguardians', 'Grotesque Guardians'),
+        ('kbd', 'King Black Dragon'),
+        ('kriltsutsaroth', "K'ril Tsutsaroth"),
+        ('nightmare', 'Nightmare'),
+        ('phantommuspah', 'Phantom Muspah'),
+        ('skotizo', 'Skotizo'),
+        ('thegauntlet', 'The Gauntlet'),
+        ('thewhisperer', 'The Whisperer'),
+        ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
+        ('tzkalzuk', 'TzKal-Zuk'),
+        ('venenatis', 'Venenatis'),
+        ('wintertodt', 'Wintertodt')
+    ],
+    [
+        ('artio', 'Artio'),
+        ('callisto', 'Callisto'),
+        ('cox', 'Chambers of Xeric'),
+        ('chaosfanatic', 'Chaos Fanatic'),
+        ('crazyarchaeologist', 'Crazy Archaeologist'),
         ('dagannothsupreme', 'Dagannoth Supreme'),
         ('generalgraardor', 'General Graardor'),
         ('hespori', 'Hespori'),
@@ -276,30 +304,11 @@ BOSS_COLUMNS = [
         ('sarachnis', 'Sarachnis'),
         ('spindel', 'Spindel'),
         ('thecorruptedgauntlet', 'The Corrupted Gauntlet'),
-        ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
-        ('tzkalzuk', 'TzKal-Zuk'),
-        ('vetion', "Vet'ion"),
-        ('zalcano', 'Zalcano')
-    ],
-    [
-        ('artio', 'Artio'),
-        ('callisto', 'Callisto'),
-        ('cox', 'Chambers of Xeric'),
-        ('chaosfanatic', 'Chaos Fanatic'),
-        ('dagannothprime', 'Dagannoth Prime'),
-        ('crazyarchaeologist', 'Crazy Archaeologist'),
-        ('giantmole', 'Giant Mole'),
-        ('kalphitequeen', 'Kalphite Queen'),
-        ('kreearra', "Kree'Arra"),
-        ('nex', 'Nex'),
-        ('obor', 'Obor'),
-        ('scorpia', 'Scorpia'),
-        ('tempoross', 'Tempoross'),
         ('tob', 'Theatre of Blood'),
         ('tombsofamascut', 'Tombs of Amascut'),
         ('tztokjad', 'TzTok-Jad'),
-        ('vorkath', 'Vorkath'),
-        ('zulrah', 'Zulrah')
+        ('vetion', "Vet'ion"),
+        ('zalcano', 'Zalcano')
     ]
 ]
 

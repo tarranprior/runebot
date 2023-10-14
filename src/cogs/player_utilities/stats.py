@@ -7,11 +7,6 @@ command, allowing users to search for player stats from the official API.
 Classes:
     - `Stats`:
             A class for handling the `stats` command.
-    - `Dropdown`:
-            A class for creating dropdown options that can be added
-            to a `DropdownView` instance.
-    - `DropdownView`:
-            A view class for creating dropdowns in the response.
 
 Key Functions:
     - `search_hiscores(...)`, `stats(...)`, and
@@ -19,6 +14,8 @@ Key Functions:
             Functions for searching and retrieving Hiscore data, as well as
             creating a slash command and autocomplete query for the `stats`
             command.
+    - `button_listener(...)`:
+            Cog listener which listens for button events.
     - `callback(self, inter: disnake.MessageInteraction)`:
             A callback function for dropdown selection.
     - `setup(bot: Bot)`:
@@ -63,8 +60,6 @@ class Stats(commands.Cog, name='stats'):
         inter: ApplicationCommandInteraction,
         hiscore_category: str,
         account_type: str,
-        ephemeral: bool,
-        xp: bool,
         username: str = None
     ) -> Tuple[disnake.Embed, disnake.ui.View]:
         '''
@@ -79,15 +74,11 @@ class Stats(commands.Cog, name='stats'):
             Represents the Hiscore category (Ex: Bosses, Skills etc.)
         :param account_type: (String) -
             Represents an account type (Ex: Ironman, 1 Defence etc.)
-        :param ephemeral: (Boolean) -
-            Represents the ephemeral value. Defaults to False.
-        :param xp: (Boolean) -
-            Represents the xp value. Defaults to False.
         :param username: (String[Optional]) -
             Represents a player's username.
 
-        :return: Tuple[disnake.Embed, disnake.ui.View] -
-            An embed and view containing the hiscore information.
+        :return: Tuple[disnake.Embed, list] -
+            An embed and list containing the hiscore information.
         '''
 
         if not username: # If a username wasn't provided...
@@ -152,7 +143,7 @@ class Stats(commands.Cog, name='stats'):
             ),
         )
 
-        if hiscore_category == 'Skills':
+        if hiscore_category == 'skills':
 
             # Gets all combat levels of the player with the provided
             # Hiscore data.
@@ -180,18 +171,17 @@ class Stats(commands.Cog, name='stats'):
             # Gets the overall rank of the player.
             overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
             if overall_rank == '-1':
-                overall_rank = 'N/A'
+                overall_rank = '--'
 
             # Gets the overall experience of the player.
             overall_exp = f'{int(hiscore_data.get("Overall").split(",")[2]):,}'
             if overall_exp == '0':
-                overall_exp = 'N/A'
+                overall_exp = '--'
 
             for column_data in STAT_COLUMNS:
                 column_text = "\n".join([
                     f"{SKILL_EMOTES.get(skill)} "
-                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '-')}"
-                    + (f"\n{hiscore_data.get(data).split(',')[2].replace('-1', '-')}" if xp else "")
+                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '--')}"
                     for skill, data in column_data
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
@@ -212,20 +202,28 @@ class Stats(commands.Cog, name='stats'):
                 '''
             )
 
-            view = DropdownView(
-                inter,
-                [
-                    'Bounty Hunter',
-                    'Clue Scrolls',
-                    'Bosses'
-                ],
-                account_type,
-                ephemeral,
-                xp,
-                username
-            )
+            view = View()
+            components = [
+                disnake.ui.Button(
+                    label='Boss Kills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'boss_kills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Bounty Hunter',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'bounty_hunter,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Clue Scrolls',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'clue_scrolls,{account_type},{username}'
+                ),
+            ]
+            for component in components:
+                view.add_item(component)
 
-        elif hiscore_category == 'Bosses':
+        elif hiscore_category == 'boss_kills':
 
             for column_data in BOSS_COLUMNS:
                 column_text = "\n".join([
@@ -236,20 +234,28 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = DropdownView(
-                inter,
-                [
-                    'Skills',
-                    'Bounty Hunter',
-                    'Clue Scrolls'
-                ],
-                account_type,
-                ephemeral,
-                xp,
-                username
-            )
+            view = View()
+            components = [
+                disnake.ui.Button(
+                    label='Skills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'skills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Bounty Hunter',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'bounty_hunter,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Clue Scrolls',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'clue_scrolls,{account_type},{username}'
+                ),
+            ]
+            for component in components:
+                view.add_item(component)
 
-        elif hiscore_category == 'Bounty Hunter':
+        elif hiscore_category == 'bounty_hunter':
 
             for column_data in BOUNTY_COLUMNS:
                 column_text = "\n".join([
@@ -260,20 +266,28 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = DropdownView(
-                inter,
-                [
-                    'Skills',
-                    'Clue Scrolls',
-                    'Bosses'
-                ],
-                account_type,
-                ephemeral,
-                xp,
-                username
-            )
+            view = View()
+            components = [
+                disnake.ui.Button(
+                    label='Skills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'skills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Boss Kills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'boss_kills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Clue Scrolls',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'clue_scrolls,{account_type},{username}'
+                )
+            ]
+            for component in components:
+                view.add_item(component)
 
-        elif hiscore_category == 'Clue Scrolls':
+        elif hiscore_category == 'clue_scrolls':
 
             for column_data in CLUE_COLUMNS:
                 column_text = "\n".join([
@@ -284,18 +298,26 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = DropdownView(
-                inter,
-                [
-                    'Skills',
-                    'Bounty Hunter',
-                    'Bosses'
-                ],
-                account_type,
-                ephemeral,
-                xp,
-                username
-            )
+            view = View()
+            components = [
+                disnake.ui.Button(
+                    label='Skills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'skills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Boss Kills',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'boss_kills,{account_type},{username}'
+                ),
+                disnake.ui.Button(
+                    label='Bounty Hunter',
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=f'bounty_hunter,{account_type},{username}'
+                ),
+                ]
+            for component in components:
+                view.add_item(component)
 
             cluescroll_rank, cluescroll_total = [
                 '-' if (value := hiscore_data.get(
@@ -312,11 +334,6 @@ class Stats(commands.Cog, name='stats'):
                     **Rank**: {cluescroll_rank}\n\u200b\n
                 '''
             )
-
-        view.add_item(Button(
-            label='Visit Hiscores',
-            url=f'{HISCORE_URLS.get(account_type)}{slugify(username)}'
-        ))
 
         embed.set_footer(
             text=(
@@ -343,18 +360,6 @@ class Stats(commands.Cog, name='stats'):
                 description='Select an Account Type (optional.)',
                 type=OptionType.string,
                 required=False
-            ),
-            Option(
-                name='xp',
-                description='Toggle if you\'d like to display total xp for each skill.',
-                type=OptionType.boolean,
-                required=False
-            ),
-            Option(
-                name='ephemeral',
-                description='Toggle if you\'d like the response to be hidden to others.',
-                type=OptionType.boolean,
-                required=False
             )
         ]
     )
@@ -362,8 +367,6 @@ class Stats(commands.Cog, name='stats'):
         self,
         inter: ApplicationCommandInteraction,
         account_type: str = None,
-        ephemeral: bool = False,
-        xp: bool = False,
         *,
         username: str = None
     ) -> None:
@@ -376,28 +379,54 @@ class Stats(commands.Cog, name='stats'):
             Represents an interaction with an application command.
         :param account_type: (String[Optional]) -
             Represents an account type (Ex: Ironman, 1 Defence etc.)
-        :param ephemeral: (Boolean) -
-            Represents the ephemeral value. Defaults to False.
-        :param xp: (Boolean) -
-            Represents the xp value. Defaults to False.
         :param username: (String[Optional]) -
             Represents a player's username.
 
         :return: (None)
         '''
 
+        hiscore_category = 'skills'
         embed, view = await self.search_hiscores(
             inter,
-            'Skills',
+            hiscore_category,
             account_type,
-            ephemeral,
-            xp,
+            username
+        )
+        await inter.response.send_message(
+            embed=embed,
+            view=view
+        )
+
+
+    @commands.Cog.listener('on_button_click')
+    async def button_listener(
+        self,
+        inter: disnake.MessageInteraction
+    ) -> None:
+        '''
+        Cog listener which listens for button events.
+
+        :param self: -
+            Represents this object.
+        :param inter: -
+            Represents an interaction with an application command.
+        
+        :return: (None)
+        '''
+
+        params = inter.component.custom_id.split(',')
+        button_id, account_type, username = params
+
+        embed, view = await Stats.search_hiscores(
+            self,
+            inter,
+            button_id,
+            account_type,
             username
         )
         await inter.send(
             embed=embed,
-            view=view,
-            ephemeral=ephemeral
+            view=view
         )
 
 
@@ -417,130 +446,7 @@ class Stats(commands.Cog, name='stats'):
         '''
 
         _ = account_type
-
         return ACCOUNT_TYPES
-
-
-class Dropdown(disnake.ui.StringSelect):
-    '''
-    A class which contains logic for the dropdown options (Select Menu.)
-    '''
-
-    def __init__(
-        self,
-        inter: ApplicationCommandInteraction,
-        options: list,
-        account_type: str,
-        ephemeral: bool,
-        xp: bool,
-        username: str
-    ) -> None:
-        '''
-        Initialises the Dropdown object.
-
-        :param self: -
-            Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
-        :param options: (List) -
-            Represents a list of strings representing the dropdown options.
-        :param account_type: (String) -
-            Represents an account type (Ex: Ironman, 1 Defence etc.)
-        :param ephemeral: (Boolean) -
-            Represents the ephemeral value.
-        :param xp: (Boolean) -
-            Represents the xp value. Defaults to False.
-        :param username: (String) -
-            Represents a player's username.
-
-        :return: (None)
-        '''
-
-        self.bot = Bot
-        self.inter = inter
-        self.account_type = account_type
-        self.ephemeral = ephemeral
-        self.xp = xp
-        self.username = username
-
-        super().__init__(
-            placeholder='Select another category.',
-            min_values=1,
-            max_values=1,
-            options=options
-        )
-
-    async def callback(self, inter: disnake.MessageInteraction):
-        '''
-        The callback function for dropdown selection (Select Menu.)
-
-        :param self: -
-            Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
-
-        :return: (None)
-        '''
-
-        await inter.response.defer()
-        embed, view = await Stats.search_hiscores(
-            self,
-            self.inter,
-            self.values[0],
-            self.account_type,
-            self.ephemeral,
-            self.xp,
-            self.username
-        )
-        await inter.followup.send(
-            embed=embed,
-            view=view,
-            ephemeral=self.ephemeral
-        )
-
-
-class DropdownView(disnake.ui.View):
-    '''
-    A class which contains logic for displaying a dropdown view.
-    '''
-
-    def __init__(
-        self,
-        inter: ApplicationCommandInteraction,
-        options: list,
-        account_type: str,
-        ephemeral: bool,
-        xp: bool,
-        username: str,
-        timeout=None
-    ) -> None:
-        '''
-        :param self: -
-            Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
-        :param options: (List) -
-            Represents a list of strings representing the dropdown options.
-        :param account_type: (String) -
-            Represents an account type (Ex: Ironman, 1 Defence etc.)
-        :param username: (String) -
-            Represents a player's username.
-        :param ephemeral: (Boolean) -
-            Represents the ephemeral value.
-        :param xp: (Boolean) -
-            Represents the xp value. Defaults to False.
-        :param timeout: Optional([Integer]) -
-            Represents the amount of time that the view remains active before
-            timing out.
-
-        :return: (None)
-        '''
-
-        self.bot = Bot
-        super().__init__(timeout=timeout)
-        self.add_item(Dropdown(
-            inter, options, account_type, ephemeral, xp, username
-        ))
 
 
 def setup(bot: Bot) -> None:
