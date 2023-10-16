@@ -21,10 +21,7 @@ if __name__ == '__main__':
     bot = Bot(
         activity=disnake.Game(
             name=f"{configuration()['configuration']['activity']}"
-        ),
-        case_insensitive=True,
-        help_command=None,
-        intents=disnake.Intents.all()
+        )
     )
 
     bot.load_extensions(exts=[

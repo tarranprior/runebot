@@ -50,7 +50,7 @@ from config import *
 from utils import EmbedFactory, configuration, add_guild, remove_guild
 
 
-class Bot(commands.Bot):
+class Bot(commands.InteractionBot):
     '''
     A class which represents a Discord bot instance.
     '''
@@ -67,7 +67,7 @@ class Bot(commands.Bot):
         :return: (None)
         '''
 
-        super().__init__(*args, **kwargs, command_prefix='/')
+        super().__init__(*args, **kwargs)
         self.bot = Bot
         self.config = config or configuration()
 
