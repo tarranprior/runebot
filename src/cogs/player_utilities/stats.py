@@ -424,7 +424,7 @@ class Stats(commands.Cog, name='stats'):
             account_type,
             username
         )
-        await inter.send(
+        await inter.response.edit_message(
             embed=embed,
             view=view
         )
