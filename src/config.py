@@ -156,6 +156,7 @@ HISCORES_ORDER = [
     'Phantom Muspah',
     'Sarachnis',
     'Scorpia',
+    'Scurrius',
     'Skotizo',
     'Spindel',
     'Tempoross',
@@ -260,13 +261,13 @@ BOSS_COLUMNS = [
         ('nex', 'Nex'),
         ('obor', 'Obor'),
         ('scorpia', 'Scorpia'),
-        ('tempoross', 'Tempoross'),
-        ('theleviathan', 'The Leviathan'),
-        ('tobhardmode', 'Theatre of Blood: Hard Mode'),
-        ('tombsofamascutexpertmode', 'Tombs of Amascut: Expert Mode'),
-        ('vardorvis', 'Vardorvis'),
-        ('vorkath', 'Vorkath'),
-        ('zulrah', 'Zulrah')
+        ('spindel', 'Spindel'),
+        ('thecorruptedgauntlet', 'The Corrupted Gauntlet'),
+        ('tob', 'Theatre of Blood'),
+        ('tombsofamascut', 'Tombs of Amascut'),
+        ('tztokjad', 'TzTok-Jad'),
+        ('vetion', "Vet'ion"),
+        ('zalcano', 'Zalcano')
     ],
     [
         ('alchemicalhydra', 'Alchemical Hydra'),
@@ -281,13 +282,14 @@ BOSS_COLUMNS = [
         ('kriltsutsaroth', "K'ril Tsutsaroth"),
         ('nightmare', 'Nightmare'),
         ('phantommuspah', 'Phantom Muspah'),
-        ('skotizo', 'Skotizo'),
-        ('thegauntlet', 'The Gauntlet'),
-        ('thewhisperer', 'The Whisperer'),
-        ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
-        ('tzkalzuk', 'TzKal-Zuk'),
-        ('venenatis', 'Venenatis'),
-        ('wintertodt', 'Wintertodt')
+        ('scurrius', 'Scurrius'),
+        ('tempoross', 'Tempoross'),
+        ('theleviathan', 'The Leviathan'),
+        ('tobhardmode', 'Theatre of Blood: Hard Mode'),
+        ('tombsofamascutexpertmode', 'Tombs of Amascut: Expert Mode'),
+        ('vardorvis', 'Vardorvis'),
+        ('vorkath', 'Vorkath'),
+        ('zulrah', 'Zulrah')
     ],
     [
         ('artio', 'Artio'),
@@ -302,13 +304,13 @@ BOSS_COLUMNS = [
         ('mimic', 'Mimic'),
         ('phosanisnightmare', "Phosani's Nightmare"),
         ('sarachnis', 'Sarachnis'),
-        ('spindel', 'Spindel'),
-        ('thecorruptedgauntlet', 'The Corrupted Gauntlet'),
-        ('tob', 'Theatre of Blood'),
-        ('tombsofamascut', 'Tombs of Amascut'),
-        ('tztokjad', 'TzTok-Jad'),
-        ('vetion', "Vet'ion"),
-        ('zalcano', 'Zalcano')
+        ('skotizo', 'Skotizo'),
+        ('thegauntlet', 'The Gauntlet'),
+        ('thewhisperer', 'The Whisperer'),
+        ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
+        ('tzkalzuk', 'TzKal-Zuk'),
+        ('venenatis', 'Venenatis'),
+        ('wintertodt', 'Wintertodt')
     ]
 ]
 
