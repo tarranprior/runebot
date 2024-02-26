@@ -100,7 +100,6 @@ class Quests(commands.Cog, name='quests'):
 
         try:
             info['Quest series']
-            info['Official difficulty']
         except KeyError:
             raise exceptions.NoQuestData
 
