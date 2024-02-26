@@ -11,6 +11,8 @@
 ## Introduction
 Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python, SQLite and Beautiful Soup 4.
 
+[Click here]() to invite Runebot to your server.
+
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
 - Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
@@ -71,13 +73,15 @@ Preferably, you should use Poetry to run this bot for local development:
    BOT_TOKEN = 'YOUR_BOT_TOKEN'
    BOT_OWNER = 'YOUR_USER_ID'
    ```
-2. *Optional*: Update the activity (bot status) and/or prefix in `config.json`.
+2. *Optional*: Update the activity in `config.json`.
 
    ```json
    {
-       "activity": "RuneBot",
+       "activity": "/wikipedia | RuneBot",
    }
    ```
+
+## Usage
 
 ## Support
 If you have any questions about this project, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>
