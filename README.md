@@ -11,13 +11,13 @@
 ## Introduction
 Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python, SQLite and Beautiful Soup 4.
 
-[Click here](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands) to invite Runebot to your server.
+You can try a live instance of this project by [clicking here](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands) and inviting Runebot to your server.
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
 - Get the most up to date information - directly from the official api and wiki.
 - Full support of slash commands and the latest developer tools.
-- Autocomplete suggestions for all appliable interactions.
+- Autocomplete suggestions for all applicable interactions.
 - Display the latest price analytics and trends with data visualisation.
 - Integration of UI/UX components (buttons, dropdowns etc.)
 
