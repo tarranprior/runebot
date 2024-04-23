@@ -6,7 +6,7 @@
 <a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.8-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
 <a href="https://github.com/tarranprior/runebot/blob/main/LICENSE">![License](https://img.shields.io/badge/license-CC%20BY%20NC%20SA%203.0-7289da?style=for-the-badge)</p></a>
 </p>
-<p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a> • <a href="#references">References</a></p>
+<p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a>
 
 ## Introduction
 Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python, SQLite and Beautiful Soup 4.
@@ -15,12 +15,11 @@ Runebot is a feature-rich Discord tool which scrapes, pulls and displays informa
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
-- Display names, descriptions, images, properties, price trends etc. beautifully with embeds.
-- Get the most up to date information - directly from the official api(s) and wiki.
-- Supports slash commands.
-- Full autocomplete support for all appliable slash interactions.
-- Data visualisation for displaying the latest price analytics and trends.
-- User interface components (buttons, dropdowns etc.) for usability.
+- Get the most up to date information - directly from the official api and wiki.
+- Full support of slash commands and the latest developer tools.
+- Autocomplete suggestions for all appliable interactions.
+- Display the latest price analytics and trends with data visualisation.
+- Integration of UI/UX components (buttons, dropdowns etc.)
 
 ## Prerequisites
 - Python 3.8 +
@@ -88,9 +87,3 @@ If you have any questions about this project, please submit an issue [here](http
 
 ## License
 This project is licensed under the CC BY-NC-SA 3.0 License - see the [LICENSE](https://github.com/tarranprior/runebot/blob/main/LICENSE) file for details.
-
-## References
-- Beautiful Soup Docs https://www.crummy.com/software/BeautifulSoup/bs4/doc/
-- Disnake Docs https://docs.disnake.dev/en/latest/index.html
-- Discord Developer Applications https://discord.com/developers/applications
-- Old School RuneScape Wiki https://oldschool.runescape.wiki/
