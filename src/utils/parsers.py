@@ -396,10 +396,16 @@ def parse_thumbnail(page_content) -> Optional[str]:
     '''
 
     try:
+
+    #    img_src = page_content.find(
+    #        'div', class_='floatleft').find(
+    #        'a', class_='image').find('img').attrs['src']
+    #   thumbnail_url = f'https://oldschool.runescape.wiki/{img_src}'
+
         img_src = page_content.find(
-            'div', class_='floatleft').find(
-            'a', class_='image').find('img').attrs['src']
+            'figure', class_='mw-halign-left').find('img').attrs['src']
         thumbnail_url = f'https://oldschool.runescape.wiki/{img_src}'
+
     except AttributeError:
         thumbnail_url = None
     return thumbnail_url
