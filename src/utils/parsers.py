@@ -250,9 +250,9 @@ def parse_minigame_icon(page_content, search_query: str) -> Optional[str]:
     '''
 
     for table in page_content.find_all('table', class_='wikitable'):
-        for icon in table.find_all('img'):
-            if search_query.lower() in slugify(icon['alt']).lower():
-                icon_url = icon['src']
+        for icon in table.find_all('a'):
+            if search_query.replace('_', ' ') in icon['title']:
+                icon_url = icon.find('img')['src']
                 return f'https://oldschool.runescape.wiki{icon_url}'
 
 
@@ -397,9 +397,9 @@ def parse_thumbnail(page_content) -> Optional[str]:
 
     try:
 
-    #    img_src = page_content.find(
-    #        'div', class_='floatleft').find(
-    #        'a', class_='image').find('img').attrs['src']
+    #   img_src = page_content.find(
+    #       'div', class_='floatleft').find(
+    #       'a', class_='image').find('img').attrs['src']
     #   thumbnail_url = f'https://oldschool.runescape.wiki/{img_src}'
 
         img_src = page_content.find(
