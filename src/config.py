@@ -120,6 +120,7 @@ HISCORES_ORDER = [
     'Soul Wars Zeal',
     'Rifts Closed',
     'Colosseum Glory',
+    'Collections Logged',
     'Abyssal Sire',
     'Alchemical Hydra',
     'Amoxliatl',
@@ -169,6 +170,7 @@ HISCORES_ORDER = [
     'The Corrupted Gauntlet',
     'The Hueycoatl',
     'The Leviathan',
+    'The Royal Titans',
     'The Whisperer',
     'Theatre of Blood',
     'Theatre of Blood: Hard Mode',
@@ -274,8 +276,8 @@ BOSS_COLUMNS = [
         ('tobhardmode', 'Theatre of Blood: Hard Mode'),
         ('tombsofamascutexpertmode', 'Tombs of Amascut: Expert Mode'),
         ('vardorvis', 'Vardorvis'),
-        ('vorkath', 'Vorkath'),
-        ('zulrah', 'Zulrah')
+        ('vetion', "Vet'ion"),
+        ('zalcano', 'Zalcano')
     ],
     [
         ('alchemicalhydra', 'Alchemical Hydra'),
@@ -294,11 +296,12 @@ BOSS_COLUMNS = [
         ('scurrius', 'Scurrius'),
         ('spindel', 'Spindel'),
         ('thecorruptedgauntlet', 'The Corrupted Gauntlet'),
-        ('thewhisperer', 'The Whisperer'),
+        ('theroyaltitans', 'The Royal Titans'),
         ('thermonuclearsmokedevil', 'Thermonuclear Smoke Devil'),
         ('tzkalzuk', 'TzKal-Zuk'),
         ('venenatis', 'Venenatis'),
-        ('wintertodt', 'Wintertodt')
+        ('vorkath', 'Vorkath'),
+        ('zulrah', 'Zulrah')
     ],
     [
         ('amoxliatl', 'Amoxliatl'),
@@ -317,11 +320,11 @@ BOSS_COLUMNS = [
         ('skotizo', 'Skotizo'),
         ('tempoross', 'Tempoross'),
         ('thehueycoatl', 'The Hueycoatl'),
+        ('thewhisperer', 'The Whisperer'),
         ('tob', 'Theatre of Blood'),
         ('tombsofamascut', 'Tombs of Amascut'),
         ('tztokjad', 'TzTok-Jad'),
-        ('vetion', "Vet'ion"),
-        ('zalcano', 'Zalcano') 
+        ('wintertodt', 'Wintertodt')
     ]
 ]
 
