@@ -88,7 +88,7 @@ class Minigames(commands.Cog, name='minigames'):
                 slugify(
                     random.choice(
                         [s for s in await get_suggestions(
-                            self, ['Minigames']
+                            self, ['Minigames', 'Activities']
                         ) if s not in (
                             'Minigames',
                             'Barrows',
@@ -210,7 +210,7 @@ class Minigames(commands.Cog, name='minigames'):
         '''
 
         autocomplete_suggestions = [s for s in await get_suggestions(
-            self, ['Minigames']) if s not in (
+            self, ['Minigames', 'Activities']) if s not in (
             'Minigames',
             'Barrows',
             'Creature Creation'
