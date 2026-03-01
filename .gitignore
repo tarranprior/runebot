@@ -128,5 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Poetry
-.lock
+# Secrets / credentials
+*.pem
+*.ppk
+*.key
+
+# Local maintenance tools
+tools/
+
+# Temporary files
+temp/
+*.tmp
