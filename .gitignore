@@ -133,6 +133,9 @@ dmypy.json
 *.ppk
 *.key
 
+# Assets
+assets/emotes/*
+
 # Local maintenance tools
 tools/
 
