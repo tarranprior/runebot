@@ -102,7 +102,7 @@ HISCORES_ORDER = [
     'Runecraft',
     'Hunter',
     'Construction',
-    '----',
+    'Sailing',
     '----',
     'Bounty Hunter - Hunter',
     'Bounty Hunter - Rogue',
@@ -212,7 +212,8 @@ STAT_ORDER = [
     'Farming',
     'Construction',
     'Hunter',
-    'Overall'
+    'Sailing',
+    'Overall',
 ]
 
 STAT_COLUMNS = [
@@ -225,7 +226,8 @@ STAT_COLUMNS = [
             'Prayer',
             'Magic',
             'Runecraft',
-            'Construction'
+            'Construction',
+            'Overall'
         ]
     ],
     [
@@ -249,7 +251,7 @@ STAT_COLUMNS = [
             'Firemaking',
             'Woodcutting',
             'Farming',
-            'Overall'
+            'Sailing'
         ]
     ]
 ]
