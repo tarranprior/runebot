@@ -22,7 +22,7 @@ Try the live version of Runebot by [clicking here](https://discord.com/oauth2/au
 - Integration of UI/UX components (buttons, dropdowns etc.)
 
 ## Prerequisites
-- Python 3.8 +
+- Python 3.10 +
 - [Poetry](https://python-poetry.org/docs) (or the [pip](https://pypi.org/project/pip/) package management tool.)
 
 ## Tools
@@ -32,6 +32,7 @@ Try the live version of Runebot by [clicking here](https://discord.com/oauth2/au
 - [Matplotlib - Data Visualisation](https://matplotlib.org/)
 - [aiosqlite](https://pypi.org/project/aiosqlite/)
 - [Humanfriendly](https://github.com/xolox/python-humanfriendly)
+- [Boto3](https://pypi.org/project/boto3/)
 
 ## Disclaimer
 The Old School RuneScape Wiki, also known as the OSRS Wiki and previously known as the 2007Scape Wiki, is the official wiki for the MMORPG game Old School RuneScape developed and published by Jagex Ltd.
