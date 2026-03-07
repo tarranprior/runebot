@@ -168,6 +168,8 @@ class Stats(commands.Cog, name='stats'):
             combat_level = await calculate_combat_level(combat_levels)
             combat_experience = await calculate_combat_exp(COMBAT_SKILLS, hiscore_data)
 
+            overall_level = f'{int(hiscore_data.get("Overall").split(",")[1]):,}'
+
             # Gets the overall rank of the player.
             overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
             if overall_rank == '-1':
@@ -189,7 +191,7 @@ class Stats(commands.Cog, name='stats'):
             embed.add_field(
                 name=f'{SKILL_EMOTES.get("overall")} Overall',
                 value=f'''
-                    **Rank**: {overall_rank}
+                    **Level**: {overall_level}
                     **XP**: {overall_exp}\n\u200b\n
                 '''
             )
