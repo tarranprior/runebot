@@ -11,9 +11,10 @@ Key Functions:
     - `price(...)` and `search_query_autocomplete(...)`:
             Functions for creating a slash command and autocomplete query,
             respectively.
-    - `search_price(...)`:
-            A function for searching the Old School RuneScape wiki for price
-            information on a specified query.
+    - `_resolve_item_info(...)`:
+            Resolves a search query to item information including item ID.
+    - `_build_price_embed(...)`:
+            Builds the price embed, view, and graph from an item ID.
     - `setup(bot: Bot)`:
             A function for defining the bot setup for the `price` command.
 
@@ -30,9 +31,10 @@ docstrings.
 
 import datetime
 import random
+from typing import Tuple, Union, List
 
 from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, Option, OptionType
+from disnake import ApplicationCommandInteraction, Option, OptionType, MessageInteraction
 
 from config import *
 from templates.bot import Bot
@@ -59,24 +61,17 @@ class Price(commands.Cog, name='price'):
         self.bot = bot
 
 
-    async def search_price(
-        self,
-        inter: ApplicationCommandInteraction,
-        search_query: str
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+    async def _resolve_item_info(self, search_query: str) -> Tuple[dict, str]:
         '''
-        General function which takes the given search query and returns
-        exchange and value prices.
+        Resolves a search query to item information including item ID and title.
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple[disnake.Embed, disnake.ui.View] -
-            An embed and view containing the price information.
+        :return: Tuple[dict, str] -
+            A tuple containing the item info dictionary and title.
         '''
 
         # Checks if the query is equal to the "I'm feeling lucky" special
@@ -92,10 +87,10 @@ class Price(commands.Cog, name='price'):
             )
         else:
             page_content = parse_page(
-            BASE_URL,
-            search_query,
-            HEADERS
-        )
+                BASE_URL,
+                search_query,
+                HEADERS
+            )
 
         info = parse_infobox(page_content)
         title = parse_title(page_content)
@@ -107,15 +102,100 @@ class Price(commands.Cog, name='price'):
         except KeyError:
             raise exceptions.NoPriceData
 
+        return info, title
+
+
+    def _build_price_view(
+        self,
+        item_id: str,
+        owner_id: int
+    ) -> disnake.ui.View:
+        '''
+        Builds the view with all buttons for the price command.
+
+        :param self: -
+            Represents this object.
+        :param item_id: (String) -
+            Represents the item ID.
+        :param owner_id: (Integer) -
+            Represents the user ID who initiated the command.
+
+        :return: (disnake.ui.View) -
+            A view containing all price-related buttons.
+        '''
+
+        view = disnake.ui.View(timeout=None)
+        
+        realtime_prices = create_link_button(
+            'Real-Time Prices',
+            f'https://prices.runescape.wiki/osrs/item/{item_id}'
+        )
+        view.add_item(realtime_prices)
+
+        ge_tracker = create_link_button(
+            'GE Tracker',
+            f'https://ge-tracker.com/item/{item_id}'
+        )
+        view.add_item(ge_tracker)
+
+        osrs_exchange = create_link_button(
+            'OSRS Exchange',
+            f'https://secure.runescape.com/m=itemdb_oldschool/Watermelon/viewitem?obj={item_id}'
+        )
+        view.add_item(osrs_exchange)
+
+        refresh_button = disnake.ui.Button(
+            label='⟳',
+            style=disnake.ButtonStyle.secondary,
+            custom_id=f'price:refresh:{item_id}:{owner_id}',
+            row=1
+        )
+        view.add_item(refresh_button)
+
+        return view
+
+
+    async def _build_price_embed(
+        self,
+        item_id: str,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        owner_id: int
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str]:
+        '''
+        Builds the price embed, view, and graph from an item ID.
+
+        :param self: -
+            Represents this object.
+        :param item_id: (String) -
+            Represents the item ID.
+        :param inter: (ApplicationCommandInteraction | MessageInteraction) -
+            Represents an interaction.
+        :param owner_id: (Integer) -
+            Represents the user ID who initiated the command.
+
+        :return: Tuple[disnake.Embed, disnake.ui.View, str] -
+            An embed, view, and filename containing the price information.
+        '''
+
+        # Fetch price data from APIs
         api_data = parse_price_data(
-            f"{PRICEAPI_URL}{info['Item ID']}",
+            f"{PRICEAPI_URL}{item_id}",
             HEADERS
         )
 
         graphapi_data = parse_price_data(
-            f"{GRAPHAPI_URL}{info['Item ID']}.json",
+            f"{GRAPHAPI_URL}{item_id}.json",
             HEADERS
         )
+
+        # Fetch item info to get title and other properties
+        page_content = parse_page(
+            BASE_URL,
+            slugify(api_data['item']['name']),
+            HEADERS
+        )
+        info = parse_infobox(page_content)
+        title = parse_title(page_content)
 
         filename = await generate_graph(graphapi_data)
 
@@ -130,48 +210,34 @@ class Price(commands.Cog, name='price'):
             )
         )
 
-        embed, view = EmbedFactory().create(
-            title=f"{title} (ID: {info['Item ID']})",
+        view = self._build_price_view(item_id, owner_id)
+        embed = disnake.Embed(
+            title=f"{title} (ID: {item_id})",
             description=api_data['item']['description'],
-            thumbnail_url=thumbnail_url,
-            colour=colour,
-            button_label='Real-Time Prices',
-            button_url=f'https://prices.runescape.wiki/osrs/item/{info["Item ID"]}'
+            colour=colour
         )
-
-        # Creates a button which redirects to the corresponding GE Tracker
-        # (https://ge-tracker.com) page.
-        ge_tracker = create_link_button(
-            'GE Tracker', f'https://ge-tracker.com/item/{info["Item ID"]}')
-        view.add_item(ge_tracker)
-        # Creates a button which redirects to the corresponding OSRS Exchange
-        # page.
-        osrs_exchange = create_link_button(
-            'OSRS Exchange',
-            f'https://secure.runescape.com/m=itemdb_oldschool/Watermelon/viewitem?obj={info["Item ID"]}'
-        )
-        view.add_item(osrs_exchange)
+        embed.set_thumbnail(url=thumbnail_url)
 
         price_properties = ['Value', 'Exchange', 'Buy limit']
         for prop in price_properties:
             embed.add_field(name=prop, value=info.get(prop), inline=True)
 
         try:
-
             # Calculating the profit margin.
             price_data = parse_price_data(
-                f'{WIKIAPI_URL}{info["Item ID"]}',
+                f'{WIKIAPI_URL}{item_id}',
                 HEADERS
             )
-            high_price = price_data['data'][info['Item ID']]['high']
-            low_price = price_data['data'][info['Item ID']]['low']
+            high_price = price_data['data'][item_id]['high']
+            low_price = price_data['data'][item_id]['low']
             # Insert a + or - depending on positive or negative profit.
             def operator(i): return f'+{int(i.replace(",", ""))}' if int(i.replace(',', '')) >= 0 else '' + str(i)
-            profit_margin = operator(f'{low_price +- high_price:,}')
+            profit_margin = operator(f'{low_price - high_price:,}')
             try:
                 # Represents buy limit * profit margin.
                 potential_profit = operator(
-                    f'{int(info.get("Buy limit").replace(",", "")) * (int(low_price) +- int(high_price)):,}')
+                    f'{int(info.get("Buy limit").replace(",", "")) * (int(low_price) - int(high_price)):,}'
+                )
             except ValueError:
                 # Sets the potential profit to profit margin if buy limit is
                 # currently unknown.
@@ -181,10 +247,10 @@ class Price(commands.Cog, name='price'):
 
             # Gets the last trade date/time.
             high_time = datetime.datetime.fromtimestamp(
-                price_data['data'][info['Item ID']]['highTime']
+                price_data['data'][item_id]['highTime']
             )
             low_time = datetime.datetime.fromtimestamp(
-                price_data['data'][info['Item ID']]['lowTime']
+                price_data['data'][item_id]['lowTime']
             )
             present_time = datetime.datetime.now().replace(microsecond=0)
             high_date_diff = convert_date_to_duration(present_time, high_time)
@@ -230,9 +296,86 @@ class Price(commands.Cog, name='price'):
             inline=True
         )
         embed.set_footer(
-            text=f'Runebot {VER} • Exchange data from the Grand Exchange. For more analytics, use the buttons below.'
+            text=(
+                f'Exchange data from the official Grand Exchange API\n'
+                f'Runebot {VER}'
+            )
         )
+
+        embed.timestamp = inter.created_at
         return embed, view, filename
+
+
+    @commands.Cog.listener('on_button_click')
+    async def on_button_click(
+        self,
+        inter: MessageInteraction
+    ) -> None:
+        '''
+        Cog listener which handles button clicks for /price refresh.
+
+        :param self: -
+            Represents this object.
+        :param inter: (disnake.MessageInteraction) -
+            Represents a message component interaction triggered by a button.
+
+        :return: (None)
+        '''
+
+        custom_id = inter.component.custom_id
+
+        if not custom_id or not custom_id.startswith('price:'):
+            return
+
+        payload = custom_id.removeprefix('price:')
+        parts = payload.split(':')
+
+        if len(parts) != 3:
+            return
+
+        action, item_id, owner_id = parts
+
+        if action != 'refresh':
+            return
+        
+        if str(inter.author.id) != owner_id:
+            await inter.response.send_message(
+                'Only the original author can use these buttons.',
+                ephemeral=True
+            )
+            return
+
+        loading_view = build_loading_button_view(inter)
+        await inter.response.edit_message(view=loading_view)
+
+        try:
+            embed, view, filename = await self._build_price_embed(
+                item_id,
+                inter,
+                int(owner_id)
+            )
+
+            file = disnake.File(f'assets/{filename}', filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+
+            await inter.edit_original_response(
+                embed=embed,
+                view=view,
+                attachments=[],
+                file=file
+            )
+
+            file.close()
+            os.remove(f'assets/{filename}')
+
+        except Exception as exc:
+            view = self._build_price_view(item_id, int(owner_id))
+            await inter.edit_original_response(view=view)
+            await inter.followup.send(
+                "An error occurred while refreshing the price data.",
+                ephemeral=True
+            )
+            raise exc
 
 
     @commands.slash_command(
@@ -254,7 +397,7 @@ class Price(commands.Cog, name='price'):
         search_query: str
     ) -> None:
         '''
-        Creates a slash command for the `search_price` function.
+        Creates a slash command for the price lookup function.
 
         :param self: -
             Represents this object.
@@ -267,7 +410,16 @@ class Price(commands.Cog, name='price'):
         '''
 
         await inter.response.defer()
-        embed, view, filename = await self.search_price(inter, search_query)
+
+        info, title = await self._resolve_item_info(search_query)
+        item_id = info['Item ID']
+
+        embed, view, filename = await self._build_price_embed(
+            item_id,
+            inter,
+            inter.author.id
+        )
+
         file = disnake.File(f'assets/{filename}', filename=filename)
         embed.set_image(url=f'attachment://{filename}')
         await inter.followup.send(embed=embed, view=view, file=file)

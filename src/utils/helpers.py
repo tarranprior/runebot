@@ -15,6 +15,8 @@ Functions:
             Reformats (normalises) price integers into RuneScape currency.
     - `slugify()`:
             Replaces spaces with underscores in a search query for parsing purposes (URL formatting).
+        - `build_loading_button_view()`:
+            Builds a temporary view from the current message components and disables only the clicked button.
 
 Each function has an associated docstring, providing details
 about its functionality, parameters, and return values.
@@ -163,3 +165,45 @@ def slugify(search_query: str) -> str:
 
     search_query = search_query.replace(' ', '_')
     return search_query
+
+
+def build_loading_button_view(inter: disnake.MessageInteraction) -> disnake.ui.View:
+    '''
+    Builds a temporary view from message components and disables only
+    the clicked button.
+
+    :param inter: (disnake.MessageInteraction) -
+        Represents a message component interaction triggered by a button.
+
+    :return: (disnake.ui.View) -
+        A temporary view with only the clicked button disabled.
+    '''
+
+    view = disnake.ui.View(timeout=None)
+
+    clicked_custom_id = getattr(inter.component, 'custom_id', None)
+    clicked_url = getattr(inter.component, 'url', None)
+
+    for row_index, row in enumerate(inter.message.components):
+        for component in row.children:
+            if component.type != disnake.ComponentType.button:
+                continue
+
+            is_clicked = (
+                (clicked_custom_id and component.custom_id == clicked_custom_id)
+                or
+                (clicked_url and component.url == clicked_url)
+            )
+
+            button = disnake.ui.Button(
+                label=component.label,
+                style=component.style,
+                custom_id=component.custom_id,
+                url=component.url,
+                emoji=component.emoji,
+                disabled=component.disabled or is_clicked,
+                row=row_index
+            )
+            view.add_item(button)
+
+    return view

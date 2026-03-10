@@ -55,12 +55,90 @@ class Stats(commands.Cog, name='stats'):
         self.bot = bot
 
 
-    async def search_hiscores(
+    def _build_stats_view(
         self,
-        inter: ApplicationCommandInteraction,
         hiscore_category: str,
         account_type: str,
-        username: str = None
+        username: str,
+        owner_id: int
+    ) -> View:
+        '''
+        Builds the view with navigation and refresh buttons for /stats.
+
+        :param self: -
+            Represents this object.
+        :param hiscore_category: (String) -
+            Represents the active Hiscore category.
+        :param account_type: (String) -
+            Represents an account type (Ex: Ironman, 1 Defence etc.)
+        :param username: (String) -
+            Represents a player's username.
+        :param owner_id: (Integer) -
+            Represents the user ID who initiated the command.
+
+        :return: (View) -
+            A view containing stats navigation and refresh buttons.
+        '''
+
+        view = View(timeout=None)
+
+        categories = {
+            'skills': [
+                ('Boss Kills', 'boss_kills'),
+                ('Bounty Hunter', 'bounty_hunter'),
+                ('Clue Scrolls', 'clue_scrolls')
+            ],
+            'boss_kills': [
+                ('Skills', 'skills'),
+                ('Bounty Hunter', 'bounty_hunter'),
+                ('Clue Scrolls', 'clue_scrolls')
+            ],
+            'bounty_hunter': [
+                ('Skills', 'skills'),
+                ('Boss Kills', 'boss_kills'),
+                ('Clue Scrolls', 'clue_scrolls')
+            ],
+            'clue_scrolls': [
+                ('Skills', 'skills'),
+                ('Boss Kills', 'boss_kills'),
+                ('Bounty Hunter', 'bounty_hunter')
+            ]
+        }
+
+        for label, category in categories.get(hiscore_category, []):
+            view.add_item(
+                disnake.ui.Button(
+                    label=label,
+                    style=disnake.ButtonStyle.grey,
+                    custom_id=(
+                        f'stats:navigate,{category},{account_type},'
+                        f'{username},{owner_id}'
+                    )
+                )
+            )
+
+        view.add_item(
+            disnake.ui.Button(
+                label='⟳',
+                style=disnake.ButtonStyle.secondary,
+                custom_id=(
+                    f'stats:refresh,{hiscore_category},{account_type},'
+                    f'{username},{owner_id}'
+                ),
+                row=1
+            )
+        )
+
+        return view
+
+
+    async def search_hiscores(
+        self,
+        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        hiscore_category: str,
+        account_type: str,
+        username: str = None,
+        owner_id: int = None
     ) -> Tuple[disnake.Embed, disnake.ui.View]:
         '''
         Function which takes a username and returns hiscore
@@ -68,17 +146,19 @@ class Stats(commands.Cog, name='stats'):
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
+        :param inter: (ApplicationCommandInteraction | disnake.MessageInteraction) -
+            Represents an interaction with an application command or component.
         :param hiscore_category: (String) -
             Represents the Hiscore category (Ex: Bosses, Skills etc.)
         :param account_type: (String) -
             Represents an account type (Ex: Ironman, 1 Defence etc.)
         :param username: (String[Optional]) -
             Represents a player's username.
+        :param owner_id: (Integer[Optional]) -
+            Represents the user ID who initiated the command.
 
-        :return: Tuple[disnake.Embed, list] -
-            An embed and list containing the hiscore information.
+        :return: Tuple[disnake.Embed, disnake.ui.View] -
+            An embed and view containing the hiscore information.
         '''
 
         if not username: # If a username wasn't provided...
@@ -103,6 +183,9 @@ class Stats(commands.Cog, name='stats'):
 
         if not account_type:
             account_type = 'Normal'
+
+        if owner_id == None:
+            owner_id = inter.author.id
 
         if account_type == 'Normal':
             try:
@@ -204,26 +287,12 @@ class Stats(commands.Cog, name='stats'):
                 '''
             )
 
-            view = View()
-            components = [
-                disnake.ui.Button(
-                    label='Boss Kills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'boss_kills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Bounty Hunter',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'bounty_hunter,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Clue Scrolls',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'clue_scrolls,{account_type},{username}'
-                ),
-            ]
-            for component in components:
-                view.add_item(component)
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                username,
+                owner_id
+            )
 
         elif hiscore_category == 'boss_kills':
 
@@ -236,26 +305,12 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = View()
-            components = [
-                disnake.ui.Button(
-                    label='Skills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'skills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Bounty Hunter',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'bounty_hunter,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Clue Scrolls',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'clue_scrolls,{account_type},{username}'
-                ),
-            ]
-            for component in components:
-                view.add_item(component)
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                username,
+                owner_id
+            )
 
         elif hiscore_category == 'bounty_hunter':
 
@@ -268,26 +323,12 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = View()
-            components = [
-                disnake.ui.Button(
-                    label='Skills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'skills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Boss Kills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'boss_kills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Clue Scrolls',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'clue_scrolls,{account_type},{username}'
-                )
-            ]
-            for component in components:
-                view.add_item(component)
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                username,
+                owner_id
+            )
 
         elif hiscore_category == 'clue_scrolls':
 
@@ -300,26 +341,12 @@ class Stats(commands.Cog, name='stats'):
                 ]) + '\n\u200b\n'
                 embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            view = View()
-            components = [
-                disnake.ui.Button(
-                    label='Skills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'skills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Boss Kills',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'boss_kills,{account_type},{username}'
-                ),
-                disnake.ui.Button(
-                    label='Bounty Hunter',
-                    style=disnake.ButtonStyle.grey,
-                    custom_id=f'bounty_hunter,{account_type},{username}'
-                ),
-                ]
-            for component in components:
-                view.add_item(component)
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                username,
+                owner_id
+            )
 
             cluescroll_rank, cluescroll_total = [
                 '-' if (value := hiscore_data.get(
@@ -339,7 +366,7 @@ class Stats(commands.Cog, name='stats'):
 
         embed.set_footer(
             text=(
-                'Experience data from the official Hiscores API.\n'
+                'Experience data from the official Hiscores API\n'
                 f'Runebot {VER}'
             )
         )
@@ -392,7 +419,8 @@ class Stats(commands.Cog, name='stats'):
             inter,
             hiscore_category,
             account_type,
-            username
+            username,
+            inter.author.id
         )
         await inter.response.send_message(
             embed=embed,
@@ -406,30 +434,62 @@ class Stats(commands.Cog, name='stats'):
         inter: disnake.MessageInteraction
     ) -> None:
         '''
-        Cog listener which listens for button events.
+        Cog listener which handles button clicks for /stats navigation and refresh.
 
         :param self: -
             Represents this object.
-        :param inter: -
-            Represents an interaction with an application command.
-        
+        :param inter: (disnake.MessageInteraction) -
+            Represents a message component interaction triggered by a stats button.
+
         :return: (None)
         '''
+        custom_id = inter.component.custom_id
 
-        params = inter.component.custom_id.split(',')
-        button_id, account_type, username = params
+        if not custom_id or not custom_id.startswith('stats:'):
+            return
 
-        embed, view = await Stats.search_hiscores(
-            self,
-            inter,
-            button_id,
-            account_type,
-            username
-        )
-        await inter.response.edit_message(
-            embed=embed,
-            view=view
-        )
+        payload = custom_id.removeprefix('stats:')
+        params = payload.split(',')
+
+        if len(params) != 5:
+            return
+
+        action, hiscore_category, account_type, username, owner_id = params
+
+        if action not in ['navigate', 'refresh']:
+            return
+
+        if str(inter.author.id) != owner_id:
+            await inter.response.send_message(
+                'Only the original author can use these buttons.',
+                ephemeral=True
+            )
+            return
+
+        loading_view = build_loading_button_view(inter)
+        await inter.response.edit_message(view=loading_view)
+
+        try:
+            embed, view = await self.search_hiscores(
+                inter,
+                hiscore_category,
+                account_type,
+                username,
+                int(owner_id)
+            )
+            await inter.edit_original_response(
+                embed=embed,
+                view=view
+            )
+        except Exception as exc:
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                username,
+                int(owner_id)
+            )
+            await inter.edit_original_response(view=view)
+            raise exc
 
 
     @stats.autocomplete('account_type')
