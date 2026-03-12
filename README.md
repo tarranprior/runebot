@@ -72,6 +72,11 @@ Preferably, you should use Poetry to run this bot for local development:
    ```s
    BOT_TOKEN = 'YOUR_BOT_TOKEN'
    BOT_OWNER = 'YOUR_USER_ID'
+
+   # Optional
+   RUNEBOT_INTERNAL_API_TOKEN = 'SET_A_LONG_RANDOM_SECRET'
+   RUNEBOT_INTERNAL_API_HOST = '127.0.0.1'
+   RUNEBOT_INTERNAL_API_PORT = '8080'
    ```
 2. *Optional*: Update the activity in `config.json`.
 

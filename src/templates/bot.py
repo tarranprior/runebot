@@ -41,13 +41,15 @@ import platform
 import os
 import aiosqlite
 import disnake
+from datetime import datetime, timezone
 
 from disnake.ext import commands, tasks
 from disnake import ApplicationCommandInteraction
 from loguru import logger
 
 from config import *
-from utils import EmbedFactory, configuration, add_guild, remove_guild
+from utils import DISPLAY_VERSION, EmbedFactory, configuration, add_guild, remove_guild
+from utils.runtime_stats import get_community_stats
 
 
 class Bot(commands.InteractionBot):
@@ -70,6 +72,7 @@ class Bot(commands.InteractionBot):
         super().__init__(*args, **kwargs)
         self.bot = Bot
         self.config = config or configuration()
+        self.runtime_started_at_utc = None
 
 
     def load_extensions(self, exts: list) -> None:
@@ -110,7 +113,7 @@ class Bot(commands.InteractionBot):
         :return: (None)
         '''
 
-        logger.success(f'Runebot ({VER}) is connected to the gateway.')
+        logger.success(f'Runebot ({DISPLAY_VERSION}) is connected to the gateway.')
         logger.info(f'Logged in as {self.user.name} ({self.user.id}.)')
         logger.info(f'API Version: {disnake.__version__}')
         logger.info(
@@ -160,16 +163,14 @@ class Bot(commands.InteractionBot):
         '''
 
         await self.wait_until_ready()
-        total_users = 0
-        total_channels = 0
-        for guild in self.guilds:
-            total_users += guild.member_count
-            accessible_channels = [channel for channel in guild.channels]
-            total_channels += len(accessible_channels)
+        if self.runtime_started_at_utc is None:
+            self.runtime_started_at_utc = datetime.now(timezone.utc)
+
+        stats = get_community_stats(self, self.runtime_started_at_utc)
 
         logger.success('Runebot is ready.')
-        logger.info(f'Connected to {total_users} users in {len(self.guilds)} guild(s.)')
-        logger.info(f'Speaking in {total_channels} total channels.')
+        logger.info(f'Connected to {stats.users} users in {stats.servers} guild(s.)')
+        logger.info(f'Speaking in {stats.channels} total channels.')
         logger.info('For more information on usage, see the README.\n\n')
 
 
@@ -234,7 +235,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -250,7 +251,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -266,7 +267,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.response.send_message(
                     embed=embed,
                     view=view,
@@ -283,7 +284,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -299,7 +300,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -315,7 +316,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -331,7 +332,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -347,7 +348,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view,
@@ -364,7 +365,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.followup.send(
                     embed=embed,
                     view=view
@@ -380,7 +381,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.response.send_message(
                     embed=embed,
                     view=view,
@@ -397,7 +398,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.response.send_message(
                     embed=embed,
                     view=view,
@@ -414,7 +415,7 @@ class Bot(commands.InteractionBot):
                     button_url=SUPPORT_SERVER
                 )
                 embed.timestamp = inter.created_at
-                embed.set_footer(text=f'Runebot {VER}')
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
                 return await inter.response.send_message(
                     embed=embed,
                     view=view,
