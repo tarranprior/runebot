@@ -122,11 +122,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 thumbnail_url=thumbnail_url,
                 button_url=button_url
             )
-            embed.set_footer(text=f'Runebot {VER}')
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
 
             if len(embed.description) < 84:
                 embed.set_footer(
-                    text=(f'To view more information about this page, click the button below.\nRunebot {VER}')
+                    text=(f'To view more information about this page, click the button below.\nRunebot {DISPLAY_VERSION}')
                 )
             return embed, view
 

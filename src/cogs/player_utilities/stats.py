@@ -367,7 +367,7 @@ class Stats(commands.Cog, name='stats'):
         embed.set_footer(
             text=(
                 'Experience data from the official Hiscores API\n'
-                f'Runebot {VER}'
+                f'Runebot {DISPLAY_VERSION}'
             )
         )
         embed.timestamp = inter.created_at

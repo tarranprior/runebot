@@ -153,7 +153,7 @@ class Minigames(commands.Cog, name='minigames'):
             embed.add_field(name=prop, value=info.get(prop), inline=True)
         embed.add_field(name='Skills', value=info.get('Skills'), inline=False)
         embed.add_field(name='Requirements', value=info.get('Requirements'), inline=False)
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
         return embed, view
 
 

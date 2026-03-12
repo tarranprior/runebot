@@ -168,7 +168,7 @@ class Alchemy(commands.Cog, name='alchemy'):
 
         except KeyError:
             embed.add_field(name='Margin', value='None', inline=True)
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
         return embed
 
 

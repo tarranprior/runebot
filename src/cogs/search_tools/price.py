@@ -298,7 +298,7 @@ class Price(commands.Cog, name='price'):
         embed.set_footer(
             text=(
                 f'Exchange data from the official Grand Exchange API\n'
-                f'Runebot {VER}'
+                f'Runebot {DISPLAY_VERSION}'
             )
         )
 

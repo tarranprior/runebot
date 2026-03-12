@@ -133,7 +133,7 @@ class Quests(commands.Cog, name='quests'):
             name='Rewards',
             value=f'Click [here]({BASE_URL}{slugify(title)}#Rewards) for a full list of rewards.',
             inline=True)
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
         return embed, view
 
 

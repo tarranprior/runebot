@@ -94,7 +94,7 @@ class Setrsn(commands.Cog, name='setrsn'):
             button_url=f'{HISCORE_URLS.get(account_type)}{slugify(username)}'
         )
         embed.timestamp = inter.created_at
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
 
         return embed, view
 
