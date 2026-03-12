@@ -15,3 +15,4 @@ from .database import *
 from .embeds import *
 from .helpers import *
 from .parsers import *
+from version import DISPLAY_VERSION, VERSION, get_display_version, get_version

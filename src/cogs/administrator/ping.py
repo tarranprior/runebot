@@ -126,7 +126,7 @@ class Ping(commands.Cog, name='ping'):
         )
 
         embed.timestamp = inter.created_at
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
         await inter.edit_original_message(embed=embed, view=view)
 
 

@@ -79,7 +79,7 @@ class Unsetrsn(commands.Cog, name='unsetrsn'):
             'You can set another username at any time by using `/setrsn`.'
         )
         embed.timestamp = inter.created_at
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
 
         return embed
 

@@ -10,10 +10,6 @@ which should be stored in the root of the project directory.
 
 from utils.helpers import configuration
 
-
-# CURRENT VERSION
-VER = 'v1.0.5'
-
 # GENERAL
 MAX_CHARS = 12 # Represents maximum character limit for usernames.
 

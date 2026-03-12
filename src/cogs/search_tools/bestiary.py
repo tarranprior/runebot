@@ -164,7 +164,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             name='Monster ID(s)',
             value=f'```\n{", ".join(info.get("Monster ID").split(","))}```',
             inline=False)
-        embed.set_footer(text=f'Runebot {VER}')
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
         return embed, view
 
 

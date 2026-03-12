@@ -1,13 +1,16 @@
-# RuneBot v1.0.4
+# RuneBot
 
 '''
-This module contains the version number for the RuneBot application.
+This module exposes the version number for the RuneBot application.
 
-The `__version__` variable stores the version number of the application,
-which is currently set to `1.0.4`. It'll be frequently updated to reflect
-changes to the application.
+The `__version__` variable is derived from the project root `VERSION`
+file, which is the canonical source of truth for the application
+version.
 
 Note: This module doesn't define any classes or functions of its own.
 '''
 
-__version__ = '1.0.5'
+from version import VERSION
+
+
+__version__ = VERSION
