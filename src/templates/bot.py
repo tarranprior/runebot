@@ -57,7 +57,7 @@ class Bot(commands.InteractionBot):
     A class which represents a Discord bot instance.
     '''
 
-    def __init__(self, config=None, *args, **kwargs) -> None:
+    def __init__(self, config=None, db_path=None, *args, **kwargs) -> None:
         '''
         Initialises a new instance of the Bot class.
 
@@ -65,6 +65,8 @@ class Bot(commands.InteractionBot):
             Represents this object.
         :param config: (Optional[Dictionary]) -
             A dictionary containing configuration details.
+        :param db_path: (String) -
+            SQLite database path.
 
         :return: (None)
         '''
@@ -72,6 +74,7 @@ class Bot(commands.InteractionBot):
         super().__init__(*args, **kwargs)
         self.bot = Bot
         self.config = config or configuration()
+        self.db_path = db_path
         self.runtime_started_at_utc = None
 
 
@@ -121,7 +124,7 @@ class Bot(commands.InteractionBot):
             f'{platform.release()} {os.name}\n'
         )
 
-        setattr(self.bot, 'runebotdb', await aiosqlite.connect('runebot.db'))
+        setattr(self.bot, 'runebotdb', await aiosqlite.connect(self.db_path))
         async with self.bot.runebotdb.cursor() as cursor:
             await cursor.execute(
                 '''
