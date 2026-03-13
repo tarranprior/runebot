@@ -9,9 +9,7 @@
 <p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a>
 
 ## Introduction
-Runebot is the modern RuneScape companion for your Discord server.
-
-Invite the live version of [Runebot](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands).
+Runebot is the modern RuneScape companion for your Discord server. Invite the live version [here](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands).
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
