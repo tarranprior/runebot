@@ -9,9 +9,9 @@
 <p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a>
 
 ## Introduction
-Runebot is a feature-rich Discord tool which scrapes, pulls and displays information about Old School RuneScape. Built with Python, SQLite and Beautiful Soup 4.
+Runebot is the modern RuneScape companion for your Discord server.
 
-Try the live version of Runebot by [clicking here](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands) and inviting a live instance to your server.
+Invite the live version of [Runebot](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands).
 
 ## Key Features
 - Search for items and equipment, activities, bosses and more directly on discord.
@@ -63,7 +63,7 @@ Preferably, you should use Poetry to run this bot for local development:
 4. Run the bot:
 
     ```s
-    poetry run python src/main.py
+    poetry run python src/main.py --env development
     ```
 
 ## Configuration
@@ -73,7 +73,6 @@ Preferably, you should use Poetry to run this bot for local development:
    BOT_TOKEN = 'YOUR_BOT_TOKEN'
    BOT_OWNER = 'YOUR_USER_ID'
 
-   # Optional
    RUNEBOT_INTERNAL_API_TOKEN = 'SET_A_LONG_RANDOM_SECRET'
    RUNEBOT_INTERNAL_API_HOST = '127.0.0.1'
    RUNEBOT_INTERNAL_API_PORT = '8080'
