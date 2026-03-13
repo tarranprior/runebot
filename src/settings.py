@@ -41,7 +41,7 @@ Usage examples:
 
 from dataclasses import dataclass
 from os import environ as env
-
+import json
 import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
@@ -114,10 +114,12 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
         bot_token_secret_name = env.get('RUNEBOT_AWS_BOT_TOKEN_SECRET_NAME', 'bot_token')
         db_path_secret_name = env.get('RUNEBOT_AWS_DB_PATH_SECRET_NAME', 'db_path')
 
-        bot_token = _fetch_aws_secret(bot_token_secret_name)
+        bot_token_secret = _fetch_aws_secret(bot_token_secret_name)
+        bot_token_data = json.loads(bot_token_secret)
+        bot_token = bot_token_data.get('BOT_TOKEN')
+
         db_path = _fetch_aws_secret(db_path_secret_name)
 
-        # Internal API remains optional for now.
         internal_api_token = ''
         internal_api_host = '127.0.0.1'
         internal_api_port = 8080
