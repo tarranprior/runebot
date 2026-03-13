@@ -1,34 +1,37 @@
 #! /usr/bin/env python3
 
 '''
-Runtime settings and secrets loader for Runebot.
+This module contains the runtime settings and secrets loader for Runebot.
 
 Runtime mode is selected by CLI and passed into load_settings():
     - "development" (default): values come from environment variables / .env.
     - "production": values come from AWS Secrets Manager secrets.
 
 Environment variables consumed by this module:
-    RUNEBOT_AWS_REGION                  - AWS region for Secrets Manager
-                                          (default: "eu-north-1")
-    RUNEBOT_AWS_BOT_TOKEN_SECRET_NAME   - AWS secret name for bot token
-                                          (default: "bot_token")
-    RUNEBOT_AWS_DB_PATH_SECRET_NAME     - AWS secret name for database path
-                                          (default: "db_path")
+    RUNEBOT_AWS_REGION                     - AWS region for Secrets Manager
+                                            (default: "eu-north-1")
+    RUNEBOT_AWS_BOT_TOKEN_SECRET_NAME      - AWS secret name for bot token
+                                            (default: "bot_token")
+    RUNEBOT_AWS_DB_PATH_SECRET_NAME        - AWS secret name for database path
+                                            (default: "db_path")
+    RUNEBOT_AWS_INTERNAL_API_SECRET_NAME   - AWS secret name for internal API config
+                                            (default: "internal_api")
 
     Development only (env / .env):
-    BOT_TOKEN                   - Discord bot token
-    RUNEBOT_INTERNAL_API_TOKEN  - Bearer token for the internal stats API
-                                  (default: "")
-    RUNEBOT_INTERNAL_API_HOST   - Host for the internal stats API
-                                  (default: "127.0.0.1")
-    RUNEBOT_INTERNAL_API_PORT   - Port for the internal stats API
-                                  (default: 8080)
-    DB_PATH                     - SQLite database path
-                                  (default: "runebot.db")
+    BOT_TOKEN                              - Discord bot token
+    RUNEBOT_INTERNAL_API_TOKEN             - Bearer token for the internal stats API
+                                            (default: "")
+    RUNEBOT_INTERNAL_API_HOST              - Host for the internal stats API
+                                            (default: "127.0.0.1")
+    RUNEBOT_INTERNAL_API_PORT              - Port for the internal stats API
+                                            (default: 8080)
+    DB_PATH                                - SQLite database path
+                                            (default: "runebot.db")
 
 Production only (AWS Secrets Manager):
-    bot_token secret            - SecretString is the Discord bot token
-    db_path secret              - SecretString is the SQLite database path
+    bot_token secret - SecretString is JSON containing BOT_TOKEN
+    internal_api secret - SecretString is JSON containing internal API config
+    db_path secret - SecretString is the SQLite database path
 
 Exported names:
     RuntimeSettings
@@ -113,6 +116,7 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
     else:
         bot_token_secret_name = env.get('RUNEBOT_AWS_BOT_TOKEN_SECRET_NAME', 'bot_token')
         db_path_secret_name = env.get('RUNEBOT_AWS_DB_PATH_SECRET_NAME', 'db_path')
+        internal_api_secret_name = env.get('RUNEBOT_AWS_INTERNAL_API_SECRET_NAME', 'internal_api')
 
         bot_token_secret = _fetch_aws_secret(bot_token_secret_name)
         bot_token_data = json.loads(bot_token_secret)
@@ -120,9 +124,14 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
 
         db_path = _fetch_aws_secret(db_path_secret_name)
 
-        internal_api_token = ''
-        internal_api_host = '127.0.0.1'
-        internal_api_port = 8080
+        internal_api_secret = _fetch_aws_secret(internal_api_secret_name)
+        internal_api_data = json.loads(internal_api_secret)
+
+        internal_api_token = internal_api_data.get('RUNEBOT_INTERNAL_API_TOKEN', '')
+        internal_api_host = internal_api_data.get('RUNEBOT_INTERNAL_API_HOST', '127.0.0.1')
+        internal_api_port = _coerce_port(
+            str(internal_api_data.get('RUNEBOT_INTERNAL_API_PORT', '8080'))
+        )
 
     if not bot_token:
         raise ValueError(
