@@ -4,25 +4,42 @@
 This module contains the main entry point for the bot.
 For more information about each cog and its usage, refer to the docstrings
 in the respective module.
+
+Usage:
+    poetry run python src/main.py --env development
+    poetry run python src/main.py --env production
 '''
 
-from os import environ as env
-from dotenv import load_dotenv
-from loguru import logger
-
+import argparse
 import disnake
 
+from settings import load_settings
 from templates.bot import Bot
 from utils.helpers import configuration
 from utils.internal_api import InternalStatsAPIServer
 
-load_dotenv()
 
-if __name__ == '__main__':
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--env',
+        default='development',
+        choices=('development', 'production'),
+        help='Runtime environment: development or production'
+    )
+    return parser.parse_args()
 
+
+def main() -> None:
+    args = parse_args()
+    settings = load_settings(args.env)
+
+    config = configuration()
     bot = Bot(
+        config=config,
+        db_path=settings.db_path,
         activity=disnake.Game(
-            name=f"{configuration()['configuration']['activity']}"
+            name=f"{config['configuration']['activity']}"
         )
     )
 
@@ -39,26 +56,16 @@ if __name__ == '__main__':
         'cogs.search_tools.wikipedia'
     ])
 
-    api_token = env.get('RUNEBOT_INTERNAL_API_TOKEN', '')
-    api_host = env.get('RUNEBOT_INTERNAL_API_HOST', '127.0.0.1')
-    api_port_raw = env.get('RUNEBOT_INTERNAL_API_PORT', '8080')
-
-    try:
-        api_port = int(api_port_raw)
-        if api_port < 1 or api_port > 65535:
-            raise ValueError
-    except ValueError:
-        logger.warning(
-            'Invalid RUNEBOT_INTERNAL_API_PORT value. Falling back to 8080.'
-        )
-        api_port = 8080
-
     internal_api = InternalStatsAPIServer(
         bot=bot,
-        token=api_token,
-        host=api_host,
-        port=api_port
+        token=settings.internal_api_token,
+        host=settings.internal_api_host,
+        port=settings.internal_api_port
     )
     internal_api.start()
 
-    bot.run(env['BOT_TOKEN'])
+    bot.run(settings.bot_token)
+
+
+if __name__ == '__main__':
+    main()
