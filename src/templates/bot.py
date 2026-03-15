@@ -54,7 +54,6 @@ from utils import (
     configuration,
     add_guild,
     remove_guild,
-    migrate_multi_account_schema
 )
 from utils.runtime_stats import get_community_stats
 
@@ -183,17 +182,6 @@ class Bot(commands.InteractionBot):
             )
 
         await self.bot.runebotdb.commit()
-        logger.info('Running multi-account schema check...')
-        migration_status = await migrate_multi_account_schema(self)
-        if migration_status.get('migration_required'):
-            logger.info(
-                'Multi-account migration applied '
-                f"(column_added={migration_status.get('column_added')}, "
-                f"accounts_backfilled={migration_status.get('accounts_backfilled')}, "
-                f"defaults_set={migration_status.get('defaults_set')})."
-            )
-        else:
-            logger.info('Multi-account schema already up to date.')
 
 
     async def on_ready(self) -> None:
