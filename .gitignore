@@ -142,3 +142,6 @@ tools/
 # Temporary files
 temp/
 *.tmp
+
+# Runebot development database
+runebot-dev.db
