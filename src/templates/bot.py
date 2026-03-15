@@ -48,7 +48,14 @@ from disnake import ApplicationCommandInteraction
 from loguru import logger
 
 from config import *
-from utils import DISPLAY_VERSION, EmbedFactory, configuration, add_guild, remove_guild
+from utils import (
+    DISPLAY_VERSION,
+    EmbedFactory,
+    configuration,
+    add_guild,
+    remove_guild,
+    migrate_multi_account_schema
+)
 from utils.runtime_stats import get_community_stats
 
 
@@ -126,12 +133,14 @@ class Bot(commands.InteractionBot):
 
         setattr(self.bot, 'runebotdb', await aiosqlite.connect(self.db_path))
         async with self.bot.runebotdb.cursor() as cursor:
+            await cursor.execute('PRAGMA foreign_keys = ON;')
+            await cursor.execute('PRAGMA journal_mode=WAL;')
             await cursor.execute(
                 '''
                 CREATE TABLE IF NOT EXISTS all_articles (
                     article_title TEXT NOT NULL,
                     article_category TEXT NOT NULL
-                )
+                );
                 '''
             )
             await cursor.execute(
@@ -140,18 +149,51 @@ class Bot(commands.InteractionBot):
                     guild_id INTEGER NOT NULL,
                     guild_owner_id INTEGER NOT NULL,
                     colour_mode BOOLEAN NOT NULL
-                )
+                );
                 '''
             )
             await cursor.execute(
                 '''
                 CREATE TABLE IF NOT EXISTS all_users (
                     user_id INTEGER NOT NULL,
-                    username STRING NOT NULL,
-                    account_type STRING NOT NULL
-                )
+                    username TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    default_account_id INTEGER NULL
+                );
                 '''
             )
+            await cursor.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS user_accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    last_used_at TEXT NOT NULL,
+                    UNIQUE(user_id, username, account_type)
+                );
+                '''
+            )
+            await cursor.execute(
+                '''
+                CREATE INDEX IF NOT EXISTS idx_user_accounts_user_id
+                ON user_accounts(user_id)
+                '''
+            )
+
+        await self.bot.runebotdb.commit()
+        logger.info('Running multi-account schema check...')
+        migration_status = await migrate_multi_account_schema(self)
+        if migration_status.get('migration_required'):
+            logger.info(
+                'Multi-account migration applied '
+                f"(column_added={migration_status.get('column_added')}, "
+                f"accounts_backfilled={migration_status.get('accounts_backfilled')}, "
+                f"defaults_set={migration_status.get('defaults_set')})."
+            )
+        else:
+            logger.info('Multi-account schema already up to date.')
 
 
     async def on_ready(self) -> None:

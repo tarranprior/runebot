@@ -34,8 +34,189 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
+from .helpers import utc_now_iso
+
+
+async def table_exists(self, table_name: str) -> bool:
+    '''
+    Database function which checks whether a table exists.
+
+    :param self: -
+        Represents this object.
+    :param table_name: (String) -
+        Represents a table name.
+
+    :return: (Boolean) -
+        True if the table exists, otherwise False.
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            SELECT 1
+            FROM sqlite_master
+            WHERE type = 'table' AND name = ?
+            LIMIT 1
+            ''',
+            (table_name,)
+        )
+        return await cursor.fetchone() is not None
+
+
+async def column_exists(self, table_name: str, column_name: str) -> bool:
+    '''
+    Database function which checks whether a column exists on a
+    table.
+
+    :param self: -
+        Represents this object.
+    :param table_name: (String) -
+        Represents a table name.
+    :param column_name: (String) -
+        Represents a column name.
+
+    :return: (Boolean) -
+        True if the column exists, otherwise False.
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(f'PRAGMA table_info({table_name})')
+        columns = await cursor.fetchall()
+        return any(column[1] == column_name for column in columns)
+
+
+async def migrate_multi_account_schema(self) -> dict:
+    '''
+    Database function which safely migrates the database to support
+    multi-account storage.
+
+    :param self: -
+        Represents this object.
+
+    :return: (Dictionary) -
+        Migration status summary.
+    '''
+
+    users_table_exists = await table_exists(self, 'all_users')
+    column_added = False
+    accounts_backfilled = 0
+    defaults_set = 0
+
+    try:
+        async with self.bot.runebotdb.cursor() as cursor:
+            if users_table_exists and not await column_exists(
+                self,
+                'all_users',
+                'default_account_id'
+            ):
+                await cursor.execute(
+                    '''
+                    ALTER TABLE all_users
+                    ADD COLUMN default_account_id INTEGER NULL
+                    '''
+                )
+                column_added = True
+
+            await cursor.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS user_accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    account_type TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    last_used_at TEXT NOT NULL,
+                    UNIQUE(user_id, username, account_type)
+                )
+                '''
+            )
+
+            await cursor.execute(
+                '''
+                CREATE INDEX IF NOT EXISTS idx_user_accounts_user_id
+                ON user_accounts(user_id)
+                '''
+            )
+
+            if users_table_exists:
+                await cursor.execute(
+                    '''
+                    SELECT DISTINCT au.user_id, au.username, au.account_type
+                    FROM all_users au
+                    LEFT JOIN user_accounts ua
+                        ON ua.user_id = au.user_id
+                        AND ua.username = au.username
+                        AND ua.account_type = au.account_type
+                    WHERE ua.id IS NULL
+                      AND au.username IS NOT NULL
+                      AND au.account_type IS NOT NULL
+                    '''
+                )
+                missing_accounts = await cursor.fetchall()
+
+                for user_id, username, account_type in missing_accounts:
+                    timestamp = utc_now_iso()
+                    await cursor.execute(
+                        '''
+                        INSERT INTO user_accounts (
+                            user_id,
+                            username,
+                            account_type,
+                            created_at,
+                            last_used_at
+                        )
+                        VALUES (?, ?, ?, ?, ?)
+                        ''',
+                        (user_id, username, account_type, timestamp, timestamp)
+                    )
+                    accounts_backfilled += 1
+
+                await cursor.execute(
+                    '''
+                    SELECT DISTINCT au.user_id, ua.id
+                    FROM all_users au
+                    JOIN user_accounts ua
+                        ON ua.user_id = au.user_id
+                        AND ua.username = au.username
+                        AND ua.account_type = au.account_type
+                    WHERE au.default_account_id IS NULL
+                      AND au.username IS NOT NULL
+                      AND au.account_type IS NOT NULL
+                    ''',
+                )
+                missing_defaults = await cursor.fetchall()
+
+                for user_id, account_id in missing_defaults:
+                    await cursor.execute(
+                        '''
+                        UPDATE all_users
+                        SET default_account_id = ?
+                        WHERE user_id = ? AND default_account_id IS NULL
+                        ''',
+                        (account_id, user_id)
+                    )
+                    if cursor.rowcount and cursor.rowcount > 0:
+                        defaults_set += cursor.rowcount
+
+            migration_required = (
+                column_added
+                or accounts_backfilled > 0
+                or defaults_set > 0
+            )
+
+            await self.bot.runebotdb.commit()
+            return {
+                'migration_required': migration_required,
+                'column_added': column_added,
+                'accounts_backfilled': accounts_backfilled,
+                'defaults_set': defaults_set
+            }
+
+    except Exception:
+        await self.bot.runebotdb.rollback()
+        raise
 
 async def add_guild(
     self,
@@ -81,8 +262,8 @@ async def add_username(
     account_type: str
 ) -> None:
     '''
-    Database function which adds a new user to the `all_users`
-    table.
+    Database function which adds a new user/account and updates the
+    user's default account.
 
     :param self: -
         Represents this object.
@@ -94,18 +275,76 @@ async def add_username(
     :return: (None)
     '''
 
+    username = username.strip()
+    if not username:
+        return
+
     async with self.bot.runebotdb.cursor() as cursor:
         await cursor.execute(
             '''
-            INSERT INTO all_users (
+            SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1
+            ''',
+            (user_id,)
+        )
+        existing_user = await cursor.fetchone()
+
+        if not existing_user:
+            await cursor.execute(
+                '''
+                INSERT INTO all_users (
+                    user_id,
+                    username,
+                    account_type,
+                    default_account_id
+                )
+                VALUES (?, ?, ?, NULL)
+                ''',
+                (user_id, username, account_type)
+            )
+
+        timestamp = utc_now_iso()
+        await cursor.execute(
+            '''
+            INSERT OR IGNORE INTO user_accounts (
                 user_id,
                 username,
-                account_type
+                account_type,
+                created_at,
+                last_used_at
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             ''',
-            (user_id, username, account_type,)
+            (user_id, username, account_type, timestamp, timestamp)
         )
+
+        await cursor.execute(
+            '''
+            UPDATE user_accounts
+            SET last_used_at = ?
+            WHERE user_id = ? AND username = ? AND account_type = ?
+            ''',
+            (timestamp, user_id, username, account_type)
+        )
+
+        await cursor.execute(
+            '''
+            SELECT id FROM user_accounts
+            WHERE user_id = ? AND username = ? AND account_type = ?
+            LIMIT 1
+            ''',
+            (user_id, username, account_type)
+        )
+        account = await cursor.fetchone()
+
+        if account:
+            await cursor.execute(
+                '''
+                UPDATE all_users
+                SET default_account_id = ?, username = ?, account_type = ?
+                WHERE user_id = ?
+                ''',
+                (account[0], username, account_type, user_id)
+            )
 
         return await self.bot.runebotdb.commit()
 
@@ -240,7 +479,66 @@ async def get_colour_mode(self, guild_id: int, guild_owner_id: int) -> bool:
             return True
 
 
-async def get_username(self, user_id: int) -> Optional[str]:
+async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, str]]:
+    '''
+    Database function which retrieves a user's default account.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+
+    :return: (Optional[Tuple[Integer, String, String]]) -
+        The default account in the form (id, username, account_type),
+        otherwise None.
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            SELECT ua.id, ua.username, ua.account_type
+            FROM all_users au
+            JOIN user_accounts ua ON ua.id = au.default_account_id
+            WHERE au.user_id = ?
+            LIMIT 1
+            ''',
+            (user_id,)
+        )
+        account = await cursor.fetchone()
+        if account:
+            return account[0], account[1], account[2]
+
+        await cursor.execute(
+            '''
+            SELECT username, account_type
+            FROM all_users
+            WHERE user_id = ?
+            LIMIT 1
+            ''',
+            (user_id,)
+        )
+        legacy_account = await cursor.fetchone()
+        if not legacy_account:
+            return None
+
+        username, account_type = legacy_account
+        await cursor.execute(
+            '''
+            SELECT id, username, account_type
+            FROM user_accounts
+            WHERE user_id = ? AND username = ? AND account_type = ?
+            LIMIT 1
+            ''',
+            (user_id, username, account_type)
+        )
+        mapped_account = await cursor.fetchone()
+        if mapped_account:
+            return mapped_account[0], mapped_account[1], mapped_account[2]
+
+        return None
+
+
+async def get_username(self, user_id: int) -> Tuple[Optional[str], Optional[str]]:
     '''
     Database function which retrieves a username with a given user_id.
 
@@ -252,19 +550,113 @@ async def get_username(self, user_id: int) -> Optional[str]:
     :return: (Optional[String]) -
         The respective username of the Discord user_id.
     '''
+    account = await get_default_account(self, user_id)
+    if account:
+        _, username, account_type = account
+        return username, account_type
+
+    return None, None
+
+
+async def get_user_accounts(self, user_id: int) -> List[Tuple[int, str, str]]:
+    '''
+    Database function which retrieves all accounts for a given user.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+
+    :return: (List[Tuple[Integer, String, String]]) -
+        A list of account rows in the form (id, username, account_type).
+    '''
+
     async with self.bot.runebotdb.cursor() as cursor:
-        try:
+        await cursor.execute(
+            '''
+            SELECT id, username, account_type
+            FROM user_accounts
+            WHERE user_id = ?
+            ORDER BY last_used_at DESC, id ASC
+            ''',
+            (user_id,)
+        )
+        return await cursor.fetchall()
+
+
+async def set_default_account(self, user_id: int, account_id: int) -> bool:
+    '''
+    Database function which sets a default account for a given user.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+    :param account_id: (Integer) -
+        Represents an account id.
+
+    :return: (Boolean) -
+        True if default account is updated, otherwise False.
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            SELECT username, account_type
+            FROM user_accounts
+            WHERE id = ? AND user_id = ?
+            LIMIT 1
+            ''',
+            (account_id, user_id)
+        )
+        account = await cursor.fetchone()
+        if not account:
+            return False
+
+        username, account_type = account
+
+        await cursor.execute(
+            '''
+            SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1
+            ''',
+            (user_id,)
+        )
+        existing_user = await cursor.fetchone()
+
+        if not existing_user:
             await cursor.execute(
                 '''
-                SELECT username, account_type FROM all_users WHERE user_id = ?
+                INSERT INTO all_users (
+                    user_id,
+                    username,
+                    account_type,
+                    default_account_id
+                )
+                VALUES (?, ?, ?, ?)
                 ''',
-                (user_id,)
+                (user_id, username, account_type, account_id)
             )
-            username, account_type = await cursor.fetchone()
-            return username, account_type
 
-        except TypeError:
-            return None, None
+        await cursor.execute(
+            '''
+            UPDATE all_users
+            SET default_account_id = ?, username = ?, account_type = ?
+            WHERE user_id = ?
+            ''',
+            (account_id, username, account_type, user_id)
+        )
+
+        await cursor.execute(
+            '''
+            UPDATE user_accounts
+            SET last_used_at = ?
+            WHERE id = ? AND user_id = ?
+            ''',
+            (utc_now_iso(), account_id, user_id)
+        )
+
+        await self.bot.runebotdb.commit()
+        return True
 
 
 async def remove_guild(self, guild_id: int) -> None:
@@ -292,7 +684,7 @@ async def remove_guild(self, guild_id: int) -> None:
 
 async def remove_username(self, user_id: int):
     '''
-    Database function which removes a username from the `all_users` table.
+    Database function which removes a username from the database.
 
     :param self: -
         Represents this object.
@@ -303,6 +695,13 @@ async def remove_username(self, user_id: int):
     '''
 
     async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            DELETE FROM user_accounts WHERE user_id = ?
+            ''',
+            (user_id,)
+        )
+
         await cursor.execute(
             '''
             DELETE FROM all_users WHERE user_id = ?

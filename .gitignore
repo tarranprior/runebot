@@ -143,5 +143,8 @@ tools/
 temp/
 *.tmp
 
-# Runebot development database
+# Runebot dev database artifacts
 runebot-dev.db
+runebot-dev.db-journal
+runebot-dev.db-shm
+runebot-dev.db-wal
