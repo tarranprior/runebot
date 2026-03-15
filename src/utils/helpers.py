@@ -29,6 +29,7 @@ import sys
 import os
 import io
 import json
+from datetime import datetime, timezone
 
 from typing import Optional, Tuple
 from urllib.request import Request, urlopen
@@ -36,8 +37,6 @@ from loguru import logger
 from humanfriendly import format_timespan
 import disnake
 from colorthief import ColorThief as ColourThief
-
-from .database import get_colour_mode
 
 
 def convert_date_to_duration(date_1, date_2) -> str:
@@ -78,6 +77,18 @@ def configuration() -> dict:
         sys.exit('Configuration file not found. Please add it and try again.')
 
 
+def utc_now_iso() -> str:
+    '''
+    Helper function which returns the current UTC timestamp in ISO
+    format.
+
+    :return: (String) -
+        The current UTC timestamp in ISO format.
+    '''
+
+    return datetime.now(timezone.utc).isoformat()
+
+
 async def extract_colour(
     self,
     guild_id: int,
@@ -104,6 +115,8 @@ async def extract_colour(
         A tuple representing the dominant RGB color value of the image,
         or None if an error occurs during color extraction.
     '''
+
+    from .database import get_colour_mode
 
     if image_url:
         colour_mode = await get_colour_mode(self, guild_id, guild_owner_id)
