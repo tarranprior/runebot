@@ -80,8 +80,6 @@ class Setrsn(commands.Cog, name='setrsn'):
         if not account_type:
             account_type = 'Normal'
 
-        if await get_username(self, inter.author.id):
-            await remove_username(self, inter.author.id)
         await add_username(self, inter.author.id, username, account_type)
 
         embed, view = EmbedFactory().create(

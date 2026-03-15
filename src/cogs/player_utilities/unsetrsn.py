@@ -74,8 +74,8 @@ class Unsetrsn(commands.Cog, name='unsetrsn'):
         await remove_username(self, inter.author.id)
 
         embed = EmbedFactory().create(
-            title=f'Username has been unset.',
-            description=f'Your username has now been unset. '
+            title=f'Username(s) has been unset.',
+            description=f'Your username(s) has now been unset. '
             'You can set another username at any time by using `/setrsn`.'
         )
         embed.timestamp = inter.created_at
