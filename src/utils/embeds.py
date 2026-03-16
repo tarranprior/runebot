@@ -183,34 +183,21 @@ class EmbedFactory:
 
         embed = disnake.Embed(
             title='<:account:1482896847239381065> Account Manager (Beta)',
-            description='View and manage the accounts you save with Runebot. Use the dropdown below to set a new default account.',
+            description='View and manage accounts saved with Runebot.\n\nUse the dropdown below to select an account (sets it as default), and use the buttons to manage it.',
             colour=self.colour
         )
 
-        if default_account:
-            _, username, account_type = default_account
-            emote = emotes.get(account_type, '')
-            account_suffix = '' if account_type == 'Normal' else f' ({account_type})'
-            embed.add_field(
-                name='\n\u200B\nDefault Account',
-                value=f'{emote} {username}{account_suffix}\n\u200b',
-                inline=False
-            )
-        else:
-            embed.add_field(
-                name='Default Account',
-                value='None set\n\u200b',
-                inline=False
-            )
+        default_account_id = default_account[0] if default_account else None
 
         if accounts:
             accounts_text = '\n'.join(
+                f'{"[default] " if acc[0] == default_account_id else ""}'
                 f'{emotes.get(acc[2], "")} {acc[1]}'
                 f'{"" if acc[2] == "Normal" else f" ({acc[2]})"}'
                 for acc in accounts
             )
         else:
-            accounts_text = "You don't have any accounts."
+            accounts_text = "You don't have any accounts yet."
 
         embed.add_field(
             name=f'Accounts ({len(accounts)} of 5)',

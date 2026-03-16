@@ -195,6 +195,26 @@ class Stats(commands.Cog, name='stats'):
             )
 
         view.add_item(select)
+
+        view.add_item(
+            disnake.ui.Button(
+                label='⟳',
+                style=disnake.ButtonStyle.secondary,
+                custom_id=f'acct_manager:refresh,{owner_id}',
+                row=1
+            )
+        )
+
+        view.add_item(
+            disnake.ui.Button(
+                label='Delete',
+                style=disnake.ButtonStyle.secondary,
+                custom_id=f'acct_manager:delete,{owner_id},{default_id or 0}',
+                row=1,
+                disabled=(default_id is None)
+            )
+        )
+
         return view
 
 
@@ -542,7 +562,182 @@ class Stats(commands.Cog, name='stats'):
         '''
         custom_id = inter.component.custom_id
 
-        if not custom_id or not custom_id.startswith('stats:'):
+        if not custom_id:
+            return
+
+        if custom_id.startswith('acct_manager:'):
+            payload = custom_id.removeprefix('acct_manager:')
+            params = payload.split(',')
+
+            if not params:
+                return
+
+            action = params[0]
+
+            if action == 'refresh':
+                if len(params) != 2:
+                    return
+
+                _, owner_id = params
+
+                if str(inter.author.id) != owner_id:
+                    await inter.response.send_message(
+                        'Only the original author can use these buttons.',
+                        ephemeral=True
+                    )
+                    return
+
+                loading_view = build_loading_button_view(inter)
+                await inter.response.edit_message(view=loading_view)
+
+                default_account = await get_default_account(self, int(owner_id))
+                accounts = await get_user_accounts(self, int(owner_id))
+                embed = EmbedFactory().create_account_manager(
+                    default_account,
+                    accounts,
+                    ACCOUNT_EMOTES,
+                    inter.created_at
+                )
+                view = self._build_account_manager_view(
+                    accounts,
+                    default_account,
+                    int(owner_id)
+                )
+                await inter.edit_original_response(embed=embed, view=view)
+                return
+
+            if action == 'delete':
+                if len(params) != 3:
+                    return
+
+                _, owner_id, account_id = params
+                manager_message_id = str(inter.message.id)
+
+                if str(inter.author.id) != owner_id:
+                    await inter.response.send_message(
+                        'Only the original author can use these buttons.',
+                        ephemeral=True
+                    )
+                    return
+
+                if account_id == '0':
+                    await inter.response.send_message(
+                        'You do not have a default account to delete.',
+                        ephemeral=True
+                    )
+                    return
+
+                owner_accounts = await get_user_accounts(self, int(owner_id))
+                target_account = next(
+                    (acc for acc in owner_accounts if str(acc[0]) == account_id),
+                    None
+                )
+                account_name = target_account[1] if target_account else 'selected account'
+
+                confirm_embed = EmbedFactory().create(
+                    title='Confirmation',
+                    description=(
+                        f'Are you sure you want to delete the account **{account_name}**? '
+                        'You can re-add the account with </setrsn:1114968268864753754> at any time.'
+                    ),
+                    colour=0xB72615
+                )
+                confirm_embed.timestamp = inter.created_at
+                confirm_embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+                confirm_view = View(timeout=None)
+                confirm_view.add_item(
+                    disnake.ui.Button(
+                        label='Confirm',
+                        style=disnake.ButtonStyle.danger,
+                        custom_id=(
+                            f'acct_manager:delete_confirm,{owner_id},{account_id},'
+                            f'{manager_message_id}'
+                        )
+                    )
+                )
+                confirm_view.add_item(
+                    disnake.ui.Button(
+                        label='Cancel',
+                        style=disnake.ButtonStyle.secondary,
+                        custom_id=(
+                            f'acct_manager:delete_cancel,{owner_id},{account_id},'
+                            f'{manager_message_id}'
+                        )
+                    )
+                )
+
+                await inter.response.send_message(
+                    embed=confirm_embed,
+                    view=confirm_view,
+                    ephemeral=True
+                )
+                return
+
+            if action in ['delete_confirm', 'delete_cancel']:
+                if len(params) != 4:
+                    return
+
+                _, owner_id, account_id, manager_message_id = params
+
+                if str(inter.author.id) != owner_id:
+                    await inter.response.send_message(
+                        'Only the original author can use these buttons.',
+                        ephemeral=True
+                    )
+                    return
+
+                if action == 'delete_cancel':
+                    await inter.response.defer()
+                    await inter.delete_original_response()
+                    return
+
+                owner_accounts = await get_user_accounts(self, int(owner_id))
+                target_account = next(
+                    (acc for acc in owner_accounts if str(acc[0]) == account_id),
+                    None
+                )
+                
+                await inter.response.defer()
+                deleted = await remove_user_account(
+                    self,
+                    int(owner_id),
+                    int(account_id)
+                )
+
+                await inter.delete_original_response()
+
+                if deleted:
+                    default_account = await get_default_account(self, int(owner_id))
+                    accounts = await get_user_accounts(self, int(owner_id))
+                    embed = EmbedFactory().create_account_manager(
+                        default_account,
+                        accounts,
+                        ACCOUNT_EMOTES,
+                        inter.created_at
+                    )
+                    view = self._build_account_manager_view(
+                        accounts,
+                        default_account,
+                        int(owner_id)
+                    )
+
+                    try:
+                        await inter.followup.edit_message(
+                            int(manager_message_id),
+                            embed=embed,
+                            view=view
+                        )
+                    except Exception:
+                        await inter.followup.send(
+                            embed=embed,
+                            view=view,
+                            ephemeral=True
+                        )
+                return
+            return
+
+        if not custom_id.startswith('stats:'):
             return
 
         payload = custom_id.removeprefix('stats:')

@@ -24,6 +24,8 @@ Functions:
             Removes a guild from the `all_guilds` table.
     - `remove_username()`:
             Removes a username from the `all_users` table.
+        - `remove_user_account()`:
+            Removes a specific saved account for a user.
     - `update_colour_mode()`:
             Toggles `colour_mode` for a given guild.
 
@@ -617,6 +619,102 @@ async def remove_username(self, user_id: int):
         )
 
         return await self.bot.runebotdb.commit()
+
+
+async def remove_user_account(self, user_id: int, account_id: int) -> bool:
+    '''
+    Database function which removes a specific account for a user and
+    reassigns their default account where needed.
+
+    :param self: -
+        Represents this object.
+    :param user_id: (Integer) -
+        Represents a user id.
+    :param account_id: (Integer) -
+        Represents the account id to remove.
+
+    :return: (Boolean) -
+        True if an account was deleted, otherwise False.
+    '''
+
+    async with self.bot.runebotdb.cursor() as cursor:
+        await cursor.execute(
+            '''
+            SELECT 1
+            FROM user_accounts
+            WHERE user_id = ? AND id = ?
+            LIMIT 1
+            ''',
+            (user_id, account_id)
+        )
+        account_exists = await cursor.fetchone()
+
+        if not account_exists:
+            return False
+
+        await cursor.execute(
+            '''
+            DELETE FROM user_accounts
+            WHERE user_id = ? AND id = ?
+            ''',
+            (user_id, account_id)
+        )
+
+        await cursor.execute(
+            '''
+            SELECT id, username, account_type
+            FROM user_accounts
+            WHERE user_id = ?
+            ORDER BY last_used_at DESC, id ASC
+            LIMIT 1
+            ''',
+            (user_id,)
+        )
+        next_default = await cursor.fetchone()
+
+        if next_default:
+            next_id, next_username, next_account_type = next_default
+
+            await cursor.execute(
+                '''
+                SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1
+                ''',
+                (user_id,)
+            )
+            existing_user = await cursor.fetchone()
+
+            if existing_user:
+                await cursor.execute(
+                    '''
+                    UPDATE all_users
+                    SET default_account_id = ?, username = ?, account_type = ?
+                    WHERE user_id = ?
+                    ''',
+                    (next_id, next_username, next_account_type, user_id)
+                )
+            else:
+                await cursor.execute(
+                    '''
+                    INSERT INTO all_users (
+                        user_id,
+                        username,
+                        account_type,
+                        default_account_id
+                    )
+                    VALUES (?, ?, ?, ?)
+                    ''',
+                    (user_id, next_username, next_account_type, next_id)
+                )
+        else:
+            await cursor.execute(
+                '''
+                DELETE FROM all_users WHERE user_id = ?
+                ''',
+                (user_id,)
+            )
+
+        await self.bot.runebotdb.commit()
+        return True
 
 
 async def update_colour_mode(self, guild_id: int, toggle: bool) -> None:
