@@ -129,7 +129,104 @@ class Stats(commands.Cog, name='stats'):
             )
         )
 
+        view.add_item(
+            disnake.ui.Button(
+                label='Account Manager (Beta)',
+                style=disnake.ButtonStyle.secondary,
+                emoji=disnake.PartialEmoji(name='account', id=1482896847239381065),
+                custom_id=f'stats:account_manager,{owner_id}',
+                row=1
+            )
+        )
+
         return view
+
+
+    def _build_account_manager_view(
+        self,
+        accounts: List[Tuple[int, str, str]],
+        default_account: Tuple[int, str, str],
+        owner_id: int
+    ) -> View:
+        '''
+        Builds the view containing the account select menu for the
+        Account Manager ephemeral response.
+
+        :param self: -
+            Represents this object.
+        :param accounts: (List[Tuple[Integer, String, String]]) -
+            Represents all saved accounts for the user.
+        :param default_account: (Tuple[Integer, String, String]) -
+            Represents the user\'s current default account.
+        :param owner_id: (Integer) -
+            Represents the Discord user ID who owns the accounts.
+
+        :return: (View) -
+            A view containing a select menu for switching default accounts.
+        '''
+
+        view = View(timeout=None)
+        default_id = default_account[0] if default_account else None
+
+        if accounts:
+            options = [
+                disnake.SelectOption(
+                    label=(
+                        f'{acc[1]}'
+                        if acc[2] == 'Normal'
+                        else f'{acc[1]} ({acc[2]})'
+                    ),
+                    value=str(acc[0]),
+                    default=(acc[0] == default_id)
+                )
+                for acc in accounts[:25]
+            ]
+            select = disnake.ui.Select(
+                placeholder='Select a default account...',
+                options=options,
+                custom_id=f'acct_manager:select,{owner_id}'
+            )
+        else:
+            select = disnake.ui.Select(
+                placeholder="You don't have any accounts.",
+                options=[disnake.SelectOption(label="You don't have any accounts", value='none')],
+                custom_id=f'acct_manager:select,{owner_id}',
+                disabled=True
+            )
+
+        view.add_item(select)
+        return view
+
+
+    async def _send_account_manager(
+        self,
+        inter: disnake.MessageInteraction,
+        user_id: int
+    ) -> None:
+        '''
+        Fetches account data for the given user and sends an ephemeral
+        Account Manager response to the interaction.
+
+        :param self: -
+            Represents this object.
+        :param inter: (disnake.MessageInteraction) -
+            Represents the interaction that triggered the Account Manager.
+        :param user_id: (Integer) -
+            Represents the Discord user ID of the command author.
+
+        :return: (None)
+        '''
+
+        default_account = await get_default_account(self, user_id)
+        accounts = await get_user_accounts(self, user_id)
+        embed = EmbedFactory().create_account_manager(
+            default_account,
+            accounts,
+            ACCOUNT_EMOTES,
+            inter.created_at
+        )
+        view = self._build_account_manager_view(accounts, default_account, user_id)
+        await inter.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
     async def search_hiscores(
@@ -451,13 +548,31 @@ class Stats(commands.Cog, name='stats'):
         payload = custom_id.removeprefix('stats:')
         params = payload.split(',')
 
-        if len(params) != 5:
+        if not params:
             return
 
-        action, hiscore_category, account_type, username, owner_id = params
+        action = params[0]
+
+        if action == 'account_manager':
+            if len(params) != 2:
+                return
+            owner_id = params[1]
+            if str(inter.author.id) != owner_id:
+                await inter.response.send_message(
+                    'Only the original author can use these buttons.',
+                    ephemeral=True
+                )
+                return
+            await self._send_account_manager(inter, int(owner_id))
+            return
 
         if action not in ['navigate', 'refresh']:
             return
+
+        if len(params) != 5:
+            return
+
+        _, hiscore_category, account_type, username, owner_id = params
 
         if str(inter.author.id) != owner_id:
             await inter.response.send_message(
@@ -490,6 +605,68 @@ class Stats(commands.Cog, name='stats'):
             )
             await inter.edit_original_response(view=view)
             raise exc
+
+
+    @commands.Cog.listener('on_dropdown')
+    async def dropdown_listener(
+        self,
+        inter: disnake.MessageInteraction
+    ) -> None:
+        '''
+        Cog listener which handles dropdown selections for the Account Manager.
+
+        :param self: -
+            Represents this object.
+        :param inter: (disnake.MessageInteraction) -
+            Represents a message component interaction triggered by the
+            Account Manager select menu.
+
+        :return: (None)
+        '''
+
+        custom_id = inter.component.custom_id
+
+        if not custom_id or not custom_id.startswith('acct_manager:'):
+            return
+
+        payload = custom_id.removeprefix('acct_manager:')
+        params = payload.split(',')
+
+        if len(params) != 2:
+            return
+
+        action, owner_id = params
+
+        if action != 'select':
+            return
+
+        if str(inter.author.id) != owner_id:
+            await inter.response.send_message(
+                'Only the original author can use these buttons.',
+                ephemeral=True
+            )
+            return
+
+        selected_value = inter.values[0]
+        if selected_value == 'none':
+            await inter.response.defer()
+            return
+
+        await inter.response.defer()
+
+        user_id = int(owner_id)
+        await set_default_account(self, user_id, int(selected_value))
+
+        default_account = await get_default_account(self, user_id)
+        accounts = await get_user_accounts(self, user_id)
+        embed = EmbedFactory().create_account_manager(
+            default_account,
+            accounts,
+            ACCOUNT_EMOTES,
+            inter.created_at
+        )
+        view = self._build_account_manager_view(accounts, default_account, user_id)
+        await inter.edit_original_response(embed=embed, view=view)
 
 
     @stats.autocomplete('account_type')
