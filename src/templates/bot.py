@@ -438,6 +438,23 @@ class Bot(commands.InteractionBot):
                     ephemeral=True
                 )
 
+            elif 'MaximumAccountsReached' in str(error.__str__()):
+                embed, view = EmbedFactory().create(
+                    title='Nothing interesting happens.',
+                    description=str(error.__cause__),
+                    thumbnail_url = THUMBNAILS['filler'],
+                    colour=0xB72615,
+                    button_label='Support Server',
+                    button_url=SUPPORT_SERVER
+                )
+                embed.timestamp = inter.created_at
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+                return await inter.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+
             elif 'NoGameModeData' in str(error.__str__()):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',

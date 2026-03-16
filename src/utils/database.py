@@ -36,6 +36,8 @@ docstrings.
 
 from typing import List, Optional, Tuple
 
+import exceptions
+
 from .helpers import utc_now_iso
 
 
@@ -155,6 +157,18 @@ async def add_username(
                 (timestamp, account_id)
             )
         else:
+            await cursor.execute(
+                '''
+                SELECT COUNT(*)
+                FROM user_accounts
+                WHERE user_id = ?
+                ''',
+                (user_id,)
+            )
+            count_row = await cursor.fetchone()
+            if count_row and count_row[0] >= 5:
+                raise exceptions.MaximumAccountsReached
+
             await cursor.execute(
                 '''
                 INSERT INTO user_accounts (

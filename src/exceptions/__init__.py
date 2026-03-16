@@ -384,3 +384,33 @@ class NoGameModeData(Exception):
 
         self.message = message
         super().__init__(self.message)
+
+
+class MaximumAccountsReached(Exception):
+    '''
+    Thrown when a user attempts to save more than the maximum number of
+    RuneScape accounts.
+
+    :param message: (String) -
+        A custom message to display when the exception is raised.
+        Defaults to a pre-defined message.
+
+    :return: (None)
+    '''
+
+    def __init__(self, message: str = (
+        'You have reached the maximum of **5 accounts** for your '
+        'Discord account. Remove an existing account before adding a new one.'
+    )) -> None:
+        '''
+        Initialises a new instance of the MaximumAccountsReached class.
+
+        :param message: (Optional[String]) -
+            A custom message to display when the exception is raised.
+            Defaults to a pre-defined message.
+
+        :return: (None)
+        '''
+
+        self.message = message
+        super().__init__(self.message)
