@@ -47,7 +47,6 @@ def main() -> None:
         'cogs.administrator.ping',
         'cogs.player_utilities.setrsn',
         'cogs.player_utilities.stats',
-        'cogs.player_utilities.unsetrsn',
         'cogs.search_tools.alchemy',
         'cogs.search_tools.bestiary',
         'cogs.search_tools.minigames',

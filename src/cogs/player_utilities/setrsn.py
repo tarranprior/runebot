@@ -83,12 +83,11 @@ class Setrsn(commands.Cog, name='setrsn'):
         await add_username(self, inter.author.id, username, account_type)
 
         embed, view = EmbedFactory().create(
-            title=f'Username has been set.',
-            description=f'Your username has now been set to **{username}**.\n\n'
-            'You can make changes to your username at any time by using '
-            '`/setrsn`, or use `/unsetrsn` to remove it entirely. '
-            'Toggle more options with `/settings`.',
-            button_label='Visit Hiscores',
+            title=f'Account has been set.',
+            description=f'Your default account has now been set to **{username}**.\n\n'
+            'You can set a new default at any time by using </setrsn:1114968268864753754>, '
+            f'or use the {disnake.PartialEmoji(name="account", id=1482896847239381065)} Account Manager under </stats:1479843945956769934> to manage all of your accounts.',
+            button_label='Hiscores',
             button_url=f'{HISCORE_URLS.get(account_type)}{slugify(username)}'
         )
         embed.timestamp = inter.created_at
