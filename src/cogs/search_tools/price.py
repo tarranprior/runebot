@@ -29,7 +29,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
-import datetime
+import datetime as dt
 import random
 from typing import Tuple, Union, List
 
@@ -246,13 +246,13 @@ class Price(commands.Cog, name='price'):
                 )
 
             # Gets the last trade date/time.
-            high_time = datetime.datetime.fromtimestamp(
+            high_time = dt.datetime.fromtimestamp(
                 price_data['data'][item_id]['highTime']
             )
-            low_time = datetime.datetime.fromtimestamp(
+            low_time = dt.datetime.fromtimestamp(
                 price_data['data'][item_id]['lowTime']
             )
-            present_time = datetime.datetime.now().replace(microsecond=0)
+            present_time = dt.datetime.now().replace(microsecond=0)
             high_date_diff = convert_date_to_duration(present_time, high_time)
             low_date_diff = convert_date_to_duration(present_time, low_time)
 
