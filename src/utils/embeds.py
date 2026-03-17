@@ -191,7 +191,6 @@ class EmbedFactory:
 
         if accounts:
             accounts_text = '\n'.join(
-                f'{"[default] " if acc[0] == default_account_id else ""}'
                 f'{emotes.get(acc[2], "")} {acc[1]}'
                 f'{"" if acc[2] == "Normal" else f" ({acc[2]})"}'
                 for acc in accounts

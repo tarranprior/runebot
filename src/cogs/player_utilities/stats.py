@@ -176,6 +176,11 @@ class Stats(commands.Cog, name='stats'):
                         if acc[2] == 'Normal'
                         else f'{acc[1]} ({acc[2]})'
                     ),
+                    emoji=(
+                        disnake.PartialEmoji.from_str(ACCOUNT_EMOTES.get(acc[2]))
+                        if ACCOUNT_EMOTES.get(acc[2])
+                        else None
+                    ),
                     value=str(acc[0]),
                     default=(acc[0] == default_id)
                 )
