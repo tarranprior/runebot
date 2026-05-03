@@ -97,18 +97,30 @@ class Bot(commands.InteractionBot):
         '''
 
         count = 0
+        loaded_extensions = []
+        failed_extensions = []
+
         for ext in exts:
             try:
                 self.load_extension(ext)
-                logger.success(ext)
+                loaded_extensions.append(ext)
                 count += 1
             except Exception as exc:
                 exception = f'{type(exc).__name__}: {exc}'
+                failed_extensions.append(
+                    {
+                        'extension': ext,
+                        'exception': exception,
+                    }
+                )
                 logger.error(
                     f'Unable to load extension: {ext}\n{exception}.'
                 )
 
-        logger.info(f'{count} extension(s) have loaded successfully.\n')
+        logger.bind(
+            loaded_extensions=loaded_extensions,
+            failed_extensions=failed_extensions,
+        ).info(f'{count} extension(s) have loaded successfully.\n')
 
 
     async def on_connect(self) -> None:
@@ -256,6 +268,11 @@ class Bot(commands.InteractionBot):
         :return: (None)
         '''
 
+        async def _send_error_response(embed, view, **kwargs):
+            if inter.response.is_done():
+                return await inter.followup.send(embed=embed, view=view, **kwargs)
+            return await inter.response.send_message(embed=embed, view=view, **kwargs)
+
         if isinstance(error, commands.errors.CommandInvokeError):
 
             if 'Nonexistence' in str(error.__str__()):
@@ -269,7 +286,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -285,7 +302,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -301,7 +318,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.response.send_message(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True
@@ -318,7 +335,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -334,7 +351,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -350,7 +367,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -366,7 +383,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -382,7 +399,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True
@@ -399,7 +416,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.followup.send(
+                return await _send_error_response(
                     embed=embed,
                     view=view
                 )
@@ -415,7 +432,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.response.send_message(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True
@@ -432,7 +449,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.response.send_message(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True
@@ -449,7 +466,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.response.send_message(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True
@@ -466,7 +483,7 @@ class Bot(commands.InteractionBot):
                 )
                 embed.timestamp = inter.created_at
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-                return await inter.response.send_message(
+                return await _send_error_response(
                     embed=embed,
                     view=view,
                     ephemeral=True

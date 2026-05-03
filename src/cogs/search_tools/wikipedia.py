@@ -32,9 +32,15 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
-from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, Option, OptionType
+import disnake
+import uuid
 
+from disnake.ext import commands
+from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
+from loguru import logger
+from utils.logging import build_log_message
+
+import exceptions
 from config import *
 from templates.bot import Bot
 from utils import *
@@ -60,85 +66,303 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         self.bot = bot
 
 
+    @staticmethod
+    def _invocation_source(
+        inter: ApplicationCommandInteraction | disnake.MessageInteraction
+    ) -> str:
+        return (
+            'component_callback'
+            if isinstance(inter, disnake.MessageInteraction)
+            else 'slash_command'
+        )
+
+
+    def _wiki_bind(
+        self,
+        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'search',
+        invocation_mode: str | None = None,
+        search_query: str | None = None,
+        resolved_search_term: str | None = None,
+        resolved_page_title: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        **extra,
+    ) -> dict:
+        payload = {
+            'command': 'wikipedia',
+            'trace_id': trace_id,
+            'invocation_source': self._invocation_source(inter),
+            'action': action,
+            'stage': stage,
+            'operation': operation,
+            'invocation_mode': invocation_mode,
+            'search_query': search_query,
+            'resolved_search_term': resolved_search_term,
+            'resolved_page_title': resolved_page_title,
+            'resolution_source': resolution_source,
+            'log_params': log_params,
+            **self._interaction_context(inter),
+            **extra,
+        }
+        return {k: v for k, v in payload.items() if v is not None}
+
+
+    def _log_wiki_debug(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).debug(message)
+
+
+    def _log_wiki_info(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).info(message)
+
+
+    def _log_wiki_warning(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).warning(message)
+
+
+    def _log_wiki_success(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).success(message)
+
+
+    def _log_wiki_error(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+
+
+    @staticmethod
+    def _snowflake(value) -> 'str | None':
+        return str(value) if value is not None else None
+
+
+    @staticmethod
+    def _interaction_context(
+        inter: ApplicationCommandInteraction | disnake.MessageInteraction
+    ) -> dict:
+        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+        return {
+            'user_id': Wikipedia._snowflake(getattr(user, 'id', None)),
+            'user_name': getattr(user, 'name', None),
+            'user_display_name': getattr(user, 'display_name', None),
+            'guild_id': Wikipedia._snowflake(getattr(inter, 'guild_id', None)),
+            'channel_id': Wikipedia._snowflake(getattr(inter, 'channel_id', None)),
+            'interaction_type': str(getattr(inter, 'type', None)),
+        }
+
+
     async def search_wikipedia(
         self,
-        inter: ApplicationCommandInteraction,
-        search_query: str
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        search_query: str,
+        trace_id: str | None = None,
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         Primary function for the `wikipedia` command which takes a search
         query and returns corresponding data.
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
+        :param inter: (ApplicationCommandInteraction | disnake.MessageInteraction) -
+            Represents an interaction with an application command or component callback.
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple[disnake.Embed, disnake.ui.View] -
-            An embed and view containing the wikipedia information.
+        :return: Tuple[disnake.Embed, disnake.ui.View, str, str] -
+            An embed, view, resolved search term, and resolved page title.
         '''
 
-        # Checks if the query is equal to the "I'm feeling lucky" special
-        # query and returns a random article if True.
-        if search_query == 'I\'m feeling lucky\u200a':
-            page_content = parse_page(BASE_URL, FEELING_LUCKY, HEADERS)
-        else:
-            page_content = parse_page(
-                BASE_URL,
-                search_query,
-                HEADERS
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        original_query = search_query
+        resolved_search_term = FEELING_LUCKY if invocation_mode == 'feeling_lucky' else search_query
+        resolution_source = 'wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query'
+
+        try:
+            page_content = parse_page(BASE_URL, resolved_search_term, HEADERS, trace_id=trace_id)
+            attributes = parse_all(page_content)
+            title = attributes['title']
+            resolved_search_term = title
+            description = attributes['description']
+            infobox = attributes['infobox']
+            options = attributes['options']
+            thumbnail_url = attributes['thumbnail_url']
+
+            self._log_wiki_info(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='resolve',
+                    operation='search',
+                    subject='search_query',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {
+                        'kind': 'query',
+                        'label': 'search_query',
+                        'value': original_query,
+                    },
+                    {
+                        'kind': 'query',
+                        'label': 'resolved_search_term',
+                        'value': resolved_search_term,
+                    },
+                    {
+                        'kind': 'page_title',
+                        'label': 'resolved_page_title',
+                        'value': title,
+                    },
+                    {
+                        'kind': 'resolver_input',
+                        'label': 'resolver_input',
+                        'value': FEELING_LUCKY if invocation_mode == 'feeling_lucky' else resolved_search_term,
+                    },
+                ],
             )
 
-        attributes = parse_all(page_content)
-        title = attributes['title']
-        description = attributes['description']
-        infobox = attributes['infobox']
-        options = attributes['options']
-        thumbnail_url = attributes['thumbnail_url']
+            normalized_query = search_query.rstrip('/')
+            if 'Money making guide/' in normalized_query:
+                button_url = f'{BASE_URL}Money_making_guide/{slugify(title)}'
+            else:
+                button_url = f'{BASE_URL}{slugify(title)}'
 
-        search_query = search_query.rstrip('/')
-        if 'Money making guide/' in search_query:
-            button_url = f'{BASE_URL}Money_making_guide/{slugify(title)}'
-        else:
-            button_url = f'{BASE_URL}{slugify(title)}'
-
-        colour = disnake.Colour.from_rgb(
-            *await extract_colour(
-                self,
-                inter.guild_id,
-                inter.guild.owner_id,
-                thumbnail_url,
-                HEADERS
-            )
-        )
-
-        if description:
-            embed, view = EmbedFactory().create(
-                title=title,
-                description=description.pop(),
-                colour=colour, infobox=infobox,
-                thumbnail_url=thumbnail_url,
-                button_url=button_url
-            )
-            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-
-            if len(embed.description) < 84:
-                embed.set_footer(
-                    text=(f'To view more information about this page, click the button below.\nRunebot {DISPLAY_VERSION}')
+            colour = disnake.Colour.from_rgb(
+                *await extract_colour(
+                    self,
+                    inter.guild_id,
+                    inter.guild.owner_id,
+                    thumbnail_url,
+                    HEADERS
                 )
-            return embed, view
-
-        embed = EmbedFactory().create(
-            title=title,
-            description=(
-                f'{title} may refer to several articles. Use the dropdown below to select an option.'
             )
-        )
 
-        view = DropdownView(options)
-        return embed, view
+            if description:
+                embed, view = EmbedFactory().create(
+                    title=title,
+                    description=description.pop(),
+                    colour=colour, infobox=infobox,
+                    thumbnail_url=thumbnail_url,
+                    button_url=button_url
+                )
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+                if len(embed.description) < 84:
+                    embed.set_footer(
+                        text=(f'To view more information about this page, click the button below.\nRunebot {DISPLAY_VERSION}')
+                    )
+                return embed, view, resolved_search_term, title
+
+            self._log_wiki_debug(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='start',
+                    operation='disambiguation',
+                    subject='dropdown',
+                ),
+                action='start',
+                stage='start',
+                operation='disambiguation',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {
+                        'kind': 'page_title',
+                        'label': 'resolved_page_title',
+                        'value': title,
+                    },
+                    {
+                        'kind': 'options_count',
+                        'label': 'options_count',
+                        'value': len(options) if options is not None else 0,
+                    },
+                ],
+            )
+
+            embed = EmbedFactory().create(
+                title=title,
+                description=(
+                    f'{title} may refer to several articles. Use the dropdown below to select an option.'
+                )
+            )
+
+            view = DropdownView(options, self, trace_id=trace_id)
+            return embed, view, resolved_search_term, title
+
+        except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
+            self._log_wiki_warning(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {
+                        'kind': 'query',
+                        'label': 'search_query',
+                        'value': original_query,
+                    },
+                    {
+                        'kind': 'query',
+                        'label': 'resolved_search_term',
+                        'value': resolved_search_term,
+                    },
+                ],
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+            )
+            raise
+        except Exception:
+            raise
 
 
     @commands.slash_command(
@@ -172,9 +396,127 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         :return: (None)
         '''
 
-        await inter.response.defer()
-        embed, view = await self.search_wikipedia(inter, search_query)
-        await inter.followup.send(embed=embed, view=view)
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolved_search_term = FEELING_LUCKY if invocation_mode == 'feeling_lucky' else search_query
+        trace_id = uuid.uuid4().hex
+
+        self._log_wiki_info(
+            inter,
+            build_log_message(
+                command='wikipedia',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            search_query=search_query,
+            invocation_mode=invocation_mode,
+            resolution_source='wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query',
+            trace_id=trace_id,
+            log_params=[
+                {
+                    'kind': 'query',
+                    'label': 'search_query',
+                    'value': search_query,
+                }
+            ],
+        )
+
+        try:
+            await inter.response.defer()
+            embed, view, resolved_search_term, resolved_page_title = await self.search_wikipedia(
+                inter, search_query, trace_id=trace_id
+            )
+            await inter.followup.send(embed=embed, view=view)
+
+            self._log_wiki_success(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                invocation_mode=invocation_mode,
+                resolution_source='wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query',
+                log_params=[
+                    {
+                        'kind': 'query',
+                        'label': 'search_query',
+                        'value': search_query,
+                    },
+                    {
+                        'kind': 'query',
+                        'label': 'resolved_search_term',
+                        'value': resolved_search_term,
+                    },
+                    {
+                        'kind': 'page_title',
+                        'label': 'resolved_page_title',
+                        'value': resolved_page_title,
+                    },
+                ],
+            )
+
+        except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
+            expected_description = str(exc)
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_wiki_error(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                invocation_mode=invocation_mode,
+                resolution_source='wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query',
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            return
 
 
     @wikipedia.autocomplete('search_query')
@@ -206,17 +548,21 @@ class Dropdown(disnake.ui.StringSelect):
     that can be added to a `DropdownView` instance.
     '''
 
-    def __init__(self, options: list) -> None:
+    def __init__(self, options: list, cog, trace_id: str | None = None) -> None:
         '''
         Initialises a new instance of the Dropdown class.
 
         :param options: (List) -
             A list of dropdown options.
+        :param cog: -
+            The Wikipedia cog instance.
         
         :return: (None)
         '''
 
         self.bot = Bot
+        self._cog = cog
+        self.trace_id = trace_id
         options = options
 
         super().__init__(
@@ -233,35 +579,205 @@ class Dropdown(disnake.ui.StringSelect):
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction) -
-            Represents an interaction with an application command.
+        :param inter: (disnake.MessageInteraction) -
+            Represents a message component interaction triggered by the dropdown.
 
         :return: (None)
         '''
 
-        await inter.response.defer()
-        embed, view = await Wikipedia.search_wikipedia(
-            self, inter, self.values[0]
+        selected_value = self.values[0] if self.values else None
+
+        self._cog._log_wiki_debug(
+            inter,
+            build_log_message(
+                command='wikipedia',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            trace_id=self.trace_id,
+            invocation_mode='dropdown_selection',
+            search_query=selected_value,
+            component_type='dropdown',
+            selected_value=selected_value,
+            log_params=[
+                {
+                    'kind': 'query',
+                    'label': 'search_query',
+                    'value': selected_value,
+                }
+            ],
         )
-        await inter.followup.send(embed=embed, view=view)
+
+        try:
+            self._cog._log_wiki_debug(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='start',
+                    operation='defer',
+                    subject='dropdown',
+                ),
+                action='defer',
+                stage='start',
+                operation='defer',
+                trace_id=self.trace_id,
+                invocation_mode='dropdown_selection',
+                component_type='dropdown',
+                selected_value=selected_value,
+            )
+            await inter.response.defer()
+
+            embed, view, resolved_search_term, resolved_page_title = await self._cog.search_wikipedia(
+                inter, selected_value, trace_id=self.trace_id
+            )
+
+            self._cog._log_wiki_debug(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='start',
+                    operation='followup_send',
+                    subject='dropdown',
+                ),
+                action='start',
+                stage='start',
+                operation='followup_send',
+                trace_id=self.trace_id,
+                invocation_mode='dropdown_selection',
+                component_type='dropdown',
+                selected_value=selected_value,
+            )
+
+            await inter.followup.send(embed=embed, view=view)
+
+            self._cog._log_wiki_debug(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='complete',
+                    operation='followup_send',
+                    subject='dropdown',
+                ),
+                action='complete',
+                stage='complete',
+                operation='followup_send',
+                trace_id=self.trace_id,
+                invocation_mode='dropdown_selection',
+                component_type='dropdown',
+                selected_value=selected_value,
+            )
+
+            self._cog._log_wiki_debug(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                operation='search',
+                invocation_mode='dropdown_selection',
+                trace_id=self.trace_id,
+                search_query=selected_value,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                resolution_source='user_query',
+                component_type='dropdown',
+                selected_value=selected_value,
+                log_params=[
+                    {
+                        'kind': 'query',
+                        'label': 'search_query',
+                        'value': selected_value,
+                    },
+                    {
+                        'kind': 'query',
+                        'label': 'resolved_search_term',
+                        'value': resolved_search_term,
+                    },
+                    {
+                        'kind': 'page_title',
+                        'label': 'resolved_page_title',
+                        'value': resolved_page_title,
+                    },
+                ],
+            )
+        except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=str(exc),
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._cog._log_wiki_error(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                invocation_mode='dropdown_selection',
+                search_query=selected_value,
+                component_type='dropdown',
+                selected_value=selected_value,
+                trace_id=self.trace_id if hasattr(self, 'trace_id') else None,
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that selection.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that selection.',
+                    ephemeral=True,
+                )
+            return
 
 
 class DropdownView(disnake.ui.View):
     '''
     A view class for creating dropdowns in the response.
     '''
-    def __init__(self, options: list) -> None:
+    def __init__(self, options: list, cog, trace_id: str | None = None) -> None:
         '''
         Initialises a new instance of the DropdownView class.
 
         :param options: (List) -
         A list of options for the dropdown.
+        :param cog: -
+            The Wikipedia cog instance.
 
         :return: (None)
         '''
         self.bot = Bot
+        self.trace_id = trace_id
         super().__init__()
-        self.add_item(Dropdown(options))
+        self.add_item(Dropdown(options, cog, trace_id=trace_id))
 
 
 def setup(bot) -> None:

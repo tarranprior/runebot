@@ -30,9 +30,12 @@ docstrings.
 '''
 
 import random
+import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
+from loguru import logger
+from utils.logging import build_log_message
 
 import exceptions
 from config import *
@@ -60,81 +63,283 @@ class Quests(commands.Cog, name='quests'):
         self.bot = bot
 
 
+    @staticmethod
+    def _snowflake(value) -> str | None:
+        return str(value) if value is not None else None
+    
+
+    @staticmethod
+    def _interaction_context(inter: ApplicationCommandInteraction) -> dict:
+        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+        return {
+            'user_id': Quests._snowflake(getattr(user, 'id', None)),
+            'user_name': getattr(user, 'name', None),
+            'user_display_name': getattr(user, 'display_name', None),
+            'guild_id': Quests._snowflake(getattr(inter, 'guild_id', None)),
+            'channel_id': Quests._snowflake(getattr(inter, 'channel_id', None)),
+            'interaction_type': str(getattr(inter, 'type', None)),
+        }
+
+
+    @staticmethod
+    def _invocation_source(
+        inter: ApplicationCommandInteraction
+    ) -> str:
+        return 'slash_command'
+
+
+    def _quests_bind(
+        self,
+        inter: ApplicationCommandInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'search',
+        invocation_mode: str | None = None,
+        search_query: str | None = None,
+        resolved_search_term: str | None = None,
+        resolved_page_title: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        **extra,
+    ) -> dict:
+        payload = {
+            'command': 'quests',
+            'trace_id': trace_id,
+            'invocation_source': self._invocation_source(inter),
+            'action': action,
+            'stage': stage,
+            'operation': operation,
+            'invocation_mode': invocation_mode,
+            'search_query': search_query,
+            'resolved_search_term': resolved_search_term,
+            'resolved_page_title': resolved_page_title,
+            'resolution_source': resolution_source,
+            'log_params': log_params,
+            **self._interaction_context(inter),
+            **extra,
+        }
+        return {k: v for k, v in payload.items() if v is not None}
+
+
+    def _log_quests_debug(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._quests_bind(inter, **bind_kwargs)).debug(message)
+    
+
+    def _log_quests_info(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._quests_bind(inter, **bind_kwargs)).info(message)
+
+
+    def _log_quests_success(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._quests_bind(inter, **bind_kwargs)).success(message)
+
+
+    def _log_quests_error(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._quests_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+
+
+    def _log_quests_warning(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._quests_bind(inter, **bind_kwargs)).warning(message)
+
+
     async def search_quest(
         self,
-        search_query: str
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        inter: ApplicationCommandInteraction,
+        search_query: str,
+        trace_id: str | None = None,
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         Primary function for the `quests` command which takes a search
         query and returns corresponding quest data.
-    
+
         :param self: -
             Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple[disnake.Embed, disnake.ui.View] -
-            An embed and view containing the quest information.
+        :return: Tuple[disnake.Embed, disnake.ui.View, str, str] -
+            An embed, view, resolved search term, and resolved page title.
         '''
 
-        # Checks if the query is equal to the "I'm feeling lucky" special
-        # query and returns a random article if True.
-        if search_query == 'I\'m feeling lucky\u200a':
-            quests = await get_suggestions(self, ['Quests'])
-            page_content = parse_page(
-                BASE_URL,
-                slugify(
-                    random.choice([i for i in quests if not any(w in i for w in BLACKLIST_QUESTS)])
-                ),
-                HEADERS
-            )
-        else:
-            page_content = parse_page(
-            BASE_URL,
-            search_query,
-            HEADERS
-        )
-
-        info = parse_infobox(page_content)
-        title = parse_title(page_content)
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'user_query'
+        original_query = search_query
+        resolved_search_term = search_query
 
         try:
-            info['Quest series']
-        except KeyError:
-            raise exceptions.NoQuestData
+            if invocation_mode == 'feeling_lucky':
+                quests = await get_suggestions(self, ['Quests'])
+                lucky_selection = random.choice([
+                    i for i in quests if not any(w in i for w in BLACKLIST_QUESTS)
+                ])
+                resolved_search_term = lucky_selection
+                resolution_source = 'wiki_random_quest'
 
-        quest_details = parse_quest_details(page_content)
+                page_content = parse_page(
+                    BASE_URL,
+                    slugify(lucky_selection),
+                    HEADERS,
+                    trace_id=trace_id
+                )
+            else:
+                page_content = parse_page(
+                    BASE_URL,
+                    search_query,
+                    HEADERS,
+                    trace_id=trace_id
+                )
 
-        embed, view = EmbedFactory().create(
-            title=title,
-            description=quest_details['Description'],
-            colour=disnake.Colour.og_blurple(),
-            thumbnail_url=THUMBNAILS['quest'],
-            button_label='Quick Guide',
-            button_url=f'{BASE_URL}{slugify(title)}/Quick_guide'
-        )
+            info = parse_infobox(page_content)
+            title = parse_title(page_content)
+            resolved_search_term = title
 
-        quest_properties = [
-            'Quest series', 'Official difficulty', 'Members'
-        ]
+            self._log_quests_info(
+                inter,
+                build_log_message(
+                    command='quests',
+                    stage='resolve',
+                    operation='search',
+                    subject='search_query',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': original_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                ],
+            )
 
-        for prop in quest_properties:
-            embed.add_field(name=prop, value=info.get(prop), inline=True)
+            if 'Quest series' not in info:
+                raise exceptions.NoQuestData
 
-        embed.add_field(
-            name='Start point',
-            value=quest_details['Start point'],
-            inline=False)
-        embed.add_field(
-            name='Requirements',
-            value=f'Click [here]({BASE_URL}{slugify(title)}#Details) for a full list of requirements.',
-            inline=True)
-        embed.add_field(
-            name='Rewards',
-            value=f'Click [here]({BASE_URL}{slugify(title)}#Rewards) for a full list of rewards.',
-            inline=True)
-        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-        return embed, view
+            quest_details = parse_quest_details(page_content)
+
+            embed, view = EmbedFactory().create(
+                title=title,
+                description=quest_details['Description'],
+                colour=disnake.Colour.og_blurple(),
+                thumbnail_url=THUMBNAILS['quest'],
+                button_label='Quick Guide',
+                button_url=f'{BASE_URL}{slugify(title)}/Quick_guide'
+            )
+
+            quest_properties = [
+                'Quest series', 'Official difficulty', 'Members'
+            ]
+
+            for prop in quest_properties:
+                embed.add_field(name=prop, value=info.get(prop), inline=True)
+
+            embed.add_field(
+                name='Start point',
+                value=quest_details['Start point'],
+                inline=False)
+            embed.add_field(
+                name='Requirements',
+                value=f'Click [here]({BASE_URL}{slugify(title)}#Details) for a full list of requirements.',
+                inline=True)
+            embed.add_field(
+                name='Rewards',
+                value=f'Click [here]({BASE_URL}{slugify(title)}#Rewards) for a full list of rewards.',
+                inline=True)
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            return embed, view, resolved_search_term, title
+
+        except exceptions.NoQuestData as exc:
+            self._log_quests_warning(
+                inter,
+                build_log_message(
+                    command='quests',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title if 'title' in locals() else None,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': original_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title if 'title' in locals() else None},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
+
+        except exceptions.Nonexistence as exc:
+            self._log_quests_warning(
+                inter,
+                build_log_message(
+                    command='quests',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=original_query,
+                resolved_search_term=resolved_search_term,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': original_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
 
 
     @commands.slash_command(
@@ -153,7 +358,7 @@ class Quests(commands.Cog, name='quests'):
         self,
         inter: ApplicationCommandInteraction,
         *,
-        search_query
+        search_query: str
     ) -> None:
         '''
         Creates a slash command for the `search_quest` function.
@@ -167,13 +372,122 @@ class Quests(commands.Cog, name='quests'):
 
         :return: (None)
         '''
-        await inter.response.defer()
-        embed, view = await self.search_quest(search_query)
-        await inter.followup.send(embed=embed, view=view)
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_quest' if invocation_mode == 'feeling_lucky' else 'user_query'
+        trace_id = uuid.uuid4().hex
+
+        self._log_quests_info(
+            inter,
+            build_log_message(
+                command='quests',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            trace_id=trace_id,
+            search_query=search_query,
+            invocation_mode=invocation_mode,
+            resolution_source=resolution_source,
+            log_params=[
+                {'kind': 'query', 'label': 'search_query', 'value': search_query}
+            ],
+        )
+
+        try:
+            await inter.response.defer()
+            embed, view, resolved_search_term, resolved_page_title = await self.search_quest(
+                inter,
+                search_query,
+                trace_id=trace_id,
+            )
+            await inter.followup.send(embed=embed, view=view)
+
+            self._log_quests_success(
+                inter,
+                build_log_message(
+                    command='quests',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+                ],
+            )
+        except (exceptions.NoQuestData, exceptions.Nonexistence) as exc:
+            if isinstance(exc, exceptions.Nonexistence):
+                expected_description = str(exc)
+            else:
+                expected_description = str(exceptions.NoQuestData())
+                
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_quests_error(
+                inter,
+                build_log_message(
+                    command='quests',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query}
+                ],
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            return
 
 
     @quests.autocomplete('search_query')
-    async def search_query_autocomplete(self, search_query: str) -> (Union[List[str], str]):
+    async def search_query_autocomplete(self, search_query: str) -> Union[List[str], str]:
         '''
         Creates a selection of autocomplete suggestions once the user begins
         typing.
@@ -183,7 +497,7 @@ class Quests(commands.Cog, name='quests'):
         :param search_query: (String) -
             Represents a search query.
 
-        :return: (Union[List[String], String]) -
+        :return: (Union[List[str], str]) -
             A list of possible autocomplete suggestions,
             or "I'm feeling lucky".
         '''

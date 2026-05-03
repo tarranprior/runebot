@@ -11,12 +11,15 @@ Usage:
 '''
 
 import argparse
+import sys
 import disnake
+from loguru import logger
 
 from settings import load_settings
 from templates.bot import Bot
 from utils.helpers import configuration
 from utils.internal_api import InternalStatsAPIServer
+from utils.log_api_sink import start_log_api_pipeline
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,9 +33,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def configure_logging() -> None:
+    logger.remove()
+    logger.add(sys.stderr, level='INFO')
+
+
 def main() -> None:
     args = parse_args()
+    configure_logging()
     settings = load_settings(args.env)
+    
+    log_pipeline = start_log_api_pipeline(
+        host=settings.internal_api_host,
+        port=settings.internal_api_port,
+        token=settings.internal_api_token,
+        logs_db_path=settings.internal_logs_db_path,
+    )
 
     config = configuration()
     bot = Bot(
@@ -42,6 +58,7 @@ def main() -> None:
             name=f"{config['configuration']['activity']}"
         )
     )
+    setattr(bot, 'log_pipeline', log_pipeline)
 
     bot.load_extensions(exts=[
         'cogs.administrator.ping',
@@ -59,7 +76,9 @@ def main() -> None:
         bot=bot,
         token=settings.internal_api_token,
         host=settings.internal_api_host,
-        port=settings.internal_api_port
+        port=settings.internal_api_port,
+        logs_db_path=settings.internal_logs_db_path,
+        log_pipeline=log_pipeline
     )
     internal_api.start()
 

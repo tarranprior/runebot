@@ -46,14 +46,51 @@ from urllib.error import HTTPError
 import uuid
 from typing import List, Optional
 import requests
+from loguru import logger
 
 from bs4 import BeautifulSoup
 import matplotlib
 import matplotlib.pyplot as plotter
 matplotlib.use('Agg')
 
+from utils.logging import build_internal_log_message
+
 import exceptions
 from utils.helpers import normalise_price, slugify
+
+
+def parser_log(
+    level: str,
+    stage: str,
+    operation: str,
+    subject: str | None = None,
+    resolved: str | None = None,
+    trace_id: str | None = None,
+    log_params: list | None = None,
+    **extra,
+) -> None:
+    message = build_internal_log_message(
+        stage=stage,
+        operation=operation,
+        subject=subject,
+        resolved=resolved,
+    )
+
+    payload = {
+        'trace_id': trace_id,
+        'action': operation,
+        'stage': stage,
+        'operation': operation,
+        'subject': subject,
+        'resolved': resolved,
+        'log_params': log_params,
+        **extra,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+    bound_logger = logger.bind(**payload)
+
+    log_method = getattr(bound_logger, level, bound_logger.debug)
+    log_method(message)
 
 
 def parse_all(page_content: BeautifulSoup) -> dict:
@@ -90,7 +127,7 @@ def parse_all(page_content: BeautifulSoup) -> dict:
              'thumbnail_url': page_thumbnail}
 
 
-def parse_page(url: str, search_query: str, headers: dict) -> BeautifulSoup:
+def parse_page(url: str, search_query: str, headers: dict, trace_id: str | None = None) -> BeautifulSoup:
     '''
     Parser function whichs parses all page content from an
     Old School RuneScape wikipedia page.
@@ -113,15 +150,86 @@ def parse_page(url: str, search_query: str, headers: dict) -> BeautifulSoup:
     ) else slugify(search_query).lower()
     queries = [new_query, slugify(search_query).rstrip('\u200a')]
 
+    parser_log(
+        level='debug',
+        stage='start',
+        operation='load_page',
+        subject='wiki_page',
+        trace_id=trace_id,
+        log_params=[{'url': url, 'search_query': search_query}],
+    )
+
+    last_http_error = None
+
     for query in queries:
         try:
             request = Request(f'{url}{query}', headers=headers)
             page = urlopen(request)
             page_content = BeautifulSoup(page, 'html.parser')
+
+            resolved_page_title = None
+            try:
+                resolved_page_title = parse_title(page_content)
+            except Exception:
+                resolved_page_title = None
+            final_url = getattr(page, 'geturl', lambda: None)()
+
+            parser_log(
+                level='debug',
+                stage='resolve',
+                operation='page_title',
+                subject='wiki_page',
+                resolved=resolved_page_title,
+                trace_id=trace_id,
+                log_params=[{'final_url': final_url, 'query': query}],
+            )
+
+            parser_log(
+                level='debug',
+                stage='complete',
+                operation='load_page',
+                subject='wiki_page',
+                trace_id=trace_id,
+                log_params=[{'url': url, 'search_query': search_query, 'query': query}],
+            )
             break
-        except HTTPError:
+        except HTTPError as exc:
+            last_http_error = exc
+            parser_log(
+                level='debug',
+                stage='retry',
+                operation='load_page',
+                subject='wiki_page',
+                trace_id=trace_id,
+                log_params=[
+                    {
+                        'url': url,
+                        'search_query': search_query,
+                        'query': query,
+                        'error': str(exc),
+                        'status_code': getattr(exc, 'code', None),
+                    }
+                ],
+            )
             continue
     else:
+        failure_params = {'url': url, 'search_query': search_query}
+        if last_http_error is not None:
+            failure_params['error'] = str(last_http_error)
+            failure_params['status_code'] = getattr(last_http_error, 'code', None)
+
+        parser_log(
+            level='debug',
+            stage='failure',
+            operation='load_page',
+            subject='wiki_page',
+            trace_id=trace_id,
+            log_params=[failure_params],
+        )
+
+        if last_http_error is not None and getattr(last_http_error, 'code', None) in (403, 429):
+            raise exceptions.WikiRequestFailed() from last_http_error
+
         raise exceptions.Nonexistence()
 
     return page_content
@@ -307,7 +415,7 @@ def parse_levelup_table(page_div: BeautifulSoup) -> str:
     return ''.join(levelup_details)
 
 
-def parse_price_data(url: str, headers: dict) -> dict:
+def parse_price_data(url: str, headers: dict, trace_id: str | None = None) -> dict:
     '''
     Parser function which parses price data using the official API.
 
@@ -315,17 +423,57 @@ def parse_price_data(url: str, headers: dict) -> dict:
         Represents the full URL with an item_id.
     :param headers: (Dictionary) -
         Represents a series of request headers.
+    :param trace_id: (String[Optional]) -
+        Trace ID for request correlation.
 
     :return: (Dictionary) -
         A dictionary containing the parsed price data.
     '''
 
+    parser_log(
+        level='debug',
+        stage='start',
+        operation='parse_price_data',
+        subject='price_api',
+        trace_id=trace_id,
+        log_params=[{'url': url}],
+    )
     try:
         request = requests.get(url, headers=headers, timeout=60)
+        request.raise_for_status()
         data = request.json()
-    except BaseException as exc:
+
+        parser_log(
+            level='debug',
+            stage='complete',
+            operation='parse_price_data',
+            subject='price_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'data_keys': len(data) if isinstance(data, dict) else None}],
+        )
+        return data
+
+    except requests.HTTPError as exc:
+        parser_log(
+            level='debug',
+            stage='failure',
+            operation='parse_price_data',
+            subject='price_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'error': str(exc)}],
+        )
         raise exceptions.NoPriceData from exc
-    return data
+
+    except Exception as exc:
+        parser_log(
+            level='error',
+            stage='runtime_failure',
+            operation='parse_price_data',
+            subject='price_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'error': str(exc)}],
+        )
+        raise exceptions.NoPriceData from exc
 
 
 def parse_quest_details(page_content: BeautifulSoup) -> dict:
@@ -471,7 +619,8 @@ def parse_hiscores(
     url: str,
     headers: dict,
     hiscores_order: list,
-    usernames: list
+    usernames: list,
+    trace_id: str | None = None,
 ) -> dict:
     '''
     Parser function which parses values from the official
@@ -491,13 +640,74 @@ def parse_hiscores(
         for the given usernames.
     '''
 
+    parser_log(
+        level='debug',
+        stage='start',
+        operation='parse_hiscores',
+        subject='hiscores_api',
+        trace_id=trace_id,
+        log_params=[{'url': url, 'usernames_count': len(usernames)}],
+    )
+
     responses = []
-    for user in usernames:
-        request = requests.get(f'{url}{user}', headers=headers, timeout=60)
-        player_info = request.text[:-1]
-        responses.append(player_info.split('\n'))
-    for resp in responses:
-        hiscore_data =(
-            {hiscores_order[i]: resp[i] for i in range(len(hiscores_order))}
+    try:
+        for user in usernames:
+            request = requests.get(f'{url}{user}', headers=headers, timeout=60)
+            request.raise_for_status()
+            player_info = request.text[:-1]
+            responses.append(player_info.split('\n'))
+
+        hiscore_data = {}
+        for resp in responses:
+            hiscore_data = {
+                hiscores_order[i]: resp[i] for i in range(len(hiscores_order))
+            }
+
+        parser_log(
+            level='debug',
+            stage='complete',
+            operation='parse_hiscores',
+            subject='hiscores_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'usernames_count': len(usernames), 'output_keys': len(hiscore_data)}],
         )
-    return hiscore_data
+        return hiscore_data
+
+    except requests.HTTPError as exc:
+        parser_log(
+            level='debug',
+            stage='failure',
+            operation='parse_hiscores',
+            subject='hiscores_api',
+            trace_id=trace_id,
+            log_params=[
+                {'url': url, 'error': str(exc), 'status_code': getattr(exc.response, 'status_code', None),
+                 'usernames_count': len(usernames)}
+            ],
+        )
+        status_code = getattr(exc.response, 'status_code', None)
+        if status_code == 404:
+            raise exceptions.NoHiscoreData from exc
+        raise exceptions.WikiRequestFailed() from exc
+
+    except requests.RequestException as exc:
+        parser_log(
+            level='error',
+            stage='runtime_failure',
+            operation='parse_hiscores',
+            subject='hiscores_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'error': str(exc), 'usernames_count': len(usernames)}],
+        )
+        raise exceptions.WikiRequestFailed() from exc
+
+    except Exception as exc:
+        parser_log(
+            level='error',
+            stage='runtime_failure',
+            operation='parse_hiscores',
+            subject='hiscores_api',
+            trace_id=trace_id,
+            log_params=[{'url': url, 'error': str(exc), 'usernames_count': len(usernames)}],
+        )
+        raise

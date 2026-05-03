@@ -29,15 +29,18 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import random
+import uuid
+
+from disnake.ext import commands
+from disnake import ApplicationCommandInteraction, Option, OptionType
+from loguru import logger
+from utils.logging import build_log_message
+
 import exceptions
 from config import *
 from templates.bot import Bot
 from utils import *
-
-import random
-
-from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, Option, OptionType
 
 
 class Minigames(commands.Cog, name='minigames'):
@@ -60,11 +63,118 @@ class Minigames(commands.Cog, name='minigames'):
         self.bot = bot
 
 
+    @staticmethod
+    def _snowflake(value) -> str | None:
+        return str(value) if value is not None else None
+
+
+    @staticmethod
+    def _interaction_context(inter: ApplicationCommandInteraction) -> dict:
+        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+        return {
+            'user_id': Minigames._snowflake(getattr(user, 'id', None)),
+            'user_name': getattr(user, 'name', None),
+            'user_display_name': getattr(user, 'display_name', None),
+            'guild_id': Minigames._snowflake(getattr(inter, 'guild_id', None)),
+            'channel_id': Minigames._snowflake(getattr(inter, 'channel_id', None)),
+            'interaction_type': str(getattr(inter, 'type', None)),
+        }
+
+
+    @staticmethod
+    def _invocation_source(
+        inter: ApplicationCommandInteraction
+    ) -> str:
+        return 'slash_command'
+
+
+    def _minigames_bind(
+        self,
+        inter: ApplicationCommandInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'search',
+        invocation_mode: str | None = None,
+        search_query: str | None = None,
+        resolved_search_term: str | None = None,
+        resolved_page_title: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        **extra,
+    ) -> dict:
+        payload = {
+            'command': 'minigames',
+            'trace_id': trace_id,
+            'invocation_source': self._invocation_source(inter),
+            'action': action,
+            'stage': stage,
+            'operation': operation,
+            'invocation_mode': invocation_mode,
+            'search_query': search_query,
+            'resolved_search_term': resolved_search_term,
+            'resolved_page_title': resolved_page_title,
+            'resolution_source': resolution_source,
+            'log_params': log_params,
+            **self._interaction_context(inter),
+            **extra,
+        }
+        return {k: v for k, v in payload.items() if v is not None}
+
+
+    def _log_minigames_debug(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._minigames_bind(inter, **bind_kwargs)).debug(message)
+    
+
+    def _log_minigames_info(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._minigames_bind(inter, **bind_kwargs)).info(message)
+
+
+    def _log_minigames_success(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._minigames_bind(inter, **bind_kwargs)).success(message)
+
+
+    def _log_minigames_error(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._minigames_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+
+
+    def _log_minigames_warning(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._minigames_bind(inter, **bind_kwargs)).warning(message)
+
+
     async def search_minigame(
         self,
         inter: ApplicationCommandInteraction,
-        search_query: str
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        search_query: str,
+        trace_id: str | None = None,
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         General function which takes the given search query and returns
         corresponding minigame data.
@@ -76,85 +186,180 @@ class Minigames(commands.Cog, name='minigames'):
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple([discord.Embed, discord.View]) -
-            An embed and view containing the minigame information.
+        :return: Tuple[disnake.Embed, disnake.ui.View, str, str] -
+            An embed, view, resolved search term, and resolved page title.
         '''
 
-        # Checks if the query is equal to the "I'm feeling lucky" special
-        # query and returns a random article if True.
-        if search_query == 'I\'m feeling lucky\u200a':
-            page_content = parse_page(
-                BASE_URL,
-                slugify(
-                    random.choice(
-                        [s for s in await get_suggestions(
-                            self, ['Minigames', 'Activities']
-                        ) if s not in (
-                            'Minigames',
-                            'Barrows',
-                            'Creature Creation'
-                        )]
-                    )
-                ),
-                HEADERS
-            )
-        else:
-            page_content = parse_page(
-            BASE_URL,
-            search_query,
-            HEADERS
-        )
-
-        title = parse_title(page_content)
-        description = parse_description(page_content).pop()
-        info = parse_infobox(page_content)
-        minigames = parse_page(BASE_URL, 'Minigames', HEADERS)
-        thumbnail_url = parse_minigame_icon(minigames, slugify(title))
-
-        if not thumbnail_url:
-            thumbnail_url = THUMBNAILS['minigame']
-            colour = 0xC24E46
-        else:
-            colour = disnake.Colour.from_rgb(
-                *await extract_colour(
-                    self,
-                    inter.guild_id,
-                    inter.guild.owner_id,
-                    thumbnail_url,
-                    HEADERS
-                )
-            )
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_minigame' if invocation_mode == 'feeling_lucky' else 'user_query'
+        resolved_search_term = search_query
 
         try:
-            info['Type']
-        except KeyError:
-            raise exceptions.NoMinigameData
+            if invocation_mode == 'feeling_lucky':
+                random_selection = random.choice(
+                    [s for s in await get_suggestions(
+                        self, ['Minigames', 'Activities']
+                    ) if s not in (
+                        'Minigames',
+                        'Barrows',
+                        'Creature Creation'
+                    )]
+                )
+                page_content = parse_page(
+                    BASE_URL,
+                    slugify(random_selection),
+                    HEADERS,
+                    trace_id=trace_id
+                )
+                resolved_search_term = random_selection
+            else:
+                page_content = parse_page(
+                    BASE_URL,
+                    search_query,
+                    HEADERS,
+                    trace_id=trace_id
+                )
 
-        embed, view = EmbedFactory().create(
-            title=title,
-            description=description,
-            thumbnail_url=thumbnail_url,
-            colour=colour,
-            button_label='Visit Page',
-            button_url=f'{BASE_URL}{slugify(title)}'
-        )
+            title = parse_title(page_content)
+            resolved_search_term = title
 
-        minigame_properties = [
-            'Released',
-            'Type',
-            'Members',
-            'Location',
-            'Participants',
-            'Reward currency',
-            'Tutorial'
-        ]
+            self._log_minigames_info(
+                inter,
+                build_log_message(
+                    command='minigames',
+                    stage='resolve',
+                    operation='search',
+                    subject='search_query',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                ],
+            )
 
-        for prop in minigame_properties:
-            embed.add_field(name=prop, value=info.get(prop), inline=True)
-        embed.add_field(name='Skills', value=info.get('Skills'), inline=False)
-        embed.add_field(name='Requirements', value=info.get('Requirements'), inline=False)
-        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-        return embed, view
+            description = parse_description(page_content).pop()
+            info = parse_infobox(page_content)
+            minigames = parse_page(
+                BASE_URL,
+                'Minigames',
+                HEADERS,
+                trace_id=trace_id,
+            )
+            thumbnail_url = parse_minigame_icon(minigames, slugify(title))
+
+            if not thumbnail_url:
+                thumbnail_url = THUMBNAILS['minigame']
+                colour = 0xC24E46
+            else:
+                colour = disnake.Colour.from_rgb(
+                    *await extract_colour(
+                        self,
+                        inter.guild_id,
+                        inter.guild.owner_id,
+                        thumbnail_url,
+                        HEADERS
+                    )
+                )
+
+            try:
+                info['Type']
+            except KeyError:
+                raise exceptions.NoMinigameData
+
+            embed, view = EmbedFactory().create(
+                title=title,
+                description=description,
+                thumbnail_url=thumbnail_url,
+                colour=colour,
+                button_label='Visit Page',
+                button_url=f'{BASE_URL}{slugify(title)}'
+            )
+
+            minigame_properties = [
+                'Released',
+                'Type',
+                'Members',
+                'Location',
+                'Participants',
+                'Reward currency',
+                'Tutorial'
+            ]
+
+            for prop in minigame_properties:
+                embed.add_field(name=prop, value=info.get(prop), inline=True)
+            embed.add_field(name='Skills', value=info.get('Skills'), inline=False)
+            embed.add_field(name='Requirements', value=info.get('Requirements'), inline=False)
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            return embed, view, resolved_search_term, title
+
+        except exceptions.NoMinigameData as exc:
+            self._log_minigames_warning(
+                inter,
+                build_log_message(
+                    command='minigames',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title if 'title' in locals() else None,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title if 'title' in locals() else None},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
+
+        except exceptions.Nonexistence as exc:
+            self._log_minigames_warning(
+                inter,
+                build_log_message(
+                    command='minigames',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
 
 
     @commands.slash_command(
@@ -173,7 +378,7 @@ class Minigames(commands.Cog, name='minigames'):
         self,
         inter: ApplicationCommandInteraction,
         *,
-        search_query
+        search_query: str
     ) -> None:
         '''
         Creates a slash command for the `search_minigame` function.
@@ -187,14 +392,122 @@ class Minigames(commands.Cog, name='minigames'):
 
         :return: (None)
         '''
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_minigame' if invocation_mode == 'feeling_lucky' else 'user_query'
+        trace_id = uuid.uuid4().hex
 
-        await inter.response.defer()
-        embed, view = await self.search_minigame(inter, search_query)
-        await inter.followup.send(embed=embed, view=view)
+        self._log_minigames_info(
+            inter,
+            build_log_message(
+                command='minigames',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            trace_id=trace_id,
+            search_query=search_query,
+            invocation_mode=invocation_mode,
+            resolution_source=resolution_source,
+            log_params=[
+                {'kind': 'query', 'label': 'search_query', 'value': search_query}
+            ],
+        )
+
+        try:
+            await inter.response.defer()
+            embed, view, resolved_search_term, resolved_page_title = await self.search_minigame(
+                inter,
+                search_query,
+                trace_id=trace_id,
+            )
+            await inter.followup.send(embed=embed, view=view)
+
+            self._log_minigames_success(
+                inter,
+                build_log_message(
+                    command='minigames',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+                ],
+            )
+        except (exceptions.NoMinigameData, exceptions.Nonexistence) as exc:
+            if isinstance(exc, exceptions.Nonexistence):
+                expected_description = str(exc)
+            else:
+                expected_description = str(exceptions.NoMinigameData())
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_minigames_error(
+                inter,
+                build_log_message(
+                    command='minigames',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query}
+                ],
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            return
 
 
     @minigames.autocomplete('search_query')
-    async def search_query_autocomplete(self, search_query: str) -> (Union[List[str], str]):
+    async def search_query_autocomplete(self, search_query: str) -> Union[List[str], str]:
         '''
         Creates a selection of autocomplete suggestions once the user begins
         typing.
@@ -204,7 +517,7 @@ class Minigames(commands.Cog, name='minigames'):
         :param search_query: (String) -
             Represents a search query.
 
-        :return: (Union[List[String], String]) -
+        :return: (Union[List[str], str]) -
             A list of possible autocomplete suggestions,
             or "I'm feeling lucky".
         '''

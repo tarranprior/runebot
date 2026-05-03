@@ -186,9 +186,7 @@ class EmbedFactory:
             description='View and manage accounts saved with Runebot.\n\nUse the dropdown below to select an account (sets it as default), and use the buttons to manage it.',
             colour=self.colour
         )
-
-        default_account_id = default_account[0] if default_account else None
-
+        
         if accounts:
             accounts_text = '\n'.join(
                 f'{emotes.get(acc[2], "")} {acc[1]}'

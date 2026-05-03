@@ -31,11 +31,16 @@ docstrings.
 
 import datetime as dt
 import random
+import uuid
 from typing import Tuple, Union, List
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType, MessageInteraction
 
+from loguru import logger
+from utils.logging import build_log_message
+
+import exceptions
 from config import *
 from templates.bot import Bot
 from utils import *
@@ -61,48 +66,264 @@ class Price(commands.Cog, name='price'):
         self.bot = bot
 
 
-    async def _resolve_item_info(self, search_query: str) -> Tuple[dict, str]:
+    @staticmethod
+    def _snowflake(value) -> 'str | None':
+        return str(value) if value is not None else None
+
+
+    @staticmethod
+    def _interaction_context(inter: ApplicationCommandInteraction | MessageInteraction) -> dict:
+        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+        return {
+            'user_id': Price._snowflake(getattr(user, 'id', None)),
+            'user_name': getattr(user, 'name', None),
+            'user_display_name': getattr(user, 'display_name', None),
+            'guild_id': Price._snowflake(getattr(inter, 'guild_id', None)),
+            'channel_id': Price._snowflake(getattr(inter, 'channel_id', None)),
+            'interaction_type': str(getattr(inter, 'type', None)),
+        }
+
+
+    @staticmethod
+    def _invocation_source(inter: ApplicationCommandInteraction | MessageInteraction) -> str:
+        return (
+            'component_callback'
+            if isinstance(inter, MessageInteraction)
+            else 'slash_command'
+        )
+
+
+    def _price_bind(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'search',
+        invocation_mode: str | None = None,
+        search_query: str | None = None,
+        resolved_search_term: str | None = None,
+        resolved_page_title: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        item_id: str | None = None,
+        component_type: str | None = None,
+        button_action: str | None = None,
+        owner_id: str | int | None = None,
+        **extra,
+    ) -> dict:
+        payload = {
+            'command': 'price',
+            'trace_id': trace_id,
+            'invocation_source': self._invocation_source(inter),
+            'action': action,
+            'stage': stage,
+            'operation': operation,
+            'invocation_mode': invocation_mode,
+            'search_query': search_query,
+            'resolved_search_term': resolved_search_term,
+            'resolved_page_title': resolved_page_title,
+            'resolution_source': resolution_source,
+            'log_params': log_params,
+            'item_id': item_id,
+            'component_type': component_type,
+            'button_action': button_action,
+            'owner_id': Price._snowflake(owner_id),
+            **self._interaction_context(inter),
+            **extra,
+        }
+        return {k: v for k, v in payload.items() if v is not None}
+
+
+    def _log_price_debug(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._price_bind(inter, **bind_kwargs)).debug(message)
+    
+
+    def _log_price_info(
+        self,
+        inter: ApplicationCommandInteraction  | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._price_bind(inter, **bind_kwargs)).info(message)
+
+
+    def _log_price_warning(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._price_bind(inter, **bind_kwargs)).warning(message)
+
+
+    def _log_price_success(
+        self,
+        inter: ApplicationCommandInteraction  | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._price_bind(inter, **bind_kwargs)).success(message)
+
+
+    def _log_price_error(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        logger.bind(**self._price_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+
+
+    async def _resolve_item_info(
+        self,
+        inter: ApplicationCommandInteraction,
+        search_query: str,
+        trace_id: str | None = None,
+    ) -> Tuple[dict, str, str]:
         '''
-        Resolves a search query to item information including item ID and title.
+        Resolves a search query to item information and resolved page metadata.
 
         :param self: -
             Represents this object.
+        :param inter: (ApplicationCommandInteraction) -
+            Represents an interaction with an application command.
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple[dict, str] -
-            A tuple containing the item info dictionary and title.
+        :return: Tuple[dict, str, str] -
+            A tuple containing the item info dictionary, resolved search term,
+            and resolved page title.
         '''
 
-        # Checks if the query is equal to the "I'm feeling lucky" special
-        # query and returns a random article if True.
-        if search_query == 'I\'m feeling lucky\u200a':
-            tradeable_items = await get_suggestions(self, ['Tradeable items'])
-            page_content = parse_page(
-                BASE_URL,
-                slugify(
-                    random.choice([i for i in tradeable_items if not any(w in i for w in BLACKLIST_ITEMS)])
-                ),
-                HEADERS
-            )
-        else:
-            page_content = parse_page(
-                BASE_URL,
-                search_query,
-                HEADERS
-            )
-
-        info = parse_infobox(page_content)
-        title = parse_title(page_content)
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_item' if invocation_mode == 'feeling_lucky' else 'user_query'
+        resolved_search_term = search_query
 
         try:
-            info['Value']
-            info['Exchange']
-            info['Buy limit']
-        except KeyError:
-            raise exceptions.NoPriceData
+            if invocation_mode == 'feeling_lucky':
+                random_selection = random.choice(
+                    [i for i in await get_suggestions(self, ['Tradeable items']) if not any(w in i for w in BLACKLIST_ITEMS)]
+                )
+                resolved_search_term = random_selection
+                page_content = parse_page(
+                    BASE_URL,
+                    slugify(random_selection),
+                    HEADERS,
+                    trace_id=trace_id
+                )
+            else:
+                page_content = parse_page(
+                    BASE_URL,
+                    search_query,
+                    HEADERS,
+                    trace_id=trace_id
+                )
 
-        return info, title
+            title = parse_title(page_content)
+            resolved_search_term = title
+
+            self._log_price_info(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='resolve',
+                    operation='search',
+                    subject='search_query',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                ],
+            )
+
+            info = parse_infobox(page_content)
+
+            try:
+                info['Value']
+                info['Exchange']
+                info['Buy limit']
+            except KeyError:
+                raise exceptions.NoPriceData
+
+            return info, resolved_search_term, title
+
+        except exceptions.NoPriceData as exc:
+            self._log_price_warning(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title if 'title' in locals() else None,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {
+                        'kind': 'page_title',
+                        'label': 'resolved_page_title',
+                        'value': title if 'title' in locals() else None,
+                    },
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
+
+        except (exceptions.Nonexistence, exceptions.WikiRequestFailed) as exc:
+            self._log_price_warning(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
 
 
     def _build_price_view(
@@ -159,7 +380,10 @@ class Price(commands.Cog, name='price'):
         self,
         item_id: str,
         inter: ApplicationCommandInteraction | MessageInteraction,
-        owner_id: int
+        owner_id: int,
+        trace_id: str | None = None,
+        info: dict | None = None,
+        title: str | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str]:
         '''
         Builds the price embed, view, and graph from an item ID.
@@ -177,25 +401,27 @@ class Price(commands.Cog, name='price'):
             An embed, view, and filename containing the price information.
         '''
 
-        # Fetch price data from APIs
         api_data = parse_price_data(
             f"{PRICEAPI_URL}{item_id}",
-            HEADERS
+            HEADERS,
+            trace_id=trace_id,
         )
 
         graphapi_data = parse_price_data(
             f"{GRAPHAPI_URL}{item_id}.json",
-            HEADERS
+            HEADERS,
+            trace_id=trace_id,
         )
 
-        # Fetch item info to get title and other properties
-        page_content = parse_page(
-            BASE_URL,
-            slugify(api_data['item']['name']),
-            HEADERS
-        )
-        info = parse_infobox(page_content)
-        title = parse_title(page_content)
+        if info is None or title is None:
+            page_content = parse_page(
+                BASE_URL,
+                slugify(api_data['item']['name']),
+                HEADERS,
+                trace_id=trace_id,
+            )
+            info = parse_infobox(page_content)
+            title = parse_title(page_content)
 
         filename = await generate_graph(graphapi_data)
 
@@ -226,21 +452,25 @@ class Price(commands.Cog, name='price'):
             # Calculating the profit margin.
             price_data = parse_price_data(
                 f'{WIKIAPI_URL}{item_id}',
-                HEADERS
+                HEADERS,
+                trace_id=trace_id,
             )
             high_price = price_data['data'][item_id]['high']
             low_price = price_data['data'][item_id]['low']
             # Insert a + or - depending on positive or negative profit.
             def operator(i): return f'+{int(i.replace(",", ""))}' if int(i.replace(',', '')) >= 0 else '' + str(i)
             profit_margin = operator(f'{low_price - high_price:,}')
+            
+            buy_limit_value = info.get("Buy limit")
             try:
-                # Represents buy limit * profit margin.
+                if not isinstance(buy_limit_value, str):
+                    raise ValueError
+
+                buy_limit = int(buy_limit_value.replace(",", ""))
                 potential_profit = operator(
-                    f'{int(info.get("Buy limit").replace(",", "")) * (int(low_price) - int(high_price)):,}'
+                    f'{buy_limit * (int(low_price) - int(high_price)):,}'
                 )
-            except ValueError:
-                # Sets the potential profit to profit margin if buy limit is
-                # currently unknown.
+            except (ValueError, AttributeError):
                 potential_profit = operator(
                     f'{int(profit_margin.replace("-", "").replace("+", "").replace(",", ""))}'
                 )
@@ -345,14 +575,36 @@ class Price(commands.Cog, name='price'):
             )
             return
 
+        trace_id = uuid.uuid4().hex
         loading_view = build_loading_button_view(inter)
         await inter.response.edit_message(view=loading_view)
+
+        self._log_price_info(
+            inter,
+            build_log_message(
+                command='price',
+                stage='start',
+                operation='refresh',
+            ),
+            action='start',
+            stage='start',
+            operation='refresh',
+            trace_id=trace_id,
+            component_type='button',
+            button_action='refresh',
+            item_id=item_id,
+            owner_id=owner_id,
+            log_params=[
+                {'kind': 'item', 'label': 'item_id', 'value': item_id},
+            ],
+        )
 
         try:
             embed, view, filename = await self._build_price_embed(
                 item_id,
                 inter,
-                int(owner_id)
+                int(owner_id),
+                trace_id=trace_id,
             )
 
             file = disnake.File(f'assets/{filename}', filename=filename)
@@ -368,14 +620,99 @@ class Price(commands.Cog, name='price'):
             file.close()
             os.remove(f'assets/{filename}')
 
+            self._log_price_success(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='complete',
+                    operation='refresh',
+                ),
+                action='complete',
+                stage='complete',
+                operation='refresh',
+                trace_id=trace_id,
+                component_type='button',
+                button_action='refresh',
+                item_id=item_id,
+                owner_id=owner_id,
+                log_params=[
+                    {'kind': 'item', 'label': 'item_id', 'value': item_id},
+                ],
+            )
+
+        except (
+            exceptions.NoPriceData,
+            exceptions.Nonexistence,
+            exceptions.WikiRequestFailed,
+        ) as exc:
+            if isinstance(exc, (exceptions.Nonexistence, exceptions.WikiRequestFailed)):
+                expected_description = str(exc)
+            else:
+                expected_description = str(exceptions.NoPriceData())
+
+            self._log_price_warning(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='failure',
+                    operation='refresh',
+                ),
+                action='fail',
+                stage='failure',
+                operation='refresh',
+                trace_id=trace_id,
+                component_type='button',
+                button_action='refresh',
+                item_id=item_id,
+                owner_id=owner_id,
+                log_params=[{'kind': 'item', 'label': 'item_id', 'value': item_id}],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            await inter.edit_original_response(embed=embed, view=view, attachments=[])
+
         except Exception as exc:
+            self._log_price_error(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='runtime_failure',
+                    operation='refresh',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='refresh',
+                trace_id=trace_id,
+                component_type='button',
+                button_action='refresh',
+                item_id=item_id,
+                owner_id=owner_id,
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
             view = self._build_price_view(item_id, int(owner_id))
             await inter.edit_original_response(view=view)
             await inter.followup.send(
-                "An error occurred while refreshing the price data.",
-                ephemeral=True
+                'Something went wrong while handling that request.',
+                ephemeral=True,
             )
-            raise exc
+            return
 
 
     @commands.slash_command(
@@ -409,23 +746,168 @@ class Price(commands.Cog, name='price'):
         :return: (None)
         '''
 
-        await inter.response.defer()
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_item' if invocation_mode == 'feeling_lucky' else 'user_query'
+        trace_id = uuid.uuid4().hex
 
-        info, title = await self._resolve_item_info(search_query)
-        item_id = info['Item ID']
-
-        embed, view, filename = await self._build_price_embed(
-            item_id,
+        self._log_price_info(
             inter,
-            inter.author.id
+            build_log_message(
+                command='price',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            trace_id=trace_id,
+            search_query=search_query,
+            invocation_mode=invocation_mode,
+            resolution_source=resolution_source,
+            log_params=[{'kind': 'query', 'label': 'search_query', 'value': search_query}],
         )
 
-        file = disnake.File(f'assets/{filename}', filename=filename)
-        embed.set_image(url=f'attachment://{filename}')
-        await inter.followup.send(embed=embed, view=view, file=file)
-        file.close()
-        os.remove(f'assets/{filename}')
+        try:
+            await inter.response.defer()
+            info, resolved_search_term, resolved_page_title = await self._resolve_item_info(
+                inter,
+                search_query,
+                trace_id=trace_id,
+            )
+            item_id = info['Item ID']
 
+            embed, view, filename = await self._build_price_embed(
+                item_id,
+                inter,
+                inter.author.id,
+                trace_id=trace_id,
+                info=info,
+                title=resolved_page_title,
+            )
+
+            file = disnake.File(f'assets/{filename}', filename=filename)
+            embed.set_image(url=f'attachment://{filename}')
+            await inter.followup.send(embed=embed, view=view, file=file)
+            file.close()
+            os.remove(f'assets/{filename}')
+
+            self._log_price_success(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                item_id=item_id,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+                    {'kind': 'item', 'label': 'item_id', 'value': item_id},
+                ],
+            )
+        except (
+            exceptions.NoPriceData,
+            exceptions.Nonexistence,
+            exceptions.WikiRequestFailed,
+        ) as exc:
+            if isinstance(exc, (exceptions.Nonexistence, exceptions.WikiRequestFailed)):
+                expected_description = str(exc)
+            else:
+                expected_description = str(exceptions.NoPriceData())
+
+            if 'item_id' in locals():
+                log_params = [
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                ]
+                if 'resolved_search_term' in locals():
+                    log_params.append({'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term})
+                if 'resolved_page_title' in locals():
+                    log_params.append({'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title})
+                log_params.append({'kind': 'item', 'label': 'item_id', 'value': item_id})
+
+                self._log_price_warning(
+                    inter,
+                    build_log_message(
+                        command='price',
+                        stage='failure',
+                        operation='search',
+                    ),
+                    action='fail',
+                    stage='failure',
+                    operation='search',
+                    trace_id=trace_id,
+                    search_query=search_query,
+                    invocation_mode=invocation_mode,
+                    resolution_source=resolution_source,
+                    handled=True,
+                    expected_failure=True,
+                    user_visible=True,
+                    exception_type=type(exc).__name__,
+                    exception=str(exc),
+                    **({'resolved_search_term': resolved_search_term} if 'resolved_search_term' in locals() else {}),
+                    **({'resolved_page_title': resolved_page_title} if 'resolved_page_title' in locals() else {}),
+                    **({'item_id': item_id} if 'item_id' in locals() else {}),
+                    log_params=log_params,
+                )
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_price_error(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=[{'kind': 'query', 'label': 'search_query', 'value': search_query}],
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            return
 
     @price.autocomplete('search_query')
     async def search_query_autocomplete(self, search_query: str) -> (Union[List[str], str]):

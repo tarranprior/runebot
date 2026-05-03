@@ -47,6 +47,21 @@ class Nonexistence(Exception):
         super().__init__(self.message)
 
 
+class WikiRequestFailed(Exception):
+    '''
+    Thrown when RuneBot cannot fetch a wiki page due to an upstream
+    HTTP/access/rate-limit failure.
+    '''
+
+    def __init__(self, message: str = (
+        'The Old School RuneScape Wiki could not be reached for this request. '
+        'This may be due to rate limiting, temporary blocking, or an upstream '
+        'availability issue. Please try again shortly.'
+    )) -> None:
+        self.message = message
+        super().__init__(self.message)
+
+
 class NoAlchemyData(Exception):
     '''
     Thrown when a user's search query doesn't return any alchemy data.
@@ -306,8 +321,8 @@ class UsernameInvalid(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The username provided appears to be **incorrect** or **doesn\'t exist**. '
-        'Please try a different username.'
+        'The username provided is not valid. Please check the length and '
+        'allowed characters, then try again.'
     )) -> None:
         '''
         Initialises a new instance of the UsernameInvalid class.
@@ -342,7 +357,7 @@ class UsernameNonexistent(Exception):
         '**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''
-        Initialises a new instance of the UsernameInvalid class.
+        Initialises a new instance of the UsernameNonexistent class.
 
         :param message: (Optional[String]) -
             A custom message to display when the exception is raised.
