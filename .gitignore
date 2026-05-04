@@ -103,7 +103,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/
@@ -148,3 +148,7 @@ runebot-dev.db
 runebot-dev.db-journal
 runebot-dev.db-shm
 runebot-dev.db-wal
+runebot-logs-dev.db
+runebot-logs-dev.db-journal
+runebot-logs-dev.db-shm
+runebot-logs-dev.db-wal

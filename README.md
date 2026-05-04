@@ -2,8 +2,8 @@
 <p align="center"><img src="https://github.com/tarranprior/runebot/blob/main/assets/banner.png" /></p>
 <h1 align="center">Runebot</h1>
 
-<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.5-7289da?style=for-the-badge)</a>
-<a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.8-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
+<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.6-7289da?style=for-the-badge)</a>
+<a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.10-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
 <a href="https://github.com/tarranprior/runebot/blob/main/LICENSE">![License](https://img.shields.io/badge/license-CC%20BY%20NC%20SA%203.0-7289da?style=for-the-badge)</p></a>
 </p>
 <p align="center"><a href="#introduction">Introduction</a> • <a href="#key-features">Features</a> • <a href="#prerequisites">Prerequisites</a> • <a href="#tools">Tools</a> • <a href="#disclaimer">Disclaimer</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#support">Support</a> • <a href="#license">License</a>
