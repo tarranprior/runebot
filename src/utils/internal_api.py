@@ -4,6 +4,7 @@ import asyncio
 import json
 import threading
 import time
+from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 
 from concurrent.futures import TimeoutError as FuturesTimeoutError
@@ -307,6 +308,26 @@ class InternalStatsAPIServer:
                 except ValueError:
                     return fallback
 
+            def _parse_iso8601_timestamp(self, raw_value: str | None, field_name: str) -> tuple[str | None, datetime | None]:
+                if raw_value is None:
+                    return None, None
+
+                normalized = raw_value.strip()
+                if not normalized:
+                    raise ValueError(f'{field_name} must be a valid ISO-8601 timestamp')
+
+                iso_candidate = normalized.replace('Z', '+00:00')
+                try:
+                    parsed = datetime.fromisoformat(iso_candidate)
+                except ValueError as exc:
+                    raise ValueError(f'{field_name} must be a valid ISO-8601 timestamp') from exc
+
+                if parsed.tzinfo is None:
+                    raise ValueError(f'{field_name} must include a timezone offset')
+
+                normalized_utc = parsed.astimezone(timezone.utc)
+                return normalized_utc.isoformat(), normalized_utc
+
             def _handle_logs_query_request(self) -> None:
                 is_authorised, status_code = self._authorised()
                 if not is_authorised:
@@ -333,8 +354,25 @@ class InternalStatsAPIServer:
                 search = params.get('search', [None])[0]
                 source = params.get('source', [None])[0]
                 session_id = params.get('session_id', [None])[0]
+                start_time_raw = params.get('start_time', [None])[0]
+                end_time_raw = params.get('end_time', [None])[0]
 
-                start_time = time.perf_counter()
+                try:
+                    start_time_filter, start_time_dt = self._parse_iso8601_timestamp(start_time_raw, 'start_time')
+                    end_time_filter, end_time_dt = self._parse_iso8601_timestamp(end_time_raw, 'end_time')
+                except ValueError as exc:
+                    return self._send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {'error': str(exc)}
+                    )
+
+                if start_time_dt is not None and end_time_dt is not None and start_time_dt > end_time_dt:
+                    return self._send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {'error': 'start_time must be less than or equal to end_time'}
+                    )
+
+                request_started_at = time.perf_counter()
 
                 try:
                     items, total = query_internal_logs(
@@ -346,6 +384,8 @@ class InternalStatsAPIServer:
                         search=search,
                         source=source,
                         session_id=session_id,
+                        start_time=start_time_filter,
+                        end_time=end_time_filter,
                     )
                     level_counts = query_internal_log_level_counts(
                         db_path=outer.logs_db_path,
@@ -354,6 +394,8 @@ class InternalStatsAPIServer:
                         search=search,
                         source=source,
                         session_id=session_id,
+                        start_time=start_time_filter,
+                        end_time=end_time_filter,
                     )
                 except Exception:
                     logger.exception('Failed to query internal logs')
@@ -362,7 +404,7 @@ class InternalStatsAPIServer:
                         {'error': 'Failed to query logs'}
                     )
 
-                duration_ms = int((time.perf_counter() - start_time) * 1000)
+                duration_ms = int((time.perf_counter() - request_started_at) * 1000)
                 memory_bytes = get_process_memory_bytes()
 
                 return self._send_json(

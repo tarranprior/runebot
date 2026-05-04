@@ -30,6 +30,8 @@ def _build_internal_logs_filters(
     search: str | None,
     source: str | None,
     session_id: str | None,
+    start_time: str | None,
+    end_time: str | None,
     include_level: bool,
 ) -> tuple[str, list[Any], str | None]:
     normalized_levels = _parse_level_filters(level)
@@ -37,6 +39,8 @@ def _build_internal_logs_filters(
     normalized_search = _normalize_filter(search)
     normalized_source = _normalize_filter(source)
     normalized_session_id = _normalize_filter(session_id)
+    normalized_start_time = _normalize_filter(start_time)
+    normalized_end_time = _normalize_filter(end_time)
 
     filters: list[str] = []
     params: list[Any] = []
@@ -58,6 +62,12 @@ def _build_internal_logs_filters(
     if normalized_session_id:
         filters.append('session_id = ?')
         params.append(normalized_session_id)
+    if normalized_start_time:
+        filters.append('timestamp >= ?')
+        params.append(normalized_start_time)
+    if normalized_end_time:
+        filters.append('timestamp <= ?')
+        params.append(normalized_end_time)
     if normalized_search:
         filters.append('message LIKE ?')
         params.append(f'%{normalized_search}%')
@@ -125,6 +135,12 @@ def ensure_internal_logs_schema(db_path: str) -> None:
         )
         conn.execute(
             'CREATE INDEX IF NOT EXISTS idx_internal_logs_session_id ON internal_logs(session_id)'
+        )
+        conn.execute(
+            'CREATE INDEX IF NOT EXISTS idx_internal_logs_timestamp_id ON internal_logs(timestamp DESC, id DESC)'
+        )
+        conn.execute(
+            'CREATE INDEX IF NOT EXISTS idx_internal_logs_session_timestamp_id ON internal_logs(session_id, timestamp DESC, id DESC)'
         )
         conn.commit()
 
@@ -266,6 +282,8 @@ def query_internal_logs(
     search: str | None,
     source: str | None,
     session_id: str | None = None,
+    start_time: str | None = None,
+    end_time: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     where_clause, params, _ = _build_internal_logs_filters(
         level=level,
@@ -273,6 +291,8 @@ def query_internal_logs(
         search=search,
         source=source,
         session_id=session_id,
+        start_time=start_time,
+        end_time=end_time,
         include_level=True,
     )
 
@@ -320,6 +340,8 @@ def query_internal_log_level_counts(
     search: str | None,
     source: str | None,
     session_id: str | None = None,
+    start_time: str | None = None,
+    end_time: str | None = None,
 ) -> dict[str, int]:
     where_clause, params, _ = _build_internal_logs_filters(
         level=level,
@@ -327,6 +349,8 @@ def query_internal_log_level_counts(
         search=search,
         source=source,
         session_id=session_id,
+        start_time=start_time,
+        end_time=end_time,
         include_level=True,
     )
 
