@@ -219,6 +219,73 @@ class Bot(commands.InteractionBot):
         logger.info('For more information on usage, see the README.\n\n')
 
 
+    @staticmethod
+    def _guild_context(guild) -> dict:
+        def _serialize_scalar(value):
+            if value is None:
+                return None
+            if isinstance(value, (str, int, float, bool)):
+                return value
+
+            raw_value = getattr(value, 'value', None)
+            if isinstance(raw_value, (str, int, float, bool)):
+                return raw_value
+
+            name = getattr(value, 'name', None)
+            if isinstance(name, str):
+                return name.lower()
+
+            return str(value)
+
+        def _serialize_preferred_locale(value):
+            if value is None:
+                return None
+            if isinstance(value, str):
+                return value
+            if isinstance(value, (list, tuple)):
+                locale_values = [item for item in value if isinstance(item, str)]
+                return next((item for item in locale_values if '-' in item), locale_values[0] if locale_values else None)
+            return _serialize_scalar(value)
+
+        guild_features = sorted(getattr(guild, 'features', None) or [])
+        guild_channels = getattr(guild, 'channels', None)
+        guild_roles = getattr(guild, 'roles', None)
+        guild_verification_level = getattr(guild, 'verification_level', None)
+        guild_mfa_level = getattr(guild, 'mfa_level', None)
+        guild_nsfw_level = getattr(guild, 'nsfw_level', None)
+        bot_member = getattr(guild, 'me', None) or getattr(guild, 'self_member', None)
+
+        bot_permissions = getattr(bot_member, 'guild_permissions', None) if bot_member is not None else None
+
+        return {
+            'event': 'guild_lifecycle',
+            'guild_id': str(guild.id),
+            'guild_owner_id': str(guild.owner_id),
+            'guild_name': guild.name,
+            'guild_member_count': getattr(guild, 'member_count', None),
+            'guild_preferred_locale': _serialize_preferred_locale(getattr(guild, 'preferred_locale', None)),
+            'guild_features': guild_features,
+            'guild_features_count': len(guild_features),
+            'guild_verification_level': _serialize_scalar(guild_verification_level),
+            'guild_mfa_level': _serialize_scalar(guild_mfa_level),
+            'guild_nsfw_level': _serialize_scalar(guild_nsfw_level),
+            'guild_channel_count': len(guild_channels) if guild_channels is not None else None,
+            'guild_role_count': len(guild_roles) if guild_roles is not None else None,
+            'bot_member_present': bot_member is not None,
+            'bot_permissions_value': getattr(bot_permissions, 'value', None) if bot_permissions is not None else None,
+            'bot_permission_administrator': getattr(bot_permissions, 'administrator', None) if bot_permissions is not None else None,
+            'bot_permission_manage_guild': getattr(bot_permissions, 'manage_guild', None) if bot_permissions is not None else None,
+            'bot_permission_view_audit_log': getattr(bot_permissions, 'view_audit_log', None) if bot_permissions is not None else None,
+            'bot_permission_send_messages': getattr(bot_permissions, 'send_messages', None) if bot_permissions is not None else None,
+            'bot_permission_embed_links': getattr(bot_permissions, 'embed_links', None) if bot_permissions is not None else None,
+            'bot_permission_attach_files': getattr(bot_permissions, 'attach_files', None) if bot_permissions is not None else None,
+            'bot_permission_use_external_emojis': getattr(bot_permissions, 'use_external_emojis', None) if bot_permissions is not None else None,
+            'bot_permission_read_message_history': getattr(bot_permissions, 'read_message_history', None) if bot_permissions is not None else None,
+            'bot_permission_add_reactions': getattr(bot_permissions, 'add_reactions', None) if bot_permissions is not None else None,
+            'bot_permission_use_application_commands': getattr(bot_permissions, 'use_application_commands', None) if bot_permissions is not None else None,
+        }
+
+
     async def on_guild_join(self, guild) -> None:
         '''
         A coroutine that is called when the bot joins a guild.
@@ -231,7 +298,40 @@ class Bot(commands.InteractionBot):
         :return: (None)
         '''
 
-        await add_guild(self, guild.id, guild.owner_id, True)
+        ctx = self._guild_context(guild)
+        logger.bind(
+            **ctx,
+            lifecycle_event='guild_join',
+            action='start',
+            stage='start',
+            operation='guild_join',
+            persistence_target='all_guilds',
+        ).info('<guild>: start <guild_join>.')
+        try:
+            await add_guild(self, guild.id, guild.owner_id, True)
+            logger.bind(
+                **ctx,
+                lifecycle_event='guild_join',
+                action='complete',
+                stage='complete',
+                operation='guild_join',
+                persistence_target='all_guilds',
+            ).success('<guild>: <guild_join> complete.')
+        except Exception as exc:
+            logger.bind(
+                **ctx,
+                lifecycle_event='guild_join',
+                action='fail',
+                stage='runtime_failure',
+                operation='guild_join',
+                persistence_target='all_guilds',
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                handled=True,
+                expected_failure=False,
+                user_visible=False,
+            ).opt(exception=exc).error('<guild>: <guild_join> runtime failure.')
+            raise
 
 
     async def on_guild_remove(self, guild) -> None:
@@ -246,7 +346,40 @@ class Bot(commands.InteractionBot):
         :return: (None)
         '''
 
-        await remove_guild(self, guild.id)
+        ctx = self._guild_context(guild)
+        logger.bind(
+            **ctx,
+            lifecycle_event='guild_remove',
+            action='start',
+            stage='start',
+            operation='guild_remove',
+            persistence_target='all_guilds',
+        ).info('<guild>: start <guild_remove>.')
+        try:
+            await remove_guild(self, guild.id)
+            logger.bind(
+                **ctx,
+                lifecycle_event='guild_remove',
+                action='complete',
+                stage='complete',
+                operation='guild_remove',
+                persistence_target='all_guilds',
+            ).success('<guild>: <guild_remove> complete.')
+        except Exception as exc:
+            logger.bind(
+                **ctx,
+                lifecycle_event='guild_remove',
+                action='fail',
+                stage='runtime_failure',
+                operation='guild_remove',
+                persistence_target='all_guilds',
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                handled=True,
+                expected_failure=False,
+                user_visible=False,
+            ).opt(exception=exc).error('<guild>: <guild_remove> runtime failure.')
+            raise
 
 
     async def on_slash_command_error(
