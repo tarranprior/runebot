@@ -149,11 +149,23 @@ class InternalStatsAPIServer:
 
                 return None
 
-            def _safe_payload_preview(self, payload: dict, max_length: int = 1000) -> str:
-                preview = json.dumps(payload, ensure_ascii=True, separators=(',', ':'))
-                if len(preview) > max_length:
-                    return f'{preview[:max_length]}...'
-                return preview
+            def _build_runelite_log_summary(self, payload: dict) -> dict[str, int | str | None]:
+                # RuneLite ingest is future-facing groundwork for v1.1.0;
+                # logs here stay sanitised and avoid full payload dumps.
+                payload_size_bytes = None
+                try:
+                    payload_size_bytes = len(
+                        json.dumps(payload, ensure_ascii=True, separators=(',', ':')).encode('utf-8')
+                    )
+                except (TypeError, ValueError):
+                    payload_size_bytes = None
+
+                return {
+                    'event_type': payload.get('event_type'),
+                    'payload_keys_count': len(payload),
+                    'payload_size_bytes': payload_size_bytes,
+                    'world': payload.get('world'),
+                }
 
             def _handle_community_stats_request(self, require_auth: bool) -> None:
                 if require_auth:
@@ -226,15 +238,13 @@ class InternalStatsAPIServer:
                     )
 
                 event_type = payload['event_type'].strip()
-                player_name = payload.get('player_name')
-                world = payload.get('world')
-                safe_payload = self._safe_payload_preview(payload)
+                summary = self._build_runelite_log_summary(payload)
                 logger.info(
                     f'Received RuneLite event: '
                     f'event_type={event_type}, '
-                    f'player_name={player_name or "unknown"}, '
-                    f'world={world if world is not None else "unknown"}, '
-                    f'payload={safe_payload}'
+                    f'world={summary["world"] if summary["world"] is not None else "unknown"}, '
+                    f'payload_keys_count={summary["payload_keys_count"]}, '
+                    f'payload_size_bytes={summary["payload_size_bytes"] if summary["payload_size_bytes"] is not None else "unknown"}'
                 )
                 return self._send_json(HTTPStatus.OK, {'ok': True})
 
