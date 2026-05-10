@@ -183,6 +183,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         inter: ApplicationCommandInteraction | disnake.MessageInteraction,
         search_query: str,
         trace_id: str | None = None,
+        invocation_mode_override: str | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         Primary function for the `wikipedia` command which takes a search
@@ -199,7 +200,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             An embed, view, resolved search term, and resolved page title.
         '''
 
-        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        invocation_mode = (
+            invocation_mode_override
+            if invocation_mode_override is not None
+            else ('feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit')
+        )
         original_query = search_query
         resolved_search_term = FEELING_LUCKY if invocation_mode == 'feeling_lucky' else search_query
         resolution_source = 'wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query'
@@ -428,7 +433,12 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             embed, view, resolved_search_term, resolved_page_title = await self.search_wikipedia(
                 inter, search_query, trace_id=trace_id
             )
-            await inter.followup.send(embed=embed, view=view)
+            if isinstance(view, DropdownView):
+                view.attach_interaction_context(inter, invocation_mode=invocation_mode)
+                message = await inter.followup.send(embed=embed, view=view, wait=True)
+                view.message = message
+            else:
+                await inter.followup.send(embed=embed, view=view)
 
             self._log_wiki_success(
                 inter,
@@ -563,7 +573,6 @@ class Dropdown(disnake.ui.StringSelect):
         self.bot = Bot
         self._cog = cog
         self.trace_id = trace_id
-        options = options
 
         super().__init__(
             placeholder='Select an option...',
@@ -587,7 +596,7 @@ class Dropdown(disnake.ui.StringSelect):
 
         selected_value = self.values[0] if self.values else None
 
-        self._cog._log_wiki_debug(
+        self._cog._log_wiki_info(
             inter,
             build_log_message(
                 command='wikipedia',
@@ -631,7 +640,10 @@ class Dropdown(disnake.ui.StringSelect):
             await inter.response.defer()
 
             embed, view, resolved_search_term, resolved_page_title = await self._cog.search_wikipedia(
-                inter, selected_value, trace_id=self.trace_id
+                inter,
+                selected_value,
+                trace_id=self.trace_id,
+                invocation_mode_override='dropdown_selection',
             )
 
             self._cog._log_wiki_debug(
@@ -651,7 +663,12 @@ class Dropdown(disnake.ui.StringSelect):
                 selected_value=selected_value,
             )
 
-            await inter.followup.send(embed=embed, view=view)
+            if isinstance(view, DropdownView):
+                view.attach_interaction_context(inter, invocation_mode='dropdown_selection')
+                message = await inter.followup.send(embed=embed, view=view, wait=True)
+                view.message = message
+            else:
+                await inter.followup.send(embed=embed, view=view)
 
             self._cog._log_wiki_debug(
                 inter,
@@ -670,7 +687,7 @@ class Dropdown(disnake.ui.StringSelect):
                 selected_value=selected_value,
             )
 
-            self._cog._log_wiki_debug(
+            self._cog._log_wiki_success(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -763,21 +780,175 @@ class DropdownView(disnake.ui.View):
     '''
     A view class for creating dropdowns in the response.
     '''
+
+    TIMEOUT_SECONDS = 180
+
     def __init__(self, options: list, cog, trace_id: str | None = None) -> None:
         '''
         Initialises a new instance of the DropdownView class.
 
         :param options: (List) -
-        A list of options for the dropdown.
+            A list of options for the dropdown.
         :param cog: -
             The Wikipedia cog instance.
 
         :return: (None)
         '''
         self.bot = Bot
+        self._cog = cog
         self.trace_id = trace_id
-        super().__init__()
+        self.message: disnake.Message | None = None
+        self.request_context: dict[str, str] = {}
+        super().__init__(timeout=self.TIMEOUT_SECONDS)
         self.add_item(Dropdown(options, cog, trace_id=trace_id))
+
+    def attach_interaction_context(
+        self,
+        inter: disnake.ApplicationCommandInteraction | disnake.MessageInteraction,
+        *,
+        invocation_mode: str | None = None,
+    ) -> None:
+        raw_context: dict[str, str | None] = {
+            **self._cog._interaction_context(inter),
+            'invocation_source': self._cog._invocation_source(inter),
+            'invocation_mode': invocation_mode,
+        }
+        
+        if raw_context.get('interaction_type') == 'None':
+            raw_context['interaction_type'] = None
+
+        context_payload: dict[str, str | None] = {
+            'user_id': raw_context.get('user_id'),
+            'user_name': raw_context.get('user_name'),
+            'user_display_name': raw_context.get('user_display_name'),
+            'guild_id': raw_context.get('guild_id'),
+            'channel_id': raw_context.get('channel_id'),
+            'interaction_type': raw_context.get('interaction_type'),
+            'invocation_source': raw_context.get('invocation_source'),
+            'invocation_mode': raw_context.get('invocation_mode'),
+        }
+        self.request_context = {k: v for k, v in context_payload.items() if v is not None}
+
+    def _log_lifecycle_event(
+        self,
+        *,
+        inter: disnake.MessageInteraction | None,
+        event: str,
+        trace_id: str | None,
+        stage: str,
+        has_message_ref: bool,
+        level: str,
+        exc: Exception | None = None,
+    ) -> None:
+        log_params = [
+            {
+                'kind': 'component',
+                'label': 'component_type',
+                'value': 'dropdown',
+            },
+            {
+                'kind': 'reason',
+                'label': 'reason',
+                'value': event,
+            },
+        ]
+
+        payload = {
+            'command': 'wikipedia',
+            'action': 'deactivate',
+            'stage': stage,
+            'operation': 'disambiguation',
+            'component_type': 'dropdown',
+            'reason': event,
+            'trace_id': trace_id,
+            'has_message_ref': has_message_ref,
+            'log_params': log_params,
+        }
+
+        if inter is None and self.request_context:
+            payload.update(self.request_context)
+
+        include_user = inter is not None or bool(self.request_context.get('user_id') or self.request_context.get('user_name'))
+
+        message = build_log_message(
+            command='wikipedia',
+            stage=stage,
+            operation='disambiguation',
+            subject='dropdown' if stage == 'complete' else None,
+            include_user=include_user,
+        )
+
+        if stage == 'runtime_failure':
+            payload['cleanup_failed'] = True
+            if exc is not None:
+                payload['exception_type'] = type(exc).__name__
+                payload['exception'] = str(exc)
+
+        if inter is not None:
+            helper_kwargs = dict(payload)
+            if 'invocation_mode' not in helper_kwargs:
+                helper_kwargs['invocation_mode'] = 'dropdown_selection'
+            if level == 'info':
+                self._cog._log_wiki_info(inter, message, **helper_kwargs)
+            else:
+                self._cog._log_wiki_debug(inter, message, **helper_kwargs)
+            return
+
+        bound_logger = logger.bind(**payload)
+        if stage == 'runtime_failure' and exc is not None:
+            bound_logger = bound_logger.opt(exception=exc)
+
+        if level == 'info':
+            bound_logger.info(message)
+        else:
+            bound_logger.debug(message)
+
+    async def deactivate(
+        self,
+        *,
+        inter: disnake.MessageInteraction | None = None,
+        event: str,
+        trace_id: str | None = None,
+    ) -> None:
+        effective_trace_id = trace_id or self.trace_id
+
+        for item in self.children:
+            item.disabled = True
+
+        if self.message is None:
+            self._log_lifecycle_event(
+                inter=inter,
+                event=event,
+                trace_id=effective_trace_id,
+                stage='complete',
+                has_message_ref=False,
+                level='debug',
+            )
+            return
+
+        try:
+            await self.message.edit(view=self)
+            self._log_lifecycle_event(
+                inter=inter,
+                event=event,
+                trace_id=effective_trace_id,
+                stage='complete',
+                has_message_ref=True,
+                level='info',
+            )
+        except Exception as exc:
+            self._log_lifecycle_event(
+                inter=inter,
+                event=event,
+                trace_id=effective_trace_id,
+                stage='runtime_failure',
+                has_message_ref=True,
+                level='debug',
+                exc=exc,
+            )
+
+    async def on_timeout(self) -> None:
+        await self.deactivate(event='timeout', trace_id=self.trace_id)
 
 
 def setup(bot) -> None:
