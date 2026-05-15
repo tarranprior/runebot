@@ -74,8 +74,8 @@ class NoAlchemyData(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The term you have searched for does not have any **alchemy data**. '
-        'Try selecting one of the options from the list of suggestions.'
+        'The term you have searched for does not appear to have any `AlchemyData`. '
+        'Try selecting one of the options from the list of autocomplete suggestions.'
         '\n\n**Usage**: `/alchemy <ITEM_NAME>`'
     )) -> None:
         '''
@@ -136,10 +136,10 @@ class NoMinigameData(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The term you have searched for does not appear to be a **minigame**. '
-        'Try selecting one of the options from the list of suggestions, '
+        'The term you have searched for does not appear to have any `MinigameData`. '
+        'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Minigames) '
-        'for a full list of minigames.\n\n**Usage**: `/minigame <MINIGAME_NAME>`'
+        'for a full list of minigames.\n\n**Usage**: `/minigames <MINIGAME_NAME>`'
     )) -> None:
         '''
         Initialises a new instance of the NoMinigameData class.
@@ -167,8 +167,8 @@ class NoMonsterData(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The term you have searched for does not appear to be a **monster**. '
-        'Try selecting one of the options from the list of suggestions, '
+        'The term you have searched for does not appear to have any `MonsterData`. '
+        'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Bestiary) '
         'for a full list of monsters.\n\n**Usage**: `/bestiary <MONSTER_NAME>`'
     )) -> None:
@@ -198,8 +198,8 @@ class NoPriceData(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The term you have searched for does not have any **price data**. '
-        'Try selecting one of the options from the list of suggestions.\n\n'
+        'The term you have searched for does not have any `PriceData`. '
+        'Try selecting one of the options from the list of autocomplete suggestions.\n\n'
         '**Usage**: `/price <ITEM_NAME>`'
     )) -> None:
         '''
@@ -228,8 +228,8 @@ class NoQuestData(Exception):
     '''
 
     def __init__(self, message: str = (
-        'The term you have searched for does not appear to be a **quest**. '
-        'Try selecting one of the options from the list of suggestions, '
+        'The term you have searched for does not have any `QuestData`. '
+        'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Quests/List) '
         'for a full list of quests.\n\n**Usage**: `/quests <QUEST_NAME>`'
     )) -> None:
@@ -292,7 +292,7 @@ class StubArticle(Exception):
         'This means there is **insufficient information** on this article to '
         'display. However, this does not mean the stub is not a legitimate '
         'article; it just needs to be expanded or may not be supported by '
-        'RuneBot at this time.'
+        'Runebot at this time.'
     )) -> None:
         '''
         Initialises a new instance of the StubArticle class.
@@ -384,7 +384,7 @@ class NoGameModeData(Exception):
 
     def __init__(self, message: str = (
         'The username provided doesn\'t appear to exist under this '
-        '**Account Type**. Please select a different `account_type`, or try '
+        '`account_type`. Please select a different `account_type`, or try '
         'another username.\n\n**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''
