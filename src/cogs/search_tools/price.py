@@ -384,6 +384,10 @@ class Price(commands.Cog, name='price'):
         trace_id: str | None = None,
         info: dict | None = None,
         title: str | None = None,
+        operation: str = 'search',
+        component_type: str | None = None,
+        button_action: str | None = None,
+        log_refresh_resolve: bool = False,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str]:
         '''
         Builds the price embed, view, and graph from an item ID.
@@ -422,6 +426,31 @@ class Price(commands.Cog, name='price'):
             )
             info = parse_infobox(page_content)
             title = parse_title(page_content)
+
+        if log_refresh_resolve:
+            self._log_price_info(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='resolve',
+                    operation=operation,
+                    subject='item_id',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                operation=operation,
+                component_type=component_type,
+                button_action=button_action,
+                trace_id=trace_id,
+                item_id=item_id,
+                owner_id=owner_id,
+                resolved_page_title=title,
+                log_params=[
+                    {'kind': 'item', 'label': 'item_id', 'value': item_id},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                ],
+            )
 
         filename = await generate_graph(graphapi_data)
 
@@ -605,9 +634,14 @@ class Price(commands.Cog, name='price'):
                 inter,
                 int(owner_id),
                 trace_id=trace_id,
+                operation='refresh',
+                component_type='button',
+                button_action='refresh',
+                log_refresh_resolve=True,
             )
 
-            file = disnake.File(f'assets/{filename}', filename=filename)
+            artifact_path = f'artifacts/{filename}'
+            file = disnake.File(artifact_path, filename=filename)
             embed.set_image(url=f'attachment://{filename}')
 
             await inter.edit_original_response(
@@ -618,7 +652,7 @@ class Price(commands.Cog, name='price'):
             )
 
             file.close()
-            os.remove(f'assets/{filename}')
+            os.remove(artifact_path)
 
             self._log_price_success(
                 inter,
@@ -785,11 +819,49 @@ class Price(commands.Cog, name='price'):
                 title=resolved_page_title,
             )
 
-            file = disnake.File(f'assets/{filename}', filename=filename)
+            artifact_path = f'artifacts/{filename}'
+            file = disnake.File(artifact_path, filename=filename)
             embed.set_image(url=f'attachment://{filename}')
-            await inter.followup.send(embed=embed, view=view, file=file)
-            file.close()
-            os.remove(f'assets/{filename}')
+
+            send_succeeded = False
+            try:
+                await inter.followup.send(embed=embed, view=view, file=file)
+                send_succeeded = True
+            finally:
+                cleanup_errors = {}
+
+                try:
+                    file.close()
+                except Exception as exc:
+                    cleanup_errors['close_exception_type'] = type(exc).__name__
+                    cleanup_errors['close_exception'] = str(exc)
+
+                try:
+                    os.remove(artifact_path)
+                except Exception as exc:
+                    cleanup_errors['remove_exception_type'] = type(exc).__name__
+                    cleanup_errors['remove_exception'] = str(exc)
+
+                if cleanup_errors:
+                    self._log_price_debug(
+                        inter,
+                        '<artifact>: <cleanup> failure.',
+                        action='fail',
+                        stage='failure',
+                        operation='artifact_cleanup',
+                        trace_id=trace_id,
+                        search_query=search_query,
+                        invocation_mode=invocation_mode,
+                        resolution_source=resolution_source,
+                        handled=True,
+                        expected_failure=False,
+                        user_visible=False,
+                        fatal=False,
+                        artifact_type='price_graph',
+                        artifact_path=artifact_path,
+                        send_succeeded=send_succeeded,
+                        **cleanup_errors,
+                    )
 
             self._log_price_success(
                 inter,

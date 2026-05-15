@@ -143,6 +143,10 @@ tools/
 temp/
 *.tmp
 
+# Generated runtime artifacts
+artifacts/*
+!artifacts/.gitkeep
+
 # Runebot dev database artifacts
 runebot-dev.db
 runebot-dev.db-journal

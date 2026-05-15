@@ -43,6 +43,7 @@ docstrings.
 
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+import os
 import uuid
 from typing import List, Optional
 import requests
@@ -610,7 +611,8 @@ async def generate_graph(data: dict) -> str:
     plotter.plot(average, color='#5865F2')
     plotter.plot(prices, color='lightslategrey')
     plotter.title('Past 180 Days', loc='right', color='lightslategrey')
-    plotter.savefig(f'assets/{filename}', transparent=True)
+    os.makedirs('artifacts', exist_ok=True)
+    plotter.savefig(f'artifacts/{filename}', transparent=True)
     plotter.close()
     return f'{filename}.png'
 
