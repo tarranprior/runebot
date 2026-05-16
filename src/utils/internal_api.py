@@ -25,6 +25,9 @@ from .internal_logs import (
 from .runtime_stats import build_community_stats_payload
 
 
+MAX_LOGS_PAGE_SIZE = 500
+
+
 def get_process_memory_bytes() -> int | None:
     """Return process memory in bytes, best-effort cross-platform."""
     try:
@@ -357,7 +360,7 @@ class InternalStatsAPIServer:
 
                 page = self._parse_positive_int(params.get('page', [None])[0], 1)
                 page_size = self._parse_positive_int(params.get('page_size', [None])[0], 50)
-                page_size = min(page_size, 200)
+                page_size = min(page_size, MAX_LOGS_PAGE_SIZE)
 
                 level = params.get('level', [None])[0]
                 module = params.get('module', [None])[0]
