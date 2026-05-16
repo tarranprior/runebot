@@ -182,6 +182,71 @@ class Price(commands.Cog, name='price'):
         logger.bind(**self._price_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
 
 
+    def _cleanup_price_artifact(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        *,
+        file: disnake.File,
+        artifact_path: str,
+        trace_id: str | None,
+        send_succeeded: bool,
+        search_query: str | None = None,
+        invocation_mode: str | None = None,
+        resolution_source: str | None = None,
+        item_id: str | None = None,
+        owner_id: str | int | None = None,
+        component_type: str | None = None,
+        button_action: str | None = None,
+    ) -> None:
+        cleanup_errors = {}
+
+        try:
+            file.close()
+        except Exception as exc:
+            cleanup_errors['close_exception_type'] = type(exc).__name__
+            cleanup_errors['close_exception'] = str(exc)
+
+        try:
+            os.remove(artifact_path)
+        except Exception as exc:
+            cleanup_errors['remove_exception_type'] = type(exc).__name__
+            cleanup_errors['remove_exception'] = str(exc)
+
+        if cleanup_errors:
+            self._log_price_debug(
+                inter,
+                '<artifact>: <cleanup> failure.',
+                action='fail',
+                stage='failure',
+                operation='artifact_cleanup',
+                trace_id=trace_id,
+                search_query=search_query,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                item_id=item_id,
+                owner_id=owner_id,
+                component_type=component_type,
+                button_action=button_action,
+                handled=True,
+                expected_failure=False,
+                user_visible=False,
+                fatal=False,
+                artifact_type='price_graph',
+                artifact_path=artifact_path,
+                send_succeeded=send_succeeded,
+                **cleanup_errors,
+            )
+
+
+    def _validate_price_info(self, info: dict) -> None:
+        try:
+            info['Value']
+            info['Exchange']
+            info['Buy limit']
+        except KeyError as exc:
+            raise exceptions.NoPriceData from exc
+
+
     async def _resolve_item_info(
         self,
         inter: ApplicationCommandInteraction,
@@ -255,13 +320,7 @@ class Price(commands.Cog, name='price'):
             )
 
             info = parse_infobox(page_content)
-
-            try:
-                info['Value']
-                info['Exchange']
-                info['Buy limit']
-            except KeyError:
-                raise exceptions.NoPriceData
+            self._validate_price_info(info)
 
             return info, resolved_search_term, title
 
@@ -326,6 +385,31 @@ class Price(commands.Cog, name='price'):
             raise
 
 
+    def _resolve_item_info_by_id(
+        self,
+        item_id: str,
+        trace_id: str | None = None,
+    ) -> Tuple[dict, dict, str]:
+        api_data = parse_price_data(
+            f"{PRICEAPI_URL}{item_id}",
+            HEADERS,
+            trace_id=trace_id,
+        )
+
+        page_content = parse_page(
+            BASE_URL,
+            slugify(api_data['item']['name']),
+            HEADERS,
+            trace_id=trace_id,
+        )
+        info = parse_infobox(page_content)
+        title = parse_title(page_content)
+
+        self._validate_price_info(info)
+
+        return api_data, info, title
+
+
     def _build_price_view(
         self,
         item_id: str,
@@ -381,13 +465,11 @@ class Price(commands.Cog, name='price'):
         item_id: str,
         inter: ApplicationCommandInteraction | MessageInteraction,
         owner_id: int,
+        *,
+        api_data: dict,
+        info: dict,
+        title: str,
         trace_id: str | None = None,
-        info: dict | None = None,
-        title: str | None = None,
-        operation: str = 'search',
-        component_type: str | None = None,
-        button_action: str | None = None,
-        log_refresh_resolve: bool = False,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str]:
         '''
         Builds the price embed, view, and graph from an item ID.
@@ -405,52 +487,11 @@ class Price(commands.Cog, name='price'):
             An embed, view, and filename containing the price information.
         '''
 
-        api_data = parse_price_data(
-            f"{PRICEAPI_URL}{item_id}",
-            HEADERS,
-            trace_id=trace_id,
-        )
-
         graphapi_data = parse_price_data(
             f"{GRAPHAPI_URL}{item_id}.json",
             HEADERS,
             trace_id=trace_id,
         )
-
-        if info is None or title is None:
-            page_content = parse_page(
-                BASE_URL,
-                slugify(api_data['item']['name']),
-                HEADERS,
-                trace_id=trace_id,
-            )
-            info = parse_infobox(page_content)
-            title = parse_title(page_content)
-
-        if log_refresh_resolve:
-            self._log_price_info(
-                inter,
-                build_log_message(
-                    command='price',
-                    stage='resolve',
-                    operation=operation,
-                    subject='item_id',
-                    resolved=title,
-                ),
-                action='resolve',
-                stage='resolve',
-                operation=operation,
-                component_type=component_type,
-                button_action=button_action,
-                trace_id=trace_id,
-                item_id=item_id,
-                owner_id=owner_id,
-                resolved_page_title=title,
-                log_params=[
-                    {'kind': 'item', 'label': 'item_id', 'value': item_id},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
-                ],
-            )
 
         filename = await generate_graph(graphapi_data)
 
@@ -629,30 +670,70 @@ class Price(commands.Cog, name='price'):
         )
 
         try:
+            api_data, info, title = self._resolve_item_info_by_id(
+                item_id,
+                trace_id=trace_id,
+            )
+
+            self._log_price_info(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='resolve',
+                    operation='refresh',
+                    subject='item_id',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                operation='refresh',
+                trace_id=trace_id,
+                component_type='button',
+                button_action='refresh',
+                item_id=item_id,
+                owner_id=owner_id,
+                resolved_page_title=title,
+                log_params=[
+                    {'kind': 'item', 'label': 'item_id', 'value': item_id},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                ],
+            )
+
             embed, view, filename = await self._build_price_embed(
                 item_id,
                 inter,
                 int(owner_id),
+                api_data=api_data,
+                info=info,
+                title=title,
                 trace_id=trace_id,
-                operation='refresh',
-                component_type='button',
-                button_action='refresh',
-                log_refresh_resolve=True,
             )
 
             artifact_path = f'artifacts/{filename}'
             file = disnake.File(artifact_path, filename=filename)
             embed.set_image(url=f'attachment://{filename}')
 
-            await inter.edit_original_response(
-                embed=embed,
-                view=view,
-                attachments=[],
-                file=file
-            )
-
-            file.close()
-            os.remove(artifact_path)
+            send_succeeded = False
+            try:
+                await inter.edit_original_response(
+                    embed=embed,
+                    view=view,
+                    attachments=[],
+                    file=file
+                )
+                send_succeeded = True
+            finally:
+                self._cleanup_price_artifact(
+                    inter,
+                    file=file,
+                    artifact_path=artifact_path,
+                    trace_id=trace_id,
+                    send_succeeded=send_succeeded,
+                    item_id=item_id,
+                    owner_id=owner_id,
+                    component_type='button',
+                    button_action='refresh',
+                )
 
             self._log_price_success(
                 inter,
@@ -809,14 +890,20 @@ class Price(commands.Cog, name='price'):
                 trace_id=trace_id,
             )
             item_id = info['Item ID']
+            api_data = parse_price_data(
+                f"{PRICEAPI_URL}{item_id}",
+                HEADERS,
+                trace_id=trace_id,
+            )
 
             embed, view, filename = await self._build_price_embed(
                 item_id,
                 inter,
                 inter.author.id,
-                trace_id=trace_id,
+                api_data=api_data,
                 info=info,
                 title=resolved_page_title,
+                trace_id=trace_id,
             )
 
             artifact_path = f'artifacts/{filename}'
@@ -828,40 +915,16 @@ class Price(commands.Cog, name='price'):
                 await inter.followup.send(embed=embed, view=view, file=file)
                 send_succeeded = True
             finally:
-                cleanup_errors = {}
-
-                try:
-                    file.close()
-                except Exception as exc:
-                    cleanup_errors['close_exception_type'] = type(exc).__name__
-                    cleanup_errors['close_exception'] = str(exc)
-
-                try:
-                    os.remove(artifact_path)
-                except Exception as exc:
-                    cleanup_errors['remove_exception_type'] = type(exc).__name__
-                    cleanup_errors['remove_exception'] = str(exc)
-
-                if cleanup_errors:
-                    self._log_price_debug(
-                        inter,
-                        '<artifact>: <cleanup> failure.',
-                        action='fail',
-                        stage='failure',
-                        operation='artifact_cleanup',
-                        trace_id=trace_id,
-                        search_query=search_query,
-                        invocation_mode=invocation_mode,
-                        resolution_source=resolution_source,
-                        handled=True,
-                        expected_failure=False,
-                        user_visible=False,
-                        fatal=False,
-                        artifact_type='price_graph',
-                        artifact_path=artifact_path,
-                        send_succeeded=send_succeeded,
-                        **cleanup_errors,
-                    )
+                self._cleanup_price_artifact(
+                    inter,
+                    file=file,
+                    artifact_path=artifact_path,
+                    trace_id=trace_id,
+                    send_succeeded=send_succeeded,
+                    search_query=search_query,
+                    invocation_mode=invocation_mode,
+                    resolution_source=resolution_source,
+                )
 
             self._log_price_success(
                 inter,
