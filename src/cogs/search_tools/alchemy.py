@@ -36,9 +36,11 @@ from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
     build_command_log_bind,
+    build_expected_user_visible_failure_metadata,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
+    build_unexpected_user_visible_failure_metadata,
     emit_command_log,
 )
 
@@ -348,11 +350,7 @@ class Alchemy(commands.Cog, name='alchemy'):
                         'value': title if 'title' in locals() else None,
                     },
                 ],
-                handled=True,
-                expected_failure=True,
-                user_visible=True,
-                exception_type=type(exc).__name__,
-                exception=str(exc),
+                **build_expected_user_visible_failure_metadata(exc),
             )
             raise
 
@@ -375,11 +373,7 @@ class Alchemy(commands.Cog, name='alchemy'):
                     {'kind': 'query', 'label': 'search_query', 'value': search_query},
                     {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
                 ],
-                handled=True,
-                expected_failure=True,
-                user_visible=True,
-                exception_type=type(exc).__name__,
-                exception=str(exc),
+                **build_expected_user_visible_failure_metadata(exc),
             )
             raise
 
@@ -512,9 +506,7 @@ class Alchemy(commands.Cog, name='alchemy'):
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
                 log_params=build_search_query_log_params(search_query),
-                handled=True,
-                expected_failure=False,
-                user_visible=True,
+                **build_unexpected_user_visible_failure_metadata(),
             )
 
             if inter.response.is_done():

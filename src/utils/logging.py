@@ -131,6 +131,24 @@ def build_resolved_search_log_params(
     ]
 
 
+def build_expected_user_visible_failure_metadata(exc: Exception) -> dict:
+    return {
+        'handled': True,
+        'expected_failure': True,
+        'user_visible': True,
+        'exception_type': type(exc).__name__,
+        'exception': str(exc),
+    }
+
+
+def build_unexpected_user_visible_failure_metadata() -> dict:
+    return {
+        'handled': True,
+        'expected_failure': False,
+        'user_visible': True,
+    }
+
+
 def serialize_resolved_username(
     resolved_username: str | None,
     *,
