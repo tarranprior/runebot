@@ -4,6 +4,7 @@ import json
 import sqlite3
 from typing import Any
 
+
 DEFAULT_SOURCE = 'bot'
 LEVEL_COUNT_KEYS = ('DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR')
 
@@ -76,9 +77,25 @@ def _build_internal_logs_filters(
     return where_clause, params, normalized_levels[0] if normalized_levels else None
 
 
+def _configure_internal_logs_connection(conn: sqlite3.Connection, enable_wal: bool = False) -> None:
+    '''
+    Applies pragmas to an internal logs database connection.
+
+    :param conn: (sqlite3.Connection) -
+        Represents the SQLite connection to configure.
+    :param enable_wal: (bool) -
+        Represents whether to enable Write-Ahead Logging for this connection.
+
+    :return: (None)
+    '''
+    if enable_wal:
+        conn.execute('PRAGMA journal_mode=WAL;')
+    conn.execute('PRAGMA busy_timeout=5000;')
+
+
 def ensure_internal_logs_schema(db_path: str) -> None:
     with sqlite3.connect(db_path, timeout=5) as conn:
-        conn.execute('PRAGMA journal_mode=WAL;')
+        _configure_internal_logs_connection(conn, enable_wal=True)
         conn.execute(
             '''
             CREATE TABLE IF NOT EXISTS log_sessions (
@@ -153,6 +170,7 @@ def create_log_session(
     source: str = DEFAULT_SOURCE,
 ) -> None:
     with sqlite3.connect(db_path, timeout=5) as conn:
+        _configure_internal_logs_connection(conn)
         conn.execute(
             'INSERT INTO log_sessions (session_id, started_at, log_file, source) VALUES (?, ?, ?, ?)',
             (session_id, started_at, log_file, source),
@@ -232,6 +250,7 @@ def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
         return 0
 
     with sqlite3.connect(db_path, timeout=5) as conn:
+        _configure_internal_logs_connection(conn)
         conn.executemany(
             '''
             INSERT INTO internal_logs (
@@ -307,6 +326,7 @@ def query_internal_logs(
     offset = (page - 1) * page_size
 
     with sqlite3.connect(db_path, timeout=5) as conn:
+        _configure_internal_logs_connection(conn)
         conn.row_factory = sqlite3.Row
         total = conn.execute(count_sql, params).fetchone()[0]
         rows = conn.execute(data_sql, [*params, page_size, offset]).fetchall()
@@ -363,6 +383,7 @@ def query_internal_log_level_counts(
     counts: dict[str, int] = {level_key: 0 for level_key in LEVEL_COUNT_KEYS}
 
     with sqlite3.connect(db_path, timeout=5) as conn:
+        _configure_internal_logs_connection(conn)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(sql, params).fetchall()
 
@@ -384,6 +405,7 @@ def query_log_sessions(db_path: str) -> list[dict[str, Any]]:
         'ORDER BY ls.started_at DESC'
     )
     with sqlite3.connect(db_path, timeout=5) as conn:
+        _configure_internal_logs_connection(conn)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(sql).fetchall()
     return [
