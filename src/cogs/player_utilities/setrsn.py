@@ -28,13 +28,16 @@ from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
 
 import uuid
-from loguru import logger
-from utils.logging import build_log_message
 
 import exceptions
 from templates.bot import Bot
 from config import *
 from utils import *
+from utils.logging import (
+    build_log_message,
+    build_command_log_bind,
+    emit_command_log
+)
 
 
 class Setrsn(commands.Cog, name='setrsn'):
@@ -54,24 +57,6 @@ class Setrsn(commands.Cog, name='setrsn'):
         return: (None)
         '''
         self.bot = bot
-
-
-    @staticmethod
-    def _snowflake(value) -> str | None:
-        return str(value) if value is not None else None
-
-
-    @staticmethod
-    def _interaction_context(inter: ApplicationCommandInteraction) -> dict:
-        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
-        return {
-            'user_id': Setrsn._snowflake(getattr(user, 'id', None)),
-            'user_name': getattr(user, 'name', None),
-            'user_display_name': getattr(user, 'display_name', None),
-            'guild_id': Setrsn._snowflake(getattr(inter, 'guild_id', None)),
-            'channel_id': Setrsn._snowflake(getattr(inter, 'channel_id', None)),
-            'interaction_type': str(getattr(inter, 'type', None)),
-        }
 
 
     @staticmethod
@@ -96,24 +81,23 @@ class Setrsn(commands.Cog, name='setrsn'):
         log_params: list | None = None,
         **extra,
     ) -> dict:
-        payload = {
-            'command': 'setrsn',
-            'trace_id': trace_id,
-            'invocation_source': self._invocation_source(inter),
-            'action': action,
-            'stage': stage,
-            'operation': operation,
-            'invocation_mode': invocation_mode,
-            'username': username,
-            'resolved_username': resolved_username,
-            'account_type': account_type,
-            'resolved_account_type': resolved_account_type,
-            'resolution_source': resolution_source,
-            'log_params': log_params,
-            **self._interaction_context(inter),
+        return build_command_log_bind(
+            command='setrsn',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            username=username,
+            resolved_username=resolved_username,
+            account_type=account_type,
+            resolved_account_type=resolved_account_type,
+            resolution_source=resolution_source,
             **extra,
-        }
-        return {k: v for k, v in payload.items() if v is not None}
+        )
 
 
     def _log_setrsn_debug(
@@ -122,7 +106,11 @@ class Setrsn(commands.Cog, name='setrsn'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._setrsn_bind(inter, **bind_kwargs)).debug(message)
+        emit_command_log(
+            level='debug',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
     
 
     def _log_setrsn_info(
@@ -131,7 +119,11 @@ class Setrsn(commands.Cog, name='setrsn'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._setrsn_bind(inter, **bind_kwargs)).info(message)
+        emit_command_log(
+            level='info',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_setrsn_success(
@@ -140,7 +132,11 @@ class Setrsn(commands.Cog, name='setrsn'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._setrsn_bind(inter, **bind_kwargs)).success(message)
+        emit_command_log(
+            level='success',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_setrsn_error(
@@ -150,7 +146,12 @@ class Setrsn(commands.Cog, name='setrsn'):
         exc: Exception,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._setrsn_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+        emit_command_log(
+            level='error',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     def _log_setrsn_warning(
@@ -159,7 +160,11 @@ class Setrsn(commands.Cog, name='setrsn'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._setrsn_bind(inter, **bind_kwargs)).warning(message)
+        emit_command_log(
+            level='warning',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     async def set_username(

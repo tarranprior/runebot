@@ -37,13 +37,17 @@ import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
-from loguru import logger
-from utils.logging import build_log_message
 
 import exceptions
 from config import *
 from templates.bot import Bot
 from utils import *
+from utils.logging import (
+    build_command_log_bind,
+    build_interaction_log_context,
+    build_log_message,
+    emit_command_log,
+)
 
 
 class Wikipedia(commands.Cog, name='wikipedia'):
@@ -93,23 +97,22 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         log_params: list | None = None,
         **extra,
     ) -> dict:
-        payload = {
-            'command': 'wikipedia',
-            'trace_id': trace_id,
-            'invocation_source': self._invocation_source(inter),
-            'action': action,
-            'stage': stage,
-            'operation': operation,
-            'invocation_mode': invocation_mode,
-            'search_query': search_query,
-            'resolved_search_term': resolved_search_term,
-            'resolved_page_title': resolved_page_title,
-            'resolution_source': resolution_source,
-            'log_params': log_params,
-            **self._interaction_context(inter),
+        return build_command_log_bind(
+            command='wikipedia',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            search_query=search_query,
+            resolved_search_term=resolved_search_term,
+            resolved_page_title=resolved_page_title,
+            resolution_source=resolution_source,
             **extra,
-        }
-        return {k: v for k, v in payload.items() if v is not None}
+        )
 
 
     def _log_wiki_debug(
@@ -118,7 +121,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).debug(message)
+        emit_command_log(
+            level='debug',
+            bind_payload=self._wiki_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_wiki_info(
@@ -127,7 +134,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).info(message)
+        emit_command_log(
+            level='info',
+            bind_payload=self._wiki_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_wiki_warning(
@@ -136,7 +147,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).warning(message)
+        emit_command_log(
+            level='warning',
+            bind_payload=self._wiki_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_wiki_success(
@@ -145,7 +160,11 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).success(message)
+        emit_command_log(
+            level='success',
+            bind_payload=self._wiki_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_wiki_error(
@@ -155,27 +174,12 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         exc: Exception,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._wiki_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
-
-
-    @staticmethod
-    def _snowflake(value) -> 'str | None':
-        return str(value) if value is not None else None
-
-
-    @staticmethod
-    def _interaction_context(
-        inter: ApplicationCommandInteraction | disnake.MessageInteraction
-    ) -> dict:
-        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
-        return {
-            'user_id': Wikipedia._snowflake(getattr(user, 'id', None)),
-            'user_name': getattr(user, 'name', None),
-            'user_display_name': getattr(user, 'display_name', None),
-            'guild_id': Wikipedia._snowflake(getattr(inter, 'guild_id', None)),
-            'channel_id': Wikipedia._snowflake(getattr(inter, 'channel_id', None)),
-            'interaction_type': str(getattr(inter, 'type', None)),
-        }
+        emit_command_log(
+            level='error',
+            bind_payload=self._wiki_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     async def search_wikipedia(
@@ -809,7 +813,7 @@ class DropdownView(disnake.ui.View):
         invocation_mode: str | None = None,
     ) -> None:
         raw_context: dict[str, str | None] = {
-            **self._cog._interaction_context(inter),
+            **build_interaction_log_context(inter),
             'invocation_source': self._cog._invocation_source(inter),
             'invocation_mode': invocation_mode,
         }

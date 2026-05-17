@@ -34,8 +34,11 @@ import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
-from loguru import logger
-from utils.logging import build_log_message
+from utils.logging import (
+    build_command_log_bind,
+    build_log_message,
+    emit_command_log,
+)
 
 import exceptions
 from config import *
@@ -64,24 +67,6 @@ class Quests(commands.Cog, name='quests'):
 
 
     @staticmethod
-    def _snowflake(value) -> str | None:
-        return str(value) if value is not None else None
-    
-
-    @staticmethod
-    def _interaction_context(inter: ApplicationCommandInteraction) -> dict:
-        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
-        return {
-            'user_id': Quests._snowflake(getattr(user, 'id', None)),
-            'user_name': getattr(user, 'name', None),
-            'user_display_name': getattr(user, 'display_name', None),
-            'guild_id': Quests._snowflake(getattr(inter, 'guild_id', None)),
-            'channel_id': Quests._snowflake(getattr(inter, 'channel_id', None)),
-            'interaction_type': str(getattr(inter, 'type', None)),
-        }
-
-
-    @staticmethod
     def _invocation_source(
         inter: ApplicationCommandInteraction
     ) -> str:
@@ -104,23 +89,22 @@ class Quests(commands.Cog, name='quests'):
         log_params: list | None = None,
         **extra,
     ) -> dict:
-        payload = {
-            'command': 'quests',
-            'trace_id': trace_id,
-            'invocation_source': self._invocation_source(inter),
-            'action': action,
-            'stage': stage,
-            'operation': operation,
-            'invocation_mode': invocation_mode,
-            'search_query': search_query,
-            'resolved_search_term': resolved_search_term,
-            'resolved_page_title': resolved_page_title,
-            'resolution_source': resolution_source,
-            'log_params': log_params,
-            **self._interaction_context(inter),
+        return build_command_log_bind(
+            command='quests',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            search_query=search_query,
+            resolved_search_term=resolved_search_term,
+            resolved_page_title=resolved_page_title,
+            resolution_source=resolution_source,
             **extra,
-        }
-        return {k: v for k, v in payload.items() if v is not None}
+        )
 
 
     def _log_quests_debug(
@@ -129,7 +113,11 @@ class Quests(commands.Cog, name='quests'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._quests_bind(inter, **bind_kwargs)).debug(message)
+        emit_command_log(
+            level='debug',
+            bind_payload=self._quests_bind(inter, **bind_kwargs),
+            message=message,
+        )
     
 
     def _log_quests_info(
@@ -138,7 +126,11 @@ class Quests(commands.Cog, name='quests'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._quests_bind(inter, **bind_kwargs)).info(message)
+        emit_command_log(
+            level='info',
+            bind_payload=self._quests_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_quests_success(
@@ -147,7 +139,11 @@ class Quests(commands.Cog, name='quests'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._quests_bind(inter, **bind_kwargs)).success(message)
+        emit_command_log(
+            level='success',
+            bind_payload=self._quests_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_quests_error(
@@ -157,7 +153,12 @@ class Quests(commands.Cog, name='quests'):
         exc: Exception,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._quests_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+        emit_command_log(
+            level='error',
+            bind_payload=self._quests_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     def _log_quests_warning(
@@ -166,7 +167,11 @@ class Quests(commands.Cog, name='quests'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._quests_bind(inter, **bind_kwargs)).warning(message)
+        emit_command_log(
+            level='warning',
+            bind_payload=self._quests_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     async def search_quest(

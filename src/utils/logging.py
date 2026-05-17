@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List
+from loguru import logger
 
 @dataclass
 class LogParam:
@@ -10,6 +11,91 @@ class LogParam:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+def _snowflake_str(value: Any) -> str | None:
+    return str(value) if value is not None else None
+
+
+def build_interaction_log_context(inter: Any) -> dict:
+    user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+    interaction_type = getattr(inter, 'type', None)
+    return {
+        'user_id': _snowflake_str(getattr(user, 'id', None)),
+        'user_name': getattr(user, 'name', None),
+        'user_display_name': getattr(user, 'display_name', None),
+        'guild_id': _snowflake_str(getattr(inter, 'guild_id', None)),
+        'channel_id': _snowflake_str(getattr(inter, 'channel_id', None)),
+        'interaction_type': str(interaction_type) if interaction_type is not None else None,
+    }
+
+
+def build_command_log_bind(
+    *,
+    command: str,
+    inter: Any,
+    action: str,
+    stage: str,
+    operation: str = 'search',
+    invocation_source: str = 'slash_command',
+    invocation_mode: str | None = None,
+    search_query: str | None = None,
+    resolved_search_term: str | None = None,
+    resolved_page_title: str | None = None,
+    resolution_source: str | None = None,
+    trace_id: str | None = None,
+    log_params: list | None = None,
+    **extra,
+) -> dict:
+    payload = {
+        'command': command,
+        'trace_id': trace_id,
+        'invocation_source': invocation_source,
+        'action': action,
+        'stage': stage,
+        'operation': operation,
+        'invocation_mode': invocation_mode,
+        'search_query': search_query,
+        'resolved_search_term': resolved_search_term,
+        'resolved_page_title': resolved_page_title,
+        'resolution_source': resolution_source,
+        'log_params': log_params,
+        **build_interaction_log_context(inter),
+        **extra,
+    }
+    return {k: v for k, v in payload.items() if v is not None}
+
+
+def emit_command_log(
+    *,
+    level: str,
+    bind_payload: dict,
+    message: str,
+    exc: Exception | None = None,
+) -> None:
+    bound_logger = logger.bind(**bind_payload)
+
+    if level == 'error':
+        bound_logger.opt(exception=exc).error(message)
+        return
+
+    if level == 'debug':
+        bound_logger.debug(message)
+        return
+
+    if level == 'info':
+        bound_logger.info(message)
+        return
+
+    if level == 'warning':
+        bound_logger.warning(message)
+        return
+
+    if level == 'success':
+        bound_logger.success(message)
+        return
+
+    raise ValueError(f'Unsupported log level: {level}')
 
 
 def serialize_params(params: List[LogParam]) -> List[dict]:

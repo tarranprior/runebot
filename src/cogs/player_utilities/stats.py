@@ -31,13 +31,14 @@ docstrings.
 import uuid
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
-from loguru import logger
 
 import exceptions
 from templates.bot import Bot
 from config import *
 from utils import *
 from utils.logging import (
+    build_command_log_bind,
+    emit_command_log,
     LogParam,
     serialize_params,
     serialize_resolved_username,
@@ -85,43 +86,25 @@ class Stats(commands.Cog, name='stats'):
         log_params: list[dict] = None,
         **extra,
     ) -> dict:
-        payload = dict(
+        normalized_owner_id = str(owner_id) if owner_id is not None else None
+        return build_command_log_bind(
             command='stats',
-            trace_id=trace_id,
-            invocation_source=invocation_source,
-            **self._interaction_context(inter),
+            inter=inter,
             action=action,
             stage=stage,
             operation=operation,
+            invocation_source=invocation_source,
+            trace_id=trace_id,
+            resolution_source=resolution_source,
+            log_params=log_params,
             hiscore_category=hiscore_category,
             account_type=account_type,
             username=username,
             resolved_username=resolved_username,
             resolved_account_type=resolved_account_type,
-            resolution_source=resolution_source,
-            owner_id=Stats._snowflake(owner_id),
-            log_params=log_params,
+            owner_id=normalized_owner_id,
+            **extra,
         )
-        payload = {k: v for k, v in payload.items() if v is not None}
-        payload.update(extra)
-        return payload
-    
-
-    @staticmethod
-    def _snowflake(value) -> str | None:
-        return str(value) if value is not None else None
-
-    @staticmethod
-    def _interaction_context(inter: ApplicationCommandInteraction | MessageInteraction) -> dict:
-        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
-        return {
-            'user_id': Stats._snowflake(getattr(user, 'id', None)),
-            'user_name': getattr(user, 'name', None),
-            'user_display_name': getattr(user, 'display_name', None),
-            'guild_id': Stats._snowflake(getattr(inter, 'guild_id', None)),
-            'channel_id': Stats._snowflake(getattr(inter, 'channel_id', None)),
-            'interaction_type': str(getattr(inter, 'type', None)),
-        }
     
     @staticmethod
     def _invocation_source(
@@ -140,7 +123,11 @@ class Stats(commands.Cog, name='stats'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._stats_bind(inter, **bind_kwargs)).debug(message)
+        emit_command_log(
+            level='debug',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_stats_info(
@@ -149,7 +136,11 @@ class Stats(commands.Cog, name='stats'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._stats_bind(inter, **bind_kwargs)).info(message)
+        emit_command_log(
+            level='info',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_stats_warning(
@@ -158,7 +149,11 @@ class Stats(commands.Cog, name='stats'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._stats_bind(inter, **bind_kwargs)).warning(message)
+        emit_command_log(
+            level='warning',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_stats_success(
@@ -167,7 +162,11 @@ class Stats(commands.Cog, name='stats'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._stats_bind(inter, **bind_kwargs)).success(message)
+        emit_command_log(
+            level='success',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_stats_error(
@@ -177,7 +176,12 @@ class Stats(commands.Cog, name='stats'):
         exc: Exception,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._stats_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+        emit_command_log(
+            level='error',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     def _build_stats_view(
@@ -489,6 +493,7 @@ class Stats(commands.Cog, name='stats'):
                 resolved_account_type=resolved_account_type,
                 resolution_source=resolution_source,
                 log_params=serialize_params(params),
+                owner_id=owner_id,
             )
 
             if account_type == 'Normal':
@@ -718,6 +723,7 @@ class Stats(commands.Cog, name='stats'):
                 exception_type=type(exc).__name__,
                 exception=str(exc),
                 log_params=serialize_params(fail_params),
+                owner_id=owner_id,
             )
             raise
 

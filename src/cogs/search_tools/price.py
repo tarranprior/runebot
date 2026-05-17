@@ -37,13 +37,15 @@ from typing import Tuple, Union, List
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType, MessageInteraction
 
-from loguru import logger
-from utils.logging import build_log_message
-
 import exceptions
 from config import *
 from templates.bot import Bot
 from utils import *
+from utils.logging import (
+    build_command_log_bind,
+    build_log_message,
+    emit_command_log,
+)
 
 
 class Price(commands.Cog, name='price'):
@@ -64,25 +66,6 @@ class Price(commands.Cog, name='price'):
         '''
 
         self.bot = bot
-
-
-    @staticmethod
-    def _snowflake(value) -> 'str | None':
-        return str(value) if value is not None else None
-
-
-    @staticmethod
-    def _interaction_context(inter: ApplicationCommandInteraction | MessageInteraction) -> dict:
-        user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
-        return {
-            'user_id': Price._snowflake(getattr(user, 'id', None)),
-            'user_name': getattr(user, 'name', None),
-            'user_display_name': getattr(user, 'display_name', None),
-            'guild_id': Price._snowflake(getattr(inter, 'guild_id', None)),
-            'channel_id': Price._snowflake(getattr(inter, 'channel_id', None)),
-            'interaction_type': str(getattr(inter, 'type', None)),
-        }
-
 
     @staticmethod
     def _invocation_source(inter: ApplicationCommandInteraction | MessageInteraction) -> str:
@@ -113,27 +96,27 @@ class Price(commands.Cog, name='price'):
         owner_id: str | int | None = None,
         **extra,
     ) -> dict:
-        payload = {
-            'command': 'price',
-            'trace_id': trace_id,
-            'invocation_source': self._invocation_source(inter),
-            'action': action,
-            'stage': stage,
-            'operation': operation,
-            'invocation_mode': invocation_mode,
-            'search_query': search_query,
-            'resolved_search_term': resolved_search_term,
-            'resolved_page_title': resolved_page_title,
-            'resolution_source': resolution_source,
-            'log_params': log_params,
-            'item_id': item_id,
-            'component_type': component_type,
-            'button_action': button_action,
-            'owner_id': Price._snowflake(owner_id),
-            **self._interaction_context(inter),
+        normalized_owner_id = str(owner_id) if owner_id is not None else None
+        return build_command_log_bind(
+            command='price',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            search_query=search_query,
+            resolved_search_term=resolved_search_term,
+            resolved_page_title=resolved_page_title,
+            resolution_source=resolution_source,
+            item_id=item_id,
+            component_type=component_type,
+            button_action=button_action,
+            owner_id=normalized_owner_id,
             **extra,
-        }
-        return {k: v for k, v in payload.items() if v is not None}
+        )
 
 
     def _log_price_debug(
@@ -142,7 +125,11 @@ class Price(commands.Cog, name='price'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._price_bind(inter, **bind_kwargs)).debug(message)
+        emit_command_log(
+            level='debug',
+            bind_payload=self._price_bind(inter, **bind_kwargs),
+            message=message,
+        )
     
 
     def _log_price_info(
@@ -151,7 +138,11 @@ class Price(commands.Cog, name='price'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._price_bind(inter, **bind_kwargs)).info(message)
+        emit_command_log(
+            level='info',
+            bind_payload=self._price_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_price_warning(
@@ -160,7 +151,11 @@ class Price(commands.Cog, name='price'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._price_bind(inter, **bind_kwargs)).warning(message)
+        emit_command_log(
+            level='warning',
+            bind_payload=self._price_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_price_success(
@@ -169,7 +164,11 @@ class Price(commands.Cog, name='price'):
         message: str,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._price_bind(inter, **bind_kwargs)).success(message)
+        emit_command_log(
+            level='success',
+            bind_payload=self._price_bind(inter, **bind_kwargs),
+            message=message,
+        )
 
 
     def _log_price_error(
@@ -179,7 +178,12 @@ class Price(commands.Cog, name='price'):
         exc: Exception,
         **bind_kwargs,
     ) -> None:
-        logger.bind(**self._price_bind(inter, **bind_kwargs)).opt(exception=exc).error(message)
+        emit_command_log(
+            level='error',
+            bind_payload=self._price_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     def _cleanup_price_artifact(
