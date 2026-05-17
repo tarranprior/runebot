@@ -88,7 +88,17 @@ class InternalStatsAPIServer:
                 if add_auth_challenge:
                     self.send_header('WWW-Authenticate', 'Bearer')
                 self.end_headers()
-                self.wfile.write(body)
+                try:
+                    self.wfile.write(body)
+                except (ConnectionAbortedError, BrokenPipeError) as exc:
+                    logger.bind(
+                        action='write_response',
+                        stage='disconnect',
+                        operation='send_json',
+                        path=self.path,
+                        status_code=status_code,
+                        exception_type=type(exc).__name__,
+                    ).warning('Internal API client disconnected before JSON response could be written.')
 
             def _authorised(self) -> tuple[bool, HTTPStatus]:
                 if not outer.token:
@@ -194,13 +204,25 @@ class InternalStatsAPIServer:
                     return self._send_json(HTTPStatus.OK, payload)
                 except FuturesTimeoutError:
                     future.cancel()
-                    logger.error('Community stats API timed out while collecting runtime stats.')
+                    logger.bind(
+                        action='build_response',
+                        stage='timeout',
+                        operation='community_stats',
+                        path=self.path,
+                        timeout_seconds=5,
+                    ).error('Community stats API timed out while collecting runtime stats.')
                     return self._send_json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
                         {'error': 'Timed out collecting runtime stats'}
                     )
                 except Exception as exc:
-                    logger.error(f'Community stats API failed to collect runtime stats: {exc}')
+                    logger.bind(
+                        action='build_response',
+                        stage='runtime_failure',
+                        operation='community_stats',
+                        path=self.path,
+                        exception_type=type(exc).__name__,
+                    ).opt(exception=exc).error('Community stats API failed to collect runtime stats.')
                     return self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         {'error': 'Internal server error'}
@@ -304,8 +326,15 @@ class InternalStatsAPIServer:
 
                 try:
                     inserted = insert_internal_logs(outer.logs_db_path, validated_logs)
-                except Exception:
-                    logger.exception('Failed to persist internal logs')
+                except Exception as exc:
+                    logger.bind(
+                        action='persist',
+                        stage='runtime_failure',
+                        operation='internal_logs_ingest',
+                        path=self.path,
+                        batch_size=len(validated_logs),
+                        exception_type=type(exc).__name__,
+                    ).opt(exception=exc).error('Failed to persist internal logs.')
                     return self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         {'error': 'Failed to persist logs'}
@@ -410,8 +439,23 @@ class InternalStatsAPIServer:
                         start_time=start_time_filter,
                         end_time=end_time_filter,
                     )
-                except Exception:
-                    logger.exception('Failed to query internal logs')
+                except Exception as exc:
+                    logger.bind(
+                        action='query',
+                        stage='runtime_failure',
+                        operation='internal_logs_query',
+                        path=self.path,
+                        page=page,
+                        page_size=page_size,
+                        level=level,
+                        module=module,
+                        source=source,
+                        session_id=session_id,
+                        has_search=bool(search),
+                        has_start_time=bool(start_time_filter),
+                        has_end_time=bool(end_time_filter),
+                        exception_type=type(exc).__name__,
+                    ).opt(exception=exc).error('Failed to query internal logs.')
                     return self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         {'error': 'Failed to query logs'}
@@ -483,8 +527,14 @@ class InternalStatsAPIServer:
 
                 try:
                     sessions = query_log_sessions(outer.logs_db_path)
-                except Exception:
-                    logger.exception('Failed to query log sessions')
+                except Exception as exc:
+                    logger.bind(
+                        action='query',
+                        stage='runtime_failure',
+                        operation='log_sessions_query',
+                        path=self.path,
+                        exception_type=type(exc).__name__,
+                    ).opt(exception=exc).error('Failed to query log sessions.')
                     return self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         {'error': 'Failed to query sessions'}
