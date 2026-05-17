@@ -159,3 +159,6 @@ runebot-logs-dev.db
 runebot-logs-dev.db-journal
 runebot-logs-dev.db-shm
 runebot-logs-dev.db-wal
+
+# Runebot backups
+backups/
