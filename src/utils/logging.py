@@ -110,6 +110,27 @@ def serialize_param(param: LogParam | None) -> list[dict]:
     return serialize_params([param] if param is not None else [])
 
 
+def build_search_query_log_params(
+    search_query: str,
+) -> list[dict]:
+    return [
+        {'kind': 'query', 'label': 'search_query', 'value': search_query},
+    ]
+
+
+def build_resolved_search_log_params(
+    *,
+    search_query: str,
+    resolved_search_term: str,
+    resolved_page_title: str,
+) -> list[dict]:
+    return [
+        {'kind': 'query', 'label': 'search_query', 'value': search_query},
+        {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+        {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+    ]
+
+
 def serialize_resolved_username(
     resolved_username: str | None,
     *,

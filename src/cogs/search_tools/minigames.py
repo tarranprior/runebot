@@ -42,6 +42,8 @@ from utils import *
 from utils.logging import (
     build_command_log_bind,
     build_log_message,
+    build_resolved_search_log_params,
+    build_search_query_log_params,
     emit_command_log,
 )
 
@@ -245,11 +247,11 @@ class Minigames(commands.Cog, name='minigames'):
                 resolved_page_title=title,
                 resolution_source=resolution_source,
                 invocation_mode=invocation_mode,
-                log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
-                ],
+                log_params=build_resolved_search_log_params(
+                    search_query=search_query,
+                    resolved_search_term=resolved_search_term,
+                    resolved_page_title=title,
+                ),
             )
 
             description = parse_description(page_content).pop()
@@ -415,9 +417,7 @@ class Minigames(commands.Cog, name='minigames'):
             search_query=search_query,
             invocation_mode=invocation_mode,
             resolution_source=resolution_source,
-            log_params=[
-                {'kind': 'query', 'label': 'search_query', 'value': search_query}
-            ],
+            log_params=build_search_query_log_params(search_query),
         )
 
         try:
@@ -445,11 +445,11 @@ class Minigames(commands.Cog, name='minigames'):
                 resolved_page_title=resolved_page_title,
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
-                log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
-                ],
+                log_params=build_resolved_search_log_params(
+                    search_query=search_query,
+                    resolved_search_term=resolved_search_term,
+                    resolved_page_title=resolved_page_title,
+                ),
             )
         except (exceptions.NoMinigameData, exceptions.Nonexistence) as exc:
             if isinstance(exc, exceptions.Nonexistence):
@@ -490,9 +490,7 @@ class Minigames(commands.Cog, name='minigames'):
                 search_query=search_query,
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
-                log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query}
-                ],
+                log_params=build_search_query_log_params(search_query),
                 handled=True,
                 expected_failure=False,
                 user_visible=True,

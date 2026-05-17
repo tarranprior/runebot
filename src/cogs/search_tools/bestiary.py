@@ -37,6 +37,8 @@ from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
     build_command_log_bind,
     build_log_message,
+    build_resolved_search_log_params,
+    build_search_query_log_params,
     emit_command_log,
 )
 
@@ -241,11 +243,11 @@ class Bestiary(commands.Cog, name='bestiary'):
                 resolved_page_title=title,
                 resolution_source=resolution_source,
                 invocation_mode=invocation_mode,
-                log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
-                ],
+                log_params=build_resolved_search_log_params(
+                    search_query=search_query,
+                    resolved_search_term=resolved_search_term,
+                    resolved_page_title=title,
+                ),
             )
 
             try:
@@ -420,9 +422,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             search_query=search_query,
             invocation_mode=invocation_mode,
             resolution_source=resolution_source,
-            log_params=[
-                {'kind': 'query', 'label': 'search_query', 'value': search_query}
-            ],
+            log_params=build_search_query_log_params(search_query),
         )
 
         try:
@@ -452,9 +452,11 @@ class Bestiary(commands.Cog, name='bestiary'):
                 resolution_source=resolution_source,
                 monster_id=monster_id,
                 log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+                    *build_resolved_search_log_params(
+                        search_query=search_query,
+                        resolved_search_term=resolved_search_term,
+                        resolved_page_title=resolved_page_title,
+                    ),
                     {'kind': 'monster', 'label': 'monster_id', 'value': monster_id},
                 ],
             )
@@ -497,7 +499,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                 search_query=search_query,
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
-                log_params=[{'kind': 'query', 'label': 'search_query', 'value': search_query}],
+                log_params=build_search_query_log_params(search_query),
                 handled=True,
                 expected_failure=False,
                 user_visible=True,

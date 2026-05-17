@@ -37,6 +37,8 @@ from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
     build_command_log_bind,
     build_log_message,
+    build_resolved_search_log_params,
+    build_search_query_log_params,
     emit_command_log,
 )
 
@@ -238,11 +240,11 @@ class Alchemy(commands.Cog, name='alchemy'):
                 resolved_page_title=title,
                 resolution_source=resolution_source,
                 invocation_mode=invocation_mode,
-                log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
-                ],
+                log_params=build_resolved_search_log_params(
+                    search_query=search_query,
+                    resolved_search_term=resolved_search_term,
+                    resolved_page_title=title,
+                ),
             )
 
             info = parse_infobox(page_content)
@@ -431,7 +433,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             search_query=search_query,
             invocation_mode=invocation_mode,
             resolution_source=resolution_source,
-            log_params=[{'kind': 'query', 'label': 'search_query', 'value': search_query}],
+            log_params=build_search_query_log_params(search_query),
         )
 
         try:
@@ -461,9 +463,11 @@ class Alchemy(commands.Cog, name='alchemy'):
                 resolution_source=resolution_source,
                 item_id=item_id,
                 log_params=[
-                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
-                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
-                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title},
+                    *build_resolved_search_log_params(
+                        search_query=search_query,
+                        resolved_search_term=resolved_search_term,
+                        resolved_page_title=resolved_page_title,
+                    ),
                     {'kind': 'item', 'label': 'item_id', 'value': item_id},
                 ],
             )
@@ -507,7 +511,7 @@ class Alchemy(commands.Cog, name='alchemy'):
                 search_query=search_query,
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
-                log_params=[{'kind': 'query', 'label': 'search_query', 'value': search_query}],
+                log_params=build_search_query_log_params(search_query),
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
