@@ -25,6 +25,8 @@ Environment variables consumed by this module:
                                             (default: "127.0.0.1")
     RUNEBOT_INTERNAL_API_PORT              - Port for the internal stats API
                                             (default: 8080)
+    RUNEBOT_INTERNAL_LOGS_DB_PATH          - SQLite path for internal logs storage
+                                            (default: "runebot-logs-dev.db")
     DB_PATH                                - SQLite database path
                                             (default: "runebot.db")
 
@@ -58,6 +60,7 @@ class RuntimeSettings:
     internal_api_host: str
     internal_api_port: int
     db_path: str
+    internal_logs_db_path: str
 
 
 def _fetch_aws_secret(secret_name: str) -> str:
@@ -112,6 +115,7 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
         internal_api_host = env.get('RUNEBOT_INTERNAL_API_HOST', '127.0.0.1')
         internal_api_port = _coerce_port(env.get('RUNEBOT_INTERNAL_API_PORT', '8080'))
         db_path = env.get('DB_PATH', 'runebot.db')
+        internal_logs_db_path = env.get('RUNEBOT_INTERNAL_LOGS_DB_PATH', 'runebot-logs-dev.db')
 
     else:
         bot_token_secret_name = env.get('RUNEBOT_AWS_BOT_TOKEN_SECRET_NAME', 'bot_token')
@@ -132,6 +136,10 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
         internal_api_port = _coerce_port(
             str(internal_api_data.get('RUNEBOT_INTERNAL_API_PORT', '8080'))
         )
+        internal_logs_db_path = internal_api_data.get(
+            'RUNEBOT_INTERNAL_LOGS_DB_PATH',
+            'runebot-logs.db'
+        )
 
     if not bot_token:
         raise ValueError(
@@ -148,5 +156,6 @@ def load_settings(runtime_env: str = 'development') -> RuntimeSettings:
         internal_api_token=internal_api_token,
         internal_api_host=internal_api_host,
         internal_api_port=internal_api_port,
-        db_path=db_path
+        db_path=db_path,
+        internal_logs_db_path=internal_logs_db_path
     )

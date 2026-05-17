@@ -37,6 +37,7 @@ docstrings.
 '''
 
 from typing import List, Optional, Tuple
+from .models import DefaultAccount
 
 import exceptions
 
@@ -354,7 +355,7 @@ async def get_colour_mode(self, guild_id: int, guild_owner_id: int) -> bool:
             return True
 
 
-async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, str]]:
+async def get_default_account(self, user_id: int) -> Optional[DefaultAccount]:
     '''
     Database function which retrieves a user's default account.
 
@@ -363,9 +364,8 @@ async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, st
     :param user_id: (Integer) -
         Represents a user id.
 
-    :return: (Optional[Tuple[Integer, String, String]]) -
-        The default account in the form (id, username, account_type),
-        otherwise None.
+    :return: (Optional[DefaultAccount]) -
+        The default account as a DefaultAccount dataclass, otherwise None.
     '''
 
     async with self.bot.runebotdb.cursor() as cursor:
@@ -408,7 +408,7 @@ async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, st
             )
             mapped_account = await cursor.fetchone()
             if mapped_account:
-                return mapped_account[0], mapped_account[1], mapped_account[2]
+                return DefaultAccount(account_id=mapped_account[0], username=mapped_account[1], account_type=mapped_account[2])
 
             return None
 
@@ -424,12 +424,12 @@ async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, st
                 FROM user_accounts
                 WHERE id = ? AND user_id = ?
                 LIMIT 1
-                ''',
-                (default_account_id, user_id)
+                '''
+                , (default_account_id, user_id)
             )
             account = await cursor.fetchone()
             if account:
-                return account[0], account[1], account[2]
+                return DefaultAccount(account_id=account[0], username=account[1], account_type=account[2])
 
         await cursor.execute(
             '''
@@ -437,12 +437,12 @@ async def get_default_account(self, user_id: int) -> Optional[Tuple[int, str, st
             FROM user_accounts
             WHERE user_id = ? AND username = ? AND account_type = ?
             LIMIT 1
-            ''',
-            (user_id, username, account_type)
+            '''
+            , (user_id, username, account_type)
         )
         mapped_account = await cursor.fetchone()
         if mapped_account:
-            return mapped_account[0], mapped_account[1], mapped_account[2]
+            return DefaultAccount(account_id=mapped_account[0], username=mapped_account[1], account_type=mapped_account[2])
 
         return None
 
@@ -461,7 +461,8 @@ async def get_username(self, user_id: int) -> Tuple[Optional[str], Optional[str]
     '''
     account = await get_default_account(self, user_id)
     if account:
-        _, username, account_type = account
+        username = account.username
+        account_type = account.account_type
         return username, account_type
 
     return None, None

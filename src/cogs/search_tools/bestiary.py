@@ -30,9 +30,19 @@ docstrings.
 '''
 
 import random
+import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
+from utils.logging import (
+    build_command_log_bind,
+    build_expected_user_visible_failure_metadata,
+    build_log_message,
+    build_resolved_search_log_params,
+    build_search_query_log_params,
+    build_unexpected_user_visible_failure_metadata,
+    emit_command_log,
+)
 
 import exceptions
 from config import *
@@ -59,12 +69,122 @@ class Bestiary(commands.Cog, name='bestiary'):
 
         self.bot = bot
 
+    @staticmethod
+    def _invocation_source(
+        inter: ApplicationCommandInteraction
+    ) -> str:
+        return 'slash_command'
+
+
+    def _bestiary_bind(
+        self,
+        inter: ApplicationCommandInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'search',
+        invocation_mode: str | None = None,
+        search_query: str | None = None,
+        resolved_search_term: str | None = None,
+        resolved_page_title: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        monster_id: str | None = None,
+        **extra,
+    ) -> dict:
+        return build_command_log_bind(
+            command='bestiary',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            search_query=search_query,
+            resolved_search_term=resolved_search_term,
+            resolved_page_title=resolved_page_title,
+            resolution_source=resolution_source,
+            monster_id=monster_id,
+            **extra,
+        )
+
+
+    def _log_bestiary_debug(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='debug',
+            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+    
+    def _log_bestiary_info(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='info',
+            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_bestiary_success(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='success',
+            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_bestiary_error(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='error',
+            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
+
+
+    def _log_bestiary_warning(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='warning',
+            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
 
     async def search_bestiary(
         self,
         inter: ApplicationCommandInteraction,
-        search_query: str
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        search_query: str,
+        trace_id: str | None = None,
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         General function which takes the given search query and returns
         corresponding monster data.
@@ -76,96 +196,175 @@ class Bestiary(commands.Cog, name='bestiary'):
         :param search_query: (String) -
             Represents a search query.
 
-        :return: Tuple([discord.Embed, discord.View]) -
-            An embed and view containing the bestiary information.
+        :return: Tuple[disnake.Embed, disnake.ui.View, str, str, str] -
+            An embed, view, resolved search term, resolved page title, and monster ID.
         '''
 
-        # Checks if the query is equal to the "I'm feeling lucky" special
-        # query and returns a random article if True.
-        if search_query == 'I\'m feeling lucky\u200a':
-            page_content = parse_page(
-                BASE_URL,
-                slugify(
-                    random.choice(await get_suggestions(self, ['Monsters']))
-                ),
-                HEADERS
-            )
-        else:
-            page_content = parse_page(
-            BASE_URL,
-            search_query,
-            HEADERS
-        )
-
-        info = parse_infobox(page_content)
-        title = parse_title(page_content)
-        description = parse_description(page_content).pop()
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_monster' if invocation_mode == 'feeling_lucky' else 'user_query'
+        resolved_search_term = search_query
 
         try:
-            info['Combat level']
-        except KeyError:
-            raise exceptions.NoMonsterData
-
-        embed, view = EmbedFactory().create(
-            title=title,
-            description=description,
-            thumbnail_url=f'https://oldschool.runescape.wiki{info["Image"]}',
-            button_label='Visit Page',
-            button_url=f'{BASE_URL}{slugify(title)}'
-        )
-
-        try:
-            colour = disnake.Colour.from_rgb(
-                *await extract_colour(
-                    self, inter.guild_id, inter.guild.owner_id,
-                    f'https://oldschool.runescape.wiki{info["Image"]}',
-                    HEADERS
+            if invocation_mode == 'feeling_lucky':
+                random_selection = random.choice(await get_suggestions(self, ['Monsters']))
+                page_content = parse_page(
+                    BASE_URL,
+                    slugify(random_selection),
+                    HEADERS,
+                    trace_id=trace_id
                 )
-            )
-            embed.colour = colour
-        except KeyError:
-            pass
-
-        monster_properties = [
-            'Aggressive',
-            'Poison',
-            'Venom',
-            'Cannons',
-            'Thralls',
-            'Attack style',
-            'Poisonous',
-            'Respawn time'
-        ]
-
-        embed.add_field(
-            name='Examine',
-            value=info.get('Examine'),
-            inline=False
-        )
-        embed.add_field(
-            name='Combat level',
-            value=info.get('Combat level'),
-            inline=True
-        )
-        embed.add_field(
-            name='Max hit',
-            value=')\n'.join(info.get('Max hit').split(')')),
-            inline=True
-        )
-
-        for prop in monster_properties:
-            prop_value = info.get(prop)
-            if prop_value is not None:
-                embed.add_field(name=prop, value=prop_value, inline=True)
+                resolved_search_term = random_selection
             else:
-                embed.add_field(name=prop, value='N/A', inline=True)
+                page_content = parse_page(
+                    BASE_URL,
+                    search_query,
+                    HEADERS,
+                    trace_id=trace_id
+                )
 
-        embed.add_field(
-            name='Monster ID(s)',
-            value=f'```\n{", ".join(info.get("Monster ID").split(","))}```',
-            inline=False)
-        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-        return embed, view
+            info = parse_infobox(page_content)
+            monster_id = info.get('Monster ID')
+            title = parse_title(page_content)
+            resolved_search_term = title
+            description = parse_description(page_content).pop()
+
+            self._log_bestiary_info(
+                inter,
+                build_log_message(
+                    command='bestiary',
+                    stage='resolve',
+                    operation='search',
+                    subject='search_query',
+                    resolved=title,
+                ),
+                action='resolve',
+                stage='resolve',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=build_resolved_search_log_params(
+                    search_query=search_query,
+                    resolved_search_term=resolved_search_term,
+                    resolved_page_title=title,
+                ),
+            )
+
+            try:
+                info['Combat level']
+            except KeyError:
+                raise exceptions.NoMonsterData
+
+            embed, view = EmbedFactory().create(
+                title=title,
+                description=description,
+                thumbnail_url=f'https://oldschool.runescape.wiki{info["Image"]}',
+                button_label='Visit Page',
+                button_url=f'{BASE_URL}{slugify(title)}'
+            )
+
+            try:
+                colour = disnake.Colour.from_rgb(
+                    *await extract_colour(
+                        self, inter.guild_id, inter.guild.owner_id,
+                        f'https://oldschool.runescape.wiki{info["Image"]}',
+                        HEADERS
+                    )
+                )
+                embed.colour = colour
+            except KeyError:
+                pass
+
+            monster_properties = [
+                'Aggressive',
+                'Poison',
+                'Venom',
+                'Cannons',
+                'Thralls',
+                'Attack style',
+                'Poisonous',
+                'Respawn time'
+            ]
+
+            embed.add_field(
+                name='Examine',
+                value=info.get('Examine'),
+                inline=False
+            )
+            embed.add_field(
+                name='Combat level',
+                value=info.get('Combat level'),
+                inline=True
+            )
+            embed.add_field(
+                name='Max hit',
+                value=')\n'.join(info.get('Max hit').split(')')),
+                inline=True
+            )
+
+            for prop in monster_properties:
+                prop_value = info.get(prop)
+                if prop_value is not None:
+                    embed.add_field(name=prop, value=prop_value, inline=True)
+                else:
+                    embed.add_field(name=prop, value='N/A', inline=True)
+
+            embed.add_field(
+                name='Monster ID(s)',
+                value=f'```\n{", ".join(info.get("Monster ID").split(","))}```',
+                inline=False)
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            return embed, view, resolved_search_term, title, monster_id
+
+        except exceptions.NoMonsterData as exc:
+            self._log_bestiary_warning(
+                inter,
+                build_log_message(
+                    command='bestiary',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=title if 'title' in locals() else None,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                    {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title if 'title' in locals() else None},
+                ],
+                **build_expected_user_visible_failure_metadata(exc),
+            )
+            raise
+
+        except exceptions.Nonexistence as exc:
+            self._log_bestiary_warning(
+                inter,
+                build_log_message(
+                    command='bestiary',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolution_source=resolution_source,
+                invocation_mode=invocation_mode,
+                log_params=[
+                    {'kind': 'query', 'label': 'search_query', 'value': search_query},
+                    {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
+                ],
+                **build_expected_user_visible_failure_metadata(exc),
+            )
+            raise
 
 
     @commands.slash_command(
@@ -184,7 +383,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         self,
         inter: ApplicationCommandInteraction,
         *,
-        search_query
+        search_query: str
     ) -> None:
         '''
         Creates a slash command for the `search_bestiary` function.
@@ -199,9 +398,116 @@ class Bestiary(commands.Cog, name='bestiary'):
         :return: (None)
         '''
 
-        await inter.response.defer()
-        embed, view = await self.search_bestiary(inter, search_query)
-        await inter.followup.send(embed=embed, view=view)
+        invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
+        resolution_source = 'wiki_random_monster' if invocation_mode == 'feeling_lucky' else 'user_query'
+        trace_id = uuid.uuid4().hex
+
+        self._log_bestiary_info(
+            inter,
+            build_log_message(
+                command='bestiary',
+                stage='start',
+                operation='search',
+            ),
+            action='start',
+            stage='start',
+            operation='search',
+            trace_id=trace_id,
+            search_query=search_query,
+            invocation_mode=invocation_mode,
+            resolution_source=resolution_source,
+            log_params=build_search_query_log_params(search_query),
+        )
+
+        try:
+            await inter.response.defer()
+            embed, view, resolved_search_term, resolved_page_title, monster_id = await self.search_bestiary(
+                inter,
+                search_query,
+                trace_id=trace_id,
+            )
+            await inter.followup.send(embed=embed, view=view)
+
+            self._log_bestiary_success(
+                inter,
+                build_log_message(
+                    command='bestiary',
+                    stage='complete',
+                    operation='search',
+                ),
+                action='complete',
+                stage='complete',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                resolved_search_term=resolved_search_term,
+                resolved_page_title=resolved_page_title,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                monster_id=monster_id,
+                log_params=[
+                    *build_resolved_search_log_params(
+                        search_query=search_query,
+                        resolved_search_term=resolved_search_term,
+                        resolved_page_title=resolved_page_title,
+                    ),
+                    {'kind': 'monster', 'label': 'monster_id', 'value': monster_id},
+                ],
+            )
+        except (exceptions.NoMonsterData, exceptions.Nonexistence) as exc:
+            if isinstance(exc, exceptions.Nonexistence):
+                expected_description = str(exc)
+            else:
+                expected_description = str(exceptions.NoMonsterData())
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=expected_description,
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_bestiary_error(
+                inter,
+                build_log_message(
+                    command='bestiary',
+                    stage='runtime_failure',
+                    operation='search',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='search',
+                trace_id=trace_id,
+                search_query=search_query,
+                invocation_mode=invocation_mode,
+                resolution_source=resolution_source,
+                log_params=build_search_query_log_params(search_query),
+                **build_unexpected_user_visible_failure_metadata(),
+            )
+
+            if inter.response.is_done():
+                await inter.followup.send(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            else:
+                await inter.response.send_message(
+                    'Something went wrong while handling that request.',
+                    ephemeral=True,
+                )
+            return
 
 
     @bestiary.autocomplete('search_query')

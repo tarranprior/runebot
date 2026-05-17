@@ -10,10 +10,10 @@ Classes:
 
 Key Functions:
     - `search_hiscores(...)`, `stats(...)`, and
-      `search_query_autocomplete(...)`:
-            Functions for searching and retrieving Hiscore data, as well as
-            creating a slash command and autocomplete query for the `stats`
-            command.
+      `account_type_autocomplete(...)`:
+            Functions for resolving usernames, retrieving Hiscore data, and
+            defining the slash command and account type autocomplete for the
+            `stats` command.
     - `button_listener(...)`:
             Cog listener which listens for button events.
     - `callback(self, inter: disnake.MessageInteraction)`:
@@ -28,12 +28,24 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import uuid
 from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, Option, OptionType
+from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
 
+import exceptions
 from templates.bot import Bot
 from config import *
 from utils import *
+from utils.logging import (
+    build_command_log_bind,
+    emit_command_log,
+    LogParam,
+    serialize_params,
+    serialize_resolved_username,
+    build_stats_resolution_params,
+    build_stats_failure_params,
+    build_log_message,
+)
 
 
 class Stats(commands.Cog, name='stats'):
@@ -50,9 +62,126 @@ class Stats(commands.Cog, name='stats'):
         :param bot: (Bot) -
             An instance of the Bot class.
 
-        return: (None)
+        :return: (None)
         '''
         self.bot = bot
+    
+
+    def _stats_bind(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        *,
+        invocation_source: str,
+        action: str = None,
+        stage: str = None,
+        operation: str = None,
+        hiscore_category: str = None,
+        account_type: str = None,
+        username: str = None,
+        resolved_username: str = None,
+        resolved_account_type: str = None,
+        resolution_source: str = None,
+        trace_id: str | None = None,
+        owner_id: int | str = None,
+        log_params: list[dict] = None,
+        **extra,
+    ) -> dict:
+        normalized_owner_id = str(owner_id) if owner_id is not None else None
+        return build_command_log_bind(
+            command='stats',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=invocation_source,
+            trace_id=trace_id,
+            resolution_source=resolution_source,
+            log_params=log_params,
+            hiscore_category=hiscore_category,
+            account_type=account_type,
+            username=username,
+            resolved_username=resolved_username,
+            resolved_account_type=resolved_account_type,
+            owner_id=normalized_owner_id,
+            **extra,
+        )
+    
+    @staticmethod
+    def _invocation_source(
+        inter: ApplicationCommandInteraction | MessageInteraction
+    ) -> str:
+        return (
+            'component_callback'
+            if isinstance(inter, disnake.MessageInteraction)
+            else 'slash_command'
+        )
+
+
+    def _log_stats_debug(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='debug',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_stats_info(
+        self,
+        inter: ApplicationCommandInteraction  | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='info',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_stats_warning(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='warning',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_stats_success(
+        self,
+        inter: ApplicationCommandInteraction  | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='success',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_stats_error(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='error',
+            bind_payload=self._stats_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
 
 
     def _build_stats_view(
@@ -145,7 +274,7 @@ class Stats(commands.Cog, name='stats'):
     def _build_account_manager_view(
         self,
         accounts: List[Tuple[int, str, str]],
-        default_account: Tuple[int, str, str],
+        default_account,
         owner_id: int
     ) -> View:
         '''
@@ -156,7 +285,7 @@ class Stats(commands.Cog, name='stats'):
             Represents this object.
         :param accounts: (List[Tuple[Integer, String, String]]) -
             Represents all saved accounts for the user.
-        :param default_account: (Tuple[Integer, String, String]) -
+        :param default_account: (DefaultAccount[Optional]) -
             Represents the user\'s current default account.
         :param owner_id: (Integer) -
             Represents the Discord user ID who owns the accounts.
@@ -166,7 +295,7 @@ class Stats(commands.Cog, name='stats'):
         '''
 
         view = View(timeout=None)
-        default_id = default_account[0] if default_account else None
+        default_id = default_account.account_id if default_account else None
 
         if accounts:
             options = [
@@ -226,7 +355,9 @@ class Stats(commands.Cog, name='stats'):
     async def _send_account_manager(
         self,
         inter: disnake.MessageInteraction,
-        user_id: int
+        user_id: int,
+        default_account=None,
+        accounts=None,
     ) -> None:
         '''
         Fetches account data for the given user and sends an ephemeral
@@ -238,12 +369,17 @@ class Stats(commands.Cog, name='stats'):
             Represents the interaction that triggered the Account Manager.
         :param user_id: (Integer) -
             Represents the Discord user ID of the command author.
-
+        :param default_account: (DefaultAccount[Optional]) -
+            Represents the current default account.
+        :param accounts: (List[Tuple[int, str, str]][Optional]) -
+            Represents the user's saved accounts.
         :return: (None)
         '''
 
-        default_account = await get_default_account(self, user_id)
-        accounts = await get_user_accounts(self, user_id)
+        if default_account is None:
+            default_account = await get_default_account(self, user_id)
+        if accounts is None:
+            accounts = await get_user_accounts(self, user_id)
         embed = EmbedFactory().create_account_manager(
             default_account,
             accounts,
@@ -260,8 +396,10 @@ class Stats(commands.Cog, name='stats'):
         hiscore_category: str,
         account_type: str,
         username: str = None,
-        owner_id: int = None
-    ) -> Tuple[disnake.Embed, disnake.ui.View]:
+        owner_id: int = None,
+        trace_id: str | None = None,
+        operation: str = 'lookup',
+    ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         Function which takes a username and returns hiscore
         values from the official API in a structured format.
@@ -279,221 +417,315 @@ class Stats(commands.Cog, name='stats'):
         :param owner_id: (Integer[Optional]) -
             Represents the user ID who initiated the command.
 
-        :return: Tuple[disnake.Embed, disnake.ui.View] -
-            An embed and view containing the hiscore information.
+        :return: Tuple[disnake.Embed, disnake.ui.View, str, str, str] -
+            An embed and view containing the hiscore information, the
+            resolved username, resolved account type, and resolution source.
         '''
 
-        if not username: # If a username wasn't provided...
-            # Try to get a username from Runebot database.
-            username, default_account_type = await get_username(self, inter.author.id)
-            if username == None:
-                raise exceptions.UsernameNonexistent
-            if account_type == None:
-                account_type = default_account_type
+        input_username = username
+        working_username = username
+        resolved_username = username
+        resolved_account_type = account_type
+        resolution_source = 'provided_username'
+        default_account_id = None
 
-        # If the provided username is a Discord user...
-        # Try to get a username from Runebot database.
-        if username.startswith('<@') and username.endswith('>'):
-            username, account_type = await get_username(
-                self, username.replace('<@', '').replace('>', '')
+        try:
+            request_user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
+            request_user_id = owner_id or getattr(request_user, 'id', None)
+
+            if not working_username:
+                resolution_source = 'default_account'
+                default_account = await get_default_account(self, request_user_id)
+                if not default_account:
+                    raise exceptions.UsernameNonexistent
+                default_account_id = default_account.account_id
+                working_username = default_account.username
+                default_account_type = default_account.account_type
+                if account_type is None:
+                    account_type = default_account_type
+            else:
+                if working_username.startswith('<@') and working_username.endswith('>'):
+                    resolution_source = 'discord_mention_lookup'
+                    working_username, account_type = await get_username(
+                        self, working_username.replace('<@', '').replace('>', '')
+                    )
+                    if not working_username:
+                        raise exceptions.UsernameNonexistent
+            
+            if len(working_username) > MAX_CHARS or any(char in working_username for char in BLACKLIST_CHARS):
+                raise exceptions.UsernameInvalid
+
+            if not account_type:
+                account_type = 'Normal'
+
+            if owner_id is None:
+                owner_id = request_user_id
+            
+            params = build_stats_resolution_params(
+                original_username=input_username,
+                resolved_username=working_username,
+                resolution_source=resolution_source,
+                default_account_id=default_account_id,
+                account_type=account_type,
             )
-            if not username:
-                raise exceptions.UsernameNonexistent
 
-        if len(username) > MAX_CHARS or any(char in username for char in BLACKLIST_CHARS):
-            raise exceptions.UsernameInvalid
+            resolved_username = working_username
+            resolved_account_type = account_type
+            primary_param = params[0] if params else None
 
-        if not account_type:
-            account_type = 'Normal'
+            self._log_stats_info(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='resolve',
+                    subject=primary_param.label if primary_param else None,
+                    resolved=resolved_username,
+                ),
+                invocation_source=self._invocation_source(inter),
+                action='resolve',
+                stage='resolve',
+                operation=operation,
+                trace_id=trace_id,
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                username=input_username,
+                resolved_username=resolved_username,
+                resolved_account_type=resolved_account_type,
+                resolution_source=resolution_source,
+                log_params=serialize_params(params),
+                owner_id=owner_id,
+            )
 
-        if owner_id == None:
-            owner_id = inter.author.id
-
-        if account_type == 'Normal':
-            try:
-                hiscore_data = parse_hiscores(
-                    HISCORE_API_URLS.get(account_type),
-                    HEADERS,
-                    HISCORES_ORDER,
-                    [username]
-                )
-            except IndexError as exc:
-                raise exceptions.NoHiscoreData from exc
-
-        else:
-            try:
-                hiscore_data = parse_hiscores(
-                    HISCORE_API_URLS.get(account_type),
-                    HEADERS,
-                    HISCORES_ORDER,
-                    [username]
-                )
-            except IndexError as exc1:
+            if account_type == 'Normal':
                 try:
                     hiscore_data = parse_hiscores(
-                        NORMAL_API,
+                        HISCORE_API_URLS.get(account_type),
                         HEADERS,
                         HISCORES_ORDER,
-                        [username]
+                        [working_username],
+                        trace_id=trace_id,
                     )
-                except IndexError as exc2:
-                    raise exceptions.NoHiscoreData from exc2
-                raise exceptions.NoGameModeData from exc1
+                except IndexError as exc:
+                    raise exceptions.NoHiscoreData from exc
 
-        emote = ACCOUNT_EMOTES.get(account_type, '')
-        embed = EmbedFactory().create(
-            title=f'Personal Hiscores',
-            description=(
-                f'Personal Hiscores for {emote} **{username}**\n\u200b\n'
-            ),
-        )
+            else:
+                try:
+                    hiscore_data = parse_hiscores(
+                        HISCORE_API_URLS.get(account_type),
+                        HEADERS,
+                        HISCORES_ORDER,
+                        [working_username],
+                        trace_id=trace_id,
+                    )
+                except IndexError as exc1:
+                    try:
+                        hiscore_data = parse_hiscores(
+                            NORMAL_API,
+                            HEADERS,
+                            HISCORES_ORDER,
+                            [working_username],
+                            trace_id=trace_id,
+                        )
+                    except IndexError as exc2:
+                        raise exceptions.NoHiscoreData from exc2
+                    raise exceptions.NoGameModeData from exc1
 
-        if hiscore_category == 'skills':
+            emote = ACCOUNT_EMOTES.get(account_type, '')
+            embed = EmbedFactory().create(
+                title='Personal Hiscores',
+                description=(
+                    f'Personal Hiscores for {emote} **{working_username}**\n\u200b\n'
+                ),
+            )
 
-            # Gets all combat levels of the player with the provided
-            # Hiscore data.
-            combat_levels = {}
-            for skill in COMBAT_SKILLS:
-                combat_levels.update(
-                    {skill: int(hiscore_data.get(skill).split(',')[1])}
+            if hiscore_category == 'skills':
+
+                # Gets all combat levels of the player with the provided
+                # Hiscore data.
+                combat_levels = {}
+                for skill in COMBAT_SKILLS:
+                    combat_levels.update(
+                        {skill: int(hiscore_data.get(skill).split(',')[1])}
+                    )
+
+                # Corrects Hitpoints level if the player has no experience.
+                # (Replace Level 1 with Level 10.)
+                hp_rank = hiscore_data.get('Hitpoints').split(',')[0]
+                hp_level = hiscore_data.get('Hitpoints').split(',')[1]
+                hp_experience = hiscore_data.get('Hitpoints').split(',')[2]
+                if int(hp_level) < 10:
+                    hiscore_data.update(
+                        {'Hitpoints':f'{hp_rank},{int(10)},{hp_experience}'}
+                    )
+                    combat_levels.update({'Hitpoints': int(10)})
+
+                # Calculates combat level and experience of the player.
+                combat_level = await calculate_combat_level(combat_levels)
+                combat_experience = await calculate_combat_exp(COMBAT_SKILLS, hiscore_data)
+
+                overall_level = f'{int(hiscore_data.get("Overall").split(",")[1]):,}'
+
+                # Gets the overall rank of the player.
+                overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
+                if overall_rank == '-1':
+                    overall_rank = '--'
+
+                # Gets the overall experience of the player.
+                overall_exp = f'{int(hiscore_data.get("Overall").split(",")[2]):,}'
+                if overall_exp == '0':
+                    overall_exp = '--'
+
+                for column_data in STAT_COLUMNS:
+                    column_text = "\n".join([
+                        f"{SKILL_EMOTES.get(skill)} "
+                        f"{hiscore_data.get(data).split(',')[1].replace('-1', '--')}"
+                        for skill, data in column_data
+                    ]) + '\n\u200b\n'
+                    embed.add_field(name="\u200a", value=column_text, inline=True)
+
+                embed.add_field(
+                    name=f'{SKILL_EMOTES.get("overall")} Overall',
+                    value=f'''
+                        **Level**: {overall_level}
+                        **XP**: {overall_exp}\n\u200b\n
+                    '''
                 )
 
-            # Corrects Hitpoints level if the player has no experience.
-            # (Replace Level 1 with Level 10.)
-            hp_rank = hiscore_data.get('Hitpoints').split(',')[0]
-            hp_level = hiscore_data.get('Hitpoints').split(',')[1]
-            hp_experience = hiscore_data.get('Hitpoints').split(',')[2]
-            if int(hp_level) < 10:
-                hiscore_data.update(
-                    {'Hitpoints':f'{hp_rank},{int(10)},{hp_experience}'}
+                embed.add_field(
+                    name=f'{SKILL_EMOTES.get("combat")} Combat',
+                    value=f'''
+                        **Level**: {combat_level}
+                        **XP**: {combat_experience}\n\u200b\n
+                    '''
                 )
-                combat_levels.update({'Hitpoints': int(10)})
 
-            # Calculates combat level and experience of the player.
-            combat_level = await calculate_combat_level(combat_levels)
-            combat_experience = await calculate_combat_exp(COMBAT_SKILLS, hiscore_data)
+                view = self._build_stats_view(
+                    hiscore_category,
+                    account_type,
+                    working_username,
+                    owner_id
+                )
 
-            overall_level = f'{int(hiscore_data.get("Overall").split(",")[1]):,}'
+            elif hiscore_category == 'boss_kills':
 
-            # Gets the overall rank of the player.
-            overall_rank = f'{int(hiscore_data.get("Overall").split(",")[0]):,}'
-            if overall_rank == '-1':
-                overall_rank = '--'
+                for column_data in BOSS_COLUMNS:
+                    column_text = "\n".join([
+                        f"{BOSS_EMOTES.get(boss)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                        if hiscore_data.get(data).split(',')[1] != '-1' 
+                        else f"{BOSS_EMOTES.get(boss)} -"
+                        for boss, data in column_data
+                    ]) + '\n\u200b\n'
+                    embed.add_field(name="\u200a", value=column_text, inline=True)
 
-            # Gets the overall experience of the player.
-            overall_exp = f'{int(hiscore_data.get("Overall").split(",")[2]):,}'
-            if overall_exp == '0':
-                overall_exp = '--'
+                view = self._build_stats_view(
+                    hiscore_category,
+                    account_type,
+                    working_username,
+                    owner_id
+                )
 
-            for column_data in STAT_COLUMNS:
-                column_text = "\n".join([
-                    f"{SKILL_EMOTES.get(skill)} "
-                    f"{hiscore_data.get(data).split(',')[1].replace('-1', '--')}"
-                    for skill, data in column_data
-                ]) + '\n\u200b\n'
-                embed.add_field(name="\u200a", value=column_text, inline=True)
+            elif hiscore_category == 'bounty_hunter':
 
-            embed.add_field(
-                name=f'{SKILL_EMOTES.get("overall")} Overall',
-                value=f'''
-                    **Level**: {overall_level}
-                    **XP**: {overall_exp}\n\u200b\n
-                '''
+                for column_data in BOUNTY_COLUMNS:
+                    column_text = "\n".join([
+                        f"{BOUNTY_EMOTES.get(bounty)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                        if hiscore_data.get(data).split(',')[1] != '-1' 
+                        else f"{BOUNTY_EMOTES.get(bounty)} -"
+                        for bounty, data in column_data
+                    ]) + '\n\u200b\n'
+                    embed.add_field(name="\u200a", value=column_text, inline=True)
+
+                view = self._build_stats_view(
+                    hiscore_category,
+                    account_type,
+                    working_username,
+                    owner_id
+                )
+
+            elif hiscore_category == 'clue_scrolls':
+
+                for column_data in CLUE_COLUMNS:
+                    column_text = "\n".join([
+                        f"{CLUE_EMOTES.get(clue)} {int(hiscore_data.get(data).split(',')[1]):,}"
+                        if hiscore_data.get(data).split(',')[1] != '-1' 
+                        else f"{CLUE_EMOTES.get(clue)} -"
+                        for clue, data in column_data
+                    ]) + '\n\u200b\n'
+                    embed.add_field(name="\u200a", value=column_text, inline=True)
+
+                view = self._build_stats_view(
+                    hiscore_category,
+                    account_type,
+                    working_username,
+                    owner_id
+                )
+
+                cluescroll_rank, cluescroll_total = [
+                    '-' if (value := hiscore_data.get(
+                        'Clue Scrolls (All)'
+                    ).split(',')[index].replace('-1', '-')) == '-'
+                    else f'{int(value):,}'
+                    for index in range(2)
+                ]
+
+                embed.add_field(
+                    name=f'{CLUE_EMOTES.get("cluescrolls_all")} Clue Scrolls (all)',
+                    value=f'''
+                        **Count**: {cluescroll_total}
+                        **Rank**: {cluescroll_rank}\n\u200b\n
+                    '''
+                )
+
+            embed.set_footer(
+                text=(
+                    'Experience data from the official Hiscores API\n'
+                    f'Runebot {DISPLAY_VERSION}'
+                )
             )
+            embed.timestamp = inter.created_at
+            return embed, view, resolved_username, resolved_account_type, resolution_source
 
-            embed.add_field(
-                name=f'{SKILL_EMOTES.get("combat")} Combat',
-                value=f'''
-                    **Level**: {combat_level}
-                    **XP**: {combat_experience}\n\u200b\n
-                '''
+        except (
+            exceptions.UsernameNonexistent,
+            exceptions.UsernameInvalid,
+            exceptions.NoHiscoreData,
+            exceptions.NoGameModeData,
+            exceptions.WikiRequestFailed,
+        ) as exc:
+            fail_params = build_stats_failure_params(
+                original_username=input_username,
+                resolved_username=resolved_username,
+                resolution_source=resolution_source,
+                default_account_id=default_account_id,
+                account_type=account_type,
             )
-
-            view = self._build_stats_view(
-                hiscore_category,
-                account_type,
-                username,
-                owner_id
+            self._log_stats_warning(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='failure',
+                    operation=operation,
+                ),
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='failure',
+                operation=operation,
+                trace_id=trace_id,
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                username=input_username,
+                resolved_username=resolved_username,
+                resolved_account_type=resolved_account_type,
+                resolution_source=resolution_source,
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                log_params=serialize_params(fail_params),
+                owner_id=owner_id,
             )
-
-        elif hiscore_category == 'boss_kills':
-
-            for column_data in BOSS_COLUMNS:
-                column_text = "\n".join([
-                    f"{BOSS_EMOTES.get(boss)} {int(hiscore_data.get(data).split(',')[1]):,}"
-                    if hiscore_data.get(data).split(',')[1] != '-1' 
-                    else f"{BOSS_EMOTES.get(boss)} -"
-                    for boss, data in column_data
-                ]) + '\n\u200b\n'
-                embed.add_field(name="\u200a", value=column_text, inline=True)
-
-            view = self._build_stats_view(
-                hiscore_category,
-                account_type,
-                username,
-                owner_id
-            )
-
-        elif hiscore_category == 'bounty_hunter':
-
-            for column_data in BOUNTY_COLUMNS:
-                column_text = "\n".join([
-                    f"{BOUNTY_EMOTES.get(bounty)} {int(hiscore_data.get(data).split(',')[1]):,}"
-                    if hiscore_data.get(data).split(',')[1] != '-1' 
-                    else f"{BOUNTY_EMOTES.get(bounty)} -"
-                    for bounty, data in column_data
-                ]) + '\n\u200b\n'
-                embed.add_field(name="\u200a", value=column_text, inline=True)
-
-            view = self._build_stats_view(
-                hiscore_category,
-                account_type,
-                username,
-                owner_id
-            )
-
-        elif hiscore_category == 'clue_scrolls':
-
-            for column_data in CLUE_COLUMNS:
-                column_text = "\n".join([
-                    f"{CLUE_EMOTES.get(clue)} {int(hiscore_data.get(data).split(',')[1]):,}"
-                    if hiscore_data.get(data).split(',')[1] != '-1' 
-                    else f"{CLUE_EMOTES.get(clue)} -"
-                    for clue, data in column_data
-                ]) + '\n\u200b\n'
-                embed.add_field(name="\u200a", value=column_text, inline=True)
-
-            view = self._build_stats_view(
-                hiscore_category,
-                account_type,
-                username,
-                owner_id
-            )
-
-            cluescroll_rank, cluescroll_total = [
-                '-' if (value := hiscore_data.get(
-                    'Clue Scrolls (All)'
-                ).split(',')[index].replace('-1', '-')) == '-'
-                else f'{int(value):,}'
-                for index in range(2)
-            ]
-
-            embed.add_field(
-                name=f'{CLUE_EMOTES.get("cluescrolls_all")} Clue Scrolls (all)',
-                value=f'''
-                    **Count**: {cluescroll_total}
-                    **Rank**: {cluescroll_rank}\n\u200b\n
-                '''
-            )
-
-        embed.set_footer(
-            text=(
-                'Experience data from the official Hiscores API\n'
-                f'Runebot {DISPLAY_VERSION}'
-            )
-        )
-        embed.timestamp = inter.created_at
-        return embed, view
+            raise
 
 
     @commands.slash_command(
@@ -537,17 +769,150 @@ class Stats(commands.Cog, name='stats'):
         '''
 
         hiscore_category = 'skills'
-        embed, view = await self.search_hiscores(
+        resolved_account_type = account_type
+        trace_id = uuid.uuid4().hex
+
+        params = []
+        if username is not None:
+            params.append(
+                LogParam(
+                    kind='username',
+                    label='username',
+                    value=username,
+                )
+            )
+        primary_param = params[0] if params else None
+
+        self._log_stats_info(
             inter,
-            hiscore_category,
-            account_type,
-            username,
-            inter.author.id
+            build_log_message(
+                command='stats',
+                stage='start',
+                operation='lookup',
+                subject=primary_param.label if primary_param else None,
+            ),
+            invocation_source=self._invocation_source(inter),
+            action='start',
+            stage='start',
+            operation='lookup',
+            trace_id=trace_id,
+            hiscore_category=hiscore_category,
+            account_type=account_type,
+            username=username,
+            log_params=serialize_params(params),
         )
-        await inter.response.send_message(
-            embed=embed,
-            view=view
-        )
+
+        try:
+            await inter.response.defer()
+            embed, view, resolved_username, resolved_account_type, resolution_source = await self.search_hiscores(
+                inter,
+                hiscore_category,
+                account_type,
+                username,
+                inter.author.id,
+                trace_id=trace_id,
+            )
+            await inter.followup.send(
+                embed=embed,
+                view=view
+            )
+
+            self._log_stats_success(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='complete',
+                    operation='lookup',
+                ),
+                invocation_source=self._invocation_source(inter),
+                action='complete',
+                stage='complete',
+                operation='lookup',
+                trace_id=trace_id,
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                resolved_account_type=resolved_account_type,
+                username=username,
+                resolved_username=resolved_username,
+                resolution_source=resolution_source,
+                log_params=serialize_resolved_username(
+                    resolved_username,
+                    account_type=resolved_account_type,
+                    resolution_source=resolution_source
+                ),
+            )
+
+        except (
+            exceptions.UsernameNonexistent,
+            exceptions.UsernameInvalid,
+            exceptions.NoHiscoreData,
+            exceptions.NoGameModeData,
+            exceptions.WikiRequestFailed,
+        ) as exc:
+            if isinstance(exc, (
+                exceptions.NoHiscoreData,
+                exceptions.UsernameInvalid,
+                exceptions.WikiRequestFailed,
+            )):
+                thumbnail = THUMBNAILS['filler']
+                colour = 0xB72615
+            else:
+                thumbnail = GRAYSCALE_THUMBNAILS['filler']
+                colour = 0x8B8B8B
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=str(exc),
+                thumbnail_url=thumbnail,
+                colour=colour,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
+
+        except Exception as exc:
+            self._log_stats_error(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='runtime_failure',
+                    operation='lookup',
+                ),
+                exc,
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='runtime_failure',
+                operation='lookup',
+                trace_id=trace_id,
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                resolved_account_type=resolved_account_type,
+                username=username,
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description='Something went wrong while handling that request. Please try again.',
+                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                colour=0x8B8B8B,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view)
+            else:
+                await inter.response.send_message(embed=embed, view=view)
+            return
 
 
     @commands.Cog.listener('on_button_click')
@@ -570,139 +935,48 @@ class Stats(commands.Cog, name='stats'):
         if not custom_id:
             return
 
-        if custom_id.startswith('acct_manager:'):
-            payload = custom_id.removeprefix('acct_manager:')
+        if custom_id.startswith('acct_del:'):
+            payload = custom_id.removeprefix('acct_del:')
             params = payload.split(',')
 
-            if not params:
+            if len(params) != 5:
                 return
 
-            action = params[0]
+            action, owner_id, account_id, manager_message_id, trace_id = params
 
-            if action == 'refresh':
-                if len(params) != 2:
-                    return
-
-                _, owner_id = params
-
-                if str(inter.author.id) != owner_id:
-                    await inter.response.send_message(
-                        'Only the original author can use these buttons.',
-                        ephemeral=True
-                    )
-                    return
-
-                loading_view = build_loading_button_view(inter)
-                await inter.response.edit_message(view=loading_view)
-
-                default_account = await get_default_account(self, int(owner_id))
-                accounts = await get_user_accounts(self, int(owner_id))
-                embed = EmbedFactory().create_account_manager(
-                    default_account,
-                    accounts,
-                    ACCOUNT_EMOTES,
-                    inter.created_at
-                )
-                view = self._build_account_manager_view(
-                    accounts,
-                    default_account,
-                    int(owner_id)
-                )
-                await inter.edit_original_response(embed=embed, view=view)
-                return
-
-            if action == 'delete':
-                if len(params) != 3:
-                    return
-
-                _, owner_id, account_id = params
-                manager_message_id = str(inter.message.id)
-
-                if str(inter.author.id) != owner_id:
-                    await inter.response.send_message(
-                        'Only the original author can use these buttons.',
-                        ephemeral=True
-                    )
-                    return
-
-                if account_id == '0':
-                    await inter.response.send_message(
-                        'You do not have a default account to delete.',
-                        ephemeral=True
-                    )
-                    return
-
-                owner_accounts = await get_user_accounts(self, int(owner_id))
-                target_account = next(
-                    (acc for acc in owner_accounts if str(acc[0]) == account_id),
-                    None
-                )
-                account_name = target_account[1] if target_account else 'selected account'
-
-                confirm_embed = EmbedFactory().create(
-                    title='Confirmation',
-                    description=(
-                        f'Are you sure you want to delete the account **{account_name}**? '
-                        'You can re-add the account with </setrsn:1114968268864753754> at any time.'
-                    ),
-                    colour=0xB72615
-                )
-                confirm_embed.timestamp = inter.created_at
-                confirm_embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-
-                confirm_view = View(timeout=None)
-                confirm_view.add_item(
-                    disnake.ui.Button(
-                        label='Confirm',
-                        style=disnake.ButtonStyle.danger,
-                        custom_id=(
-                            f'acct_manager:delete_confirm,{owner_id},{account_id},'
-                            f'{manager_message_id}'
-                        )
-                    )
-                )
-                confirm_view.add_item(
-                    disnake.ui.Button(
-                        label='Cancel',
-                        style=disnake.ButtonStyle.secondary,
-                        custom_id=(
-                            f'acct_manager:delete_cancel,{owner_id},{account_id},'
-                            f'{manager_message_id}'
-                        )
-                    )
-                )
-
+            if str(inter.author.id) != owner_id:
                 await inter.response.send_message(
-                    embed=confirm_embed,
-                    view=confirm_view,
+                    'Only the original author can use these buttons.',
                     ephemeral=True
                 )
                 return
 
-            if action in ['delete_confirm', 'delete_cancel']:
-                if len(params) != 4:
-                    return
+            if action == 'no':
+                await inter.response.defer()
+                await inter.delete_original_response()
 
-                _, owner_id, account_id, manager_message_id = params
-
-                if str(inter.author.id) != owner_id:
-                    await inter.response.send_message(
-                        'Only the original author can use these buttons.',
-                        ephemeral=True
-                    )
-                    return
-
-                if action == 'delete_cancel':
-                    await inter.response.defer()
-                    await inter.delete_original_response()
-                    return
-
-                owner_accounts = await get_user_accounts(self, int(owner_id))
-                target_account = next(
-                    (acc for acc in owner_accounts if str(acc[0]) == account_id),
-                    None
+                self._log_stats_info(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='complete',
+                        operation='account_delete_cancel',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='complete',
+                    stage='complete',
+                    operation='account_delete_cancel',
+                    owner_id=owner_id,
+                    component_type='button',
+                    account_id=account_id,
                 )
-                
+                return
+
+            if action != 'ok':
+                return
+
+            try:
                 await inter.response.defer()
                 deleted = await remove_user_account(
                     self,
@@ -739,7 +1013,276 @@ class Stats(commands.Cog, name='stats'):
                             view=view,
                             ephemeral=True
                         )
+
+                    self._log_stats_success(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='complete',
+                            operation='account_delete_confirm',
+                        ),
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='complete',
+                        stage='complete',
+                        operation='account_delete_confirm',
+                        owner_id=owner_id,
+                        component_type='button',
+                        account_id=account_id,
+                    )
+            except Exception as exc:
+                self._log_stats_error(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='runtime_failure',
+                        operation='account_delete_confirm',
+                    ),
+                    exc,
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='account_delete_confirm',
+                    owner_id=owner_id,
+                    component_type='button',
+                    account_id=account_id,
+                    handled=True,
+                    expected_failure=False,
+                    user_visible=True,
+                )
+                raise
+            return
+
+        if custom_id.startswith('acct_manager:'):
+            payload = custom_id.removeprefix('acct_manager:')
+            params = payload.split(',')
+
+            if not params:
                 return
+
+            action = params[0]
+
+            if action == 'refresh':
+                if len(params) != 2:
+                    return
+
+                _, owner_id = params
+                trace_id = uuid.uuid4().hex
+
+                if str(inter.author.id) != owner_id:
+                    await inter.response.send_message(
+                        'Only the original author can use these buttons.',
+                        ephemeral=True
+                    )
+                    return
+
+                default_account = None
+                accounts = None
+                try:
+                    default_account = await get_default_account(self, int(owner_id))
+                    accounts = await get_user_accounts(self, int(owner_id))
+
+                    self._log_stats_info(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='start',
+                            operation='account_manager_refresh',
+                        ),
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='start',
+                        stage='start',
+                        operation='account_manager_refresh',
+                        owner_id=owner_id,
+                        component_type='button',
+                        accounts_count=len(accounts),
+                        has_default_account=bool(default_account),
+                        default_account_id=getattr(default_account, 'account_id', None),
+                        default_username=getattr(default_account, 'username', None),
+                        default_account_type=getattr(default_account, 'account_type', None),
+                    )
+
+                    loading_view = build_loading_button_view(inter)
+                    await inter.response.edit_message(view=loading_view)
+
+                    embed = EmbedFactory().create_account_manager(
+                        default_account,
+                        accounts,
+                        ACCOUNT_EMOTES,
+                        inter.created_at
+                    )
+                    view = self._build_account_manager_view(
+                        accounts,
+                        default_account,
+                        int(owner_id)
+                    )
+                    await inter.edit_original_response(embed=embed, view=view)
+
+                    self._log_stats_success(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='complete',
+                            operation='account_manager_refresh',
+                        ),
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='complete',
+                        stage='complete',
+                        operation='account_manager_refresh',
+                        owner_id=owner_id,
+                        component_type='button',
+                        accounts_count=len(accounts),
+                        has_default_account=bool(default_account),
+                        default_account_id=getattr(default_account, 'account_id', None),
+                        default_username=getattr(default_account, 'username', None),
+                        default_account_type=getattr(default_account, 'account_type', None),
+                    )
+
+                except Exception as exc:
+                    self._log_stats_error(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='runtime_failure',
+                            operation='account_manager_refresh',
+                        ),
+                        exc,
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='fail',
+                        stage='runtime_failure',
+                        operation='account_manager_refresh',
+                        owner_id=owner_id,
+                        component_type='button',
+                        accounts_count=len(accounts) if accounts is not None else None,
+                        has_default_account=(
+                            bool(default_account)
+                            if default_account is not None or accounts is not None
+                            else None
+                        ),
+                        default_account_id=getattr(default_account, 'account_id', None),
+                        default_username=getattr(default_account, 'username', None),
+                        default_account_type=getattr(default_account, 'account_type', None),
+                        handled=True,
+                        expected_failure=False,
+                        user_visible=True,
+                    )
+                    raise
+                return
+
+            if action == 'delete':
+                if len(params) != 3:
+                    return
+
+                _, owner_id, account_id = params
+                manager_message_id = str(inter.message.id)
+
+                if str(inter.author.id) != owner_id:
+                    await inter.response.send_message(
+                        'Only the original author can use these buttons.',
+                        ephemeral=True
+                    )
+                    return
+
+                if account_id == '0':
+                    await inter.response.send_message(
+                        'You do not have a default account to delete.',
+                        ephemeral=True
+                    )
+                    return
+
+                trace_id = uuid.uuid4().hex
+
+                self._log_stats_info(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='start',
+                        operation='account_delete',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='start',
+                    stage='start',
+                    operation='account_delete',
+                    owner_id=owner_id,
+                    component_type='button',
+                    account_id=account_id,
+                )
+
+                try:
+                    owner_accounts = await get_user_accounts(self, int(owner_id))
+                    target_account = next(
+                        (acc for acc in owner_accounts if str(acc[0]) == account_id),
+                        None
+                    )
+                    account_name = target_account[1] if target_account else 'selected account'
+
+                    confirm_embed = EmbedFactory().create(
+                        title='Confirmation',
+                        description=(
+                            f'Are you sure you want to delete the account **{account_name}**? '
+                            'You can re-add the account with </setrsn:1114968268864753754> at any time.'
+                        ),
+                        colour=0xB72615
+                    )
+                    confirm_embed.timestamp = inter.created_at
+                    confirm_embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+                    confirm_view = View(timeout=None)
+                    confirm_view.add_item(
+                        disnake.ui.Button(
+                            label='Confirm',
+                            style=disnake.ButtonStyle.danger,
+                            custom_id=(
+                                f'acct_del:ok,{owner_id},{account_id},'
+                                f'{manager_message_id},{trace_id}'
+                            )
+                        )
+                    )
+                    confirm_view.add_item(
+                        disnake.ui.Button(
+                            label='Cancel',
+                            style=disnake.ButtonStyle.secondary,
+                            custom_id=(
+                                f'acct_del:no,{owner_id},{account_id},'
+                                f'{manager_message_id},{trace_id}'
+                            )
+                        )
+                    )
+
+                    await inter.response.send_message(
+                        embed=confirm_embed,
+                        view=confirm_view,
+                        ephemeral=True
+                    )
+                except Exception as exc:
+                    self._log_stats_error(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='runtime_failure',
+                            operation='account_delete',
+                        ),
+                        exc,
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='fail',
+                        stage='runtime_failure',
+                        operation='account_delete',
+                        owner_id=owner_id,
+                        component_type='button',
+                        account_id=account_id,
+                        handled=True,
+                        expected_failure=False,
+                        user_visible=True,
+                    )
+                    raise
+                return
+
             return
 
         if not custom_id.startswith('stats:'):
@@ -763,7 +1306,91 @@ class Stats(commands.Cog, name='stats'):
                     ephemeral=True
                 )
                 return
-            await self._send_account_manager(inter, int(owner_id))
+
+            trace_id = uuid.uuid4().hex
+            default_account = None
+            accounts = None
+            try:
+                default_account = await get_default_account(self, int(owner_id))
+                accounts = await get_user_accounts(self, int(owner_id))
+
+                self._log_stats_info(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='start',
+                        operation='account_manager',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='start',
+                    stage='start',
+                    operation='account_manager',
+                    owner_id=owner_id,
+                    component_type='button',
+                    accounts_count=len(accounts),
+                    has_default_account=bool(default_account),
+                    default_account_id=getattr(default_account, 'account_id', None),
+                    default_username=getattr(default_account, 'username', None),
+                    default_account_type=getattr(default_account, 'account_type', None),
+                )
+
+                await self._send_account_manager(
+                    inter,
+                    int(owner_id),
+                    default_account=default_account,
+                    accounts=accounts,
+                )
+                self._log_stats_success(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='complete',
+                        operation='account_manager',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='complete',
+                    stage='complete',
+                    operation='account_manager',
+                    owner_id=owner_id,
+                    component_type='button',
+                    accounts_count=len(accounts),
+                    has_default_account=bool(default_account),
+                    default_account_id=getattr(default_account, 'account_id', None),
+                    default_username=getattr(default_account, 'username', None),
+                    default_account_type=getattr(default_account, 'account_type', None),
+                )
+            except Exception as exc:
+                self._log_stats_error(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='runtime_failure',
+                        operation='account_manager',
+                    ),
+                    exc,
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='account_manager',
+                    owner_id=owner_id,
+                    component_type='button',
+                    accounts_count=len(accounts) if accounts is not None else None,
+                    has_default_account=(
+                        bool(default_account)
+                        if default_account is not None or accounts is not None
+                        else None
+                    ),
+                    default_account_id=getattr(default_account, 'account_id', None),
+                    default_username=getattr(default_account, 'username', None),
+                    default_account_type=getattr(default_account, 'account_type', None),
+                    handled=True,
+                    expected_failure=False,
+                    user_visible=True,
+                )
+                raise
             return
 
         if action not in ['navigate', 'refresh']:
@@ -772,7 +1399,7 @@ class Stats(commands.Cog, name='stats'):
         if len(params) != 5:
             return
 
-        _, hiscore_category, account_type, username, owner_id = params
+        _, hiscore_category, account_type, resolved_username, owner_id = params
 
         if str(inter.author.id) != owner_id:
             await inter.response.send_message(
@@ -781,30 +1408,197 @@ class Stats(commands.Cog, name='stats'):
             )
             return
 
+        trace_id = uuid.uuid4().hex
+
+        if action == 'navigate':
+            self._log_stats_info(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='start',
+                    operation='navigate',
+                ),
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='start',
+                stage='start',
+                operation='navigate',
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                resolved_username=resolved_username,
+                resolved_account_type=account_type,
+                owner_id=owner_id,
+                component_type='button',
+                log_params=serialize_resolved_username(
+                    resolved_username,
+                    account_type=account_type,
+                    resolution_source='button_navigate',
+                ),
+            )
+        else:
+            self._log_stats_info(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='start',
+                    operation='refresh',
+                ),
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='start',
+                stage='start',
+                operation='refresh',
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                resolved_username=resolved_username,
+                resolved_account_type=account_type,
+                owner_id=owner_id,
+                component_type='button',
+                log_params=serialize_resolved_username(
+                    resolved_username,
+                    account_type=account_type,
+                    resolution_source='button_refresh',
+                ),
+            )
+        
         loading_view = build_loading_button_view(inter)
         await inter.response.edit_message(view=loading_view)
 
         try:
-            embed, view = await self.search_hiscores(
+            embed, view, resolved_username, resolved_account_type, _ = await self.search_hiscores(
                 inter,
                 hiscore_category,
                 account_type,
-                username,
-                int(owner_id)
+                resolved_username,
+                int(owner_id),
+                trace_id=trace_id,
+                operation=action,
             )
             await inter.edit_original_response(
                 embed=embed,
                 view=view
             )
+
+            if action == 'navigate':
+                self._log_stats_success(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='complete',
+                        operation='navigate',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='complete',
+                    stage='complete',
+                    operation='navigate',
+                    hiscore_category=hiscore_category,
+                    account_type=resolved_account_type,
+                    resolved_username=resolved_username,
+                    resolved_account_type=resolved_account_type,
+                    owner_id=owner_id,
+                    component_type='button',
+                    log_params=serialize_resolved_username(
+                        resolved_username,
+                        account_type=resolved_account_type,
+                        resolution_source='button_navigate',
+                    ),
+                )
+            else:
+                self._log_stats_success(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='complete',
+                        operation='refresh',
+                    ),
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='complete',
+                    stage='complete',
+                    operation='refresh',
+                    hiscore_category=hiscore_category,
+                    account_type=resolved_account_type,
+                    resolved_username=resolved_username,
+                    resolved_account_type=resolved_account_type,
+                    owner_id=owner_id,
+                    component_type='button',
+                    log_params=serialize_resolved_username(
+                        resolved_username,
+                        account_type=resolved_account_type,
+                        resolution_source='button_refresh',
+                    ),
+                )
+
+        except (
+            exceptions.UsernameNonexistent,
+            exceptions.UsernameInvalid,
+            exceptions.NoHiscoreData,
+            exceptions.NoGameModeData,
+            exceptions.WikiRequestFailed,
+        ) as exc:
+            view = self._build_stats_view(
+                hiscore_category,
+                account_type,
+                resolved_username,
+                int(owner_id)
+            )
+            if isinstance(exc, (
+                exceptions.NoHiscoreData,
+                exceptions.UsernameInvalid,
+                exceptions.WikiRequestFailed,
+            )):
+                thumbnail = THUMBNAILS['filler']
+                colour = 0xB72615
+            else:
+                thumbnail = GRAYSCALE_THUMBNAILS['filler']
+                colour = 0x8B8B8B
+
+            embed, _ = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=str(exc),
+                thumbnail_url=thumbnail,
+                colour=colour,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            await inter.edit_original_response(embed=embed, view=view)
+            return
+
         except Exception as exc:
             view = self._build_stats_view(
                 hiscore_category,
                 account_type,
-                username,
+                resolved_username,
                 int(owner_id)
             )
             await inter.edit_original_response(view=view)
-            raise exc
+            self._log_stats_error(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='runtime_failure',
+                    operation=action,
+                ),
+                exc,
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='runtime_failure',
+                operation=action,
+                hiscore_category=hiscore_category,
+                account_type=resolved_account_type,
+                resolved_username=resolved_username,
+                resolved_account_type=resolved_account_type,
+                owner_id=owner_id,
+                component_type='button',
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+            raise
 
 
     @commands.Cog.listener('on_dropdown')
@@ -852,21 +1646,94 @@ class Stats(commands.Cog, name='stats'):
             await inter.response.defer()
             return
 
-        await inter.response.defer()
+        trace_id = uuid.uuid4().hex
 
-        user_id = int(owner_id)
-        await set_default_account(self, user_id, int(selected_value))
-
-        default_account = await get_default_account(self, user_id)
-        accounts = await get_user_accounts(self, user_id)
-        embed = EmbedFactory().create_account_manager(
-            default_account,
-            accounts,
-            ACCOUNT_EMOTES,
-            inter.created_at
+        all_accounts = await get_user_accounts(self, int(owner_id))
+        selected_account = next(
+            (acc for acc in all_accounts if str(acc[0]) == selected_value), None
         )
-        view = self._build_account_manager_view(accounts, default_account, user_id)
-        await inter.edit_original_response(embed=embed, view=view)
+        selected_username = selected_account[1] if selected_account else None
+        selected_account_type = selected_account[2] if selected_account else None
+
+        self._log_stats_info(
+            inter,
+            build_log_message(
+                command='stats',
+                stage='start',
+                operation='default_account_select',
+            ),
+            trace_id=trace_id,
+            invocation_source=self._invocation_source(inter),
+            action='start',
+            stage='start',
+            operation='default_account_select',
+            owner_id=owner_id,
+            component_type='dropdown',
+            selected_value=selected_value,
+            selected_username=selected_username,
+            selected_account_type=selected_account_type,
+        )
+
+        try:
+            await inter.response.defer()
+
+            user_id = int(owner_id)
+            await set_default_account(self, user_id, int(selected_value))
+
+            default_account = await get_default_account(self, user_id)
+            accounts = await get_user_accounts(self, user_id)
+            embed = EmbedFactory().create_account_manager(
+                default_account,
+                accounts,
+                ACCOUNT_EMOTES,
+                inter.created_at
+            )
+            view = self._build_account_manager_view(accounts, default_account, user_id)
+            await inter.edit_original_response(embed=embed, view=view)
+
+            self._log_stats_success(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='complete',
+                    operation='default_account_select',
+                ),
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='complete',
+                stage='complete',
+                operation='default_account_select',
+                owner_id=owner_id,
+                component_type='dropdown',
+                selected_value=selected_value,
+                selected_username=selected_username,
+                selected_account_type=selected_account_type,
+            )
+
+        except Exception as exc:
+            self._log_stats_error(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='runtime_failure',
+                    operation='default_account_select',
+                ),
+                exc,
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='runtime_failure',
+                operation='default_account_select',
+                owner_id=owner_id,
+                component_type='dropdown',
+                selected_value=selected_value,
+                selected_username=selected_username,
+                selected_account_type=selected_account_type,
+                handled=True,
+                expected_failure=False,
+                user_visible=True,
+            )
+            raise
 
 
     @stats.autocomplete('account_type')

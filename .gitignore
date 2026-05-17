@@ -103,7 +103,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/
@@ -116,6 +116,9 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
+
+# VSCode settings
+.vscode/
 
 # mkdocs documentation
 /site
@@ -143,8 +146,16 @@ tools/
 temp/
 *.tmp
 
+# Generated runtime artifacts
+artifacts/*
+!artifacts/.gitkeep
+
 # Runebot dev database artifacts
 runebot-dev.db
 runebot-dev.db-journal
 runebot-dev.db-shm
 runebot-dev.db-wal
+runebot-logs-dev.db
+runebot-logs-dev.db-journal
+runebot-logs-dev.db-shm
+runebot-logs-dev.db-wal

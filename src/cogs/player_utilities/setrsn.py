@@ -25,11 +25,19 @@ docstrings.
 '''
 
 from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, Option, OptionType
+from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
 
+import uuid
+
+import exceptions
 from templates.bot import Bot
 from config import *
 from utils import *
+from utils.logging import (
+    build_log_message,
+    build_command_log_bind,
+    emit_command_log
+)
 
 
 class Setrsn(commands.Cog, name='setrsn'):
@@ -51,11 +59,120 @@ class Setrsn(commands.Cog, name='setrsn'):
         self.bot = bot
 
 
+    @staticmethod
+    def _invocation_source(inter: ApplicationCommandInteraction) -> str:
+        return 'slash_command'
+
+
+    def _setrsn_bind(
+        self,
+        inter: ApplicationCommandInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'set',
+        invocation_mode: str | None = None,
+        username: str | None = None,
+        resolved_username: str | None = None,
+        account_type: str | None = None,
+        resolved_account_type: str | None = None,
+        resolution_source: str | None = None,
+        trace_id: str | None = None,
+        log_params: list | None = None,
+        **extra,
+    ) -> dict:
+        return build_command_log_bind(
+            command='setrsn',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+            log_params=log_params,
+            invocation_mode=invocation_mode,
+            username=username,
+            resolved_username=resolved_username,
+            account_type=account_type,
+            resolved_account_type=resolved_account_type,
+            resolution_source=resolution_source,
+            **extra,
+        )
+
+
+    def _log_setrsn_debug(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='debug',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
+    
+
+    def _log_setrsn_info(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='info',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_setrsn_success(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='success',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
+    def _log_setrsn_error(
+        self,
+        inter: ApplicationCommandInteraction | MessageInteraction,
+        message: str,
+        exc: Exception,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='error',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+            exc=exc,
+        )
+
+
+    def _log_setrsn_warning(
+        self,
+        inter: ApplicationCommandInteraction,
+        message: str,
+        **bind_kwargs,
+    ) -> None:
+        emit_command_log(
+            level='warning',
+            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
+            message=message,
+        )
+
+
     async def set_username(
         self,
         inter: ApplicationCommandInteraction,
         username: str,
-        account_type: str = None
+        account_type: str = None,
+        trace_id: str | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View]:
         '''
         Function which takes a provided username and stores it
@@ -75,12 +192,67 @@ class Setrsn(commands.Cog, name='setrsn'):
         '''
 
         if len(username) > MAX_CHARS or any(char in username for char in BLACKLIST_CHARS):
+            self._log_setrsn_warning(
+                inter,
+                build_log_message(
+                    command='setrsn',
+                    stage='failure',
+                    operation='set',
+                ),
+                action='fail',
+                stage='failure',
+                operation='set',
+                invocation_mode='explicit',
+                username=username,
+                resolved_username=username,
+                account_type=account_type or 'Normal',
+                resolved_account_type=account_type or 'Normal',
+                resolution_source='provided_username',
+                log_params=[
+                    {'kind': 'username', 'label': 'username', 'value': username},
+                    {'kind': 'account_type', 'label': 'account_type', 'value': account_type or 'Normal'},
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                trace_id=trace_id,
+                exception_type='UsernameInvalid',
+                exception=str(exceptions.UsernameInvalid()),
+            )
             raise exceptions.UsernameInvalid
 
         if not account_type:
             account_type = 'Normal'
 
-        await add_username(self, inter.author.id, username, account_type)
+        resolved_username = username
+        resolved_account_type = account_type
+
+        self._log_setrsn_info(
+            inter,
+            build_log_message(
+                command='setrsn',
+                stage='resolve',
+                operation='set',
+                subject='username',
+                resolved=resolved_username,
+            ),
+            action='resolve',
+            stage='resolve',
+            operation='set',
+            trace_id=trace_id,
+            invocation_mode='explicit',
+            username=username,
+            resolved_username=resolved_username,
+            account_type=account_type,
+            resolved_account_type=resolved_account_type,
+            resolution_source='provided_username',
+            log_params=[
+                {'kind': 'username', 'label': 'username', 'value': username},
+                {'kind': 'account_type', 'label': 'account_type', 'value': account_type},
+            ],
+        )
+
+        await add_username(self, inter.author.id, resolved_username, resolved_account_type)
 
         embed, view = EmbedFactory().create(
             title=f'Account has been set.',
@@ -135,13 +307,84 @@ class Setrsn(commands.Cog, name='setrsn'):
         :return: (None)
         '''
 
-        embed, view = await self.set_username(
-            inter,
-            username,
-            account_type
-        )
-        await inter.send(embed=embed, view=view, ephemeral=True)
+        trace_id = uuid.uuid4().hex
 
+        self._log_setrsn_info(
+            inter,
+            build_log_message(
+                command='setrsn',
+                stage='start',
+                operation='set',
+                subject='username',
+            ),
+            action='start',
+            stage='start',
+            operation='set',
+            trace_id=trace_id,
+            username=username,
+            invocation_mode='explicit',
+            log_params=[
+                {'kind': 'username', 'label': 'username', 'value': username}
+            ],
+        )
+
+        try:
+            embed, view = await self.set_username(
+                inter,
+                username,
+                account_type,
+                trace_id=trace_id,
+            )
+            await inter.send(embed=embed, view=view, ephemeral=True)
+
+            self._log_setrsn_success(
+                inter,
+                build_log_message(
+                    command='setrsn',
+                    stage='complete',
+                    operation='set',
+                ),
+                action='complete',
+                stage='complete',
+                operation='set',
+                trace_id=trace_id,
+                invocation_mode='explicit',
+                username=username,
+                resolved_username=username,
+                account_type=account_type or 'Normal',
+                resolved_account_type=account_type or 'Normal',
+                resolution_source='provided_username',
+                log_params=[
+                    {'kind': 'username', 'label': 'username', 'value': username},
+                    {'kind': 'account_type', 'label': 'account_type', 'value': account_type or 'Normal'},
+                ],
+            )
+        except exceptions.UsernameInvalid:
+            raise
+
+        except Exception as exc:
+            self._log_setrsn_error(
+                inter,
+                build_log_message(
+                    command='setrsn',
+                    stage='runtime_failure',
+                    operation='set',
+                ),
+                exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='set',
+                trace_id=trace_id,
+                username=username,
+                invocation_mode='explicit',
+                log_params=[
+                    {'kind': 'username', 'label': 'username', 'value': username}
+                ],
+                handled=False,
+                expected_failure=False,
+                user_visible=False,
+            )
+            raise
 
     @setrsn.autocomplete('account_type')
     async def account_type_autocomplete(self, account_type: str) -> List[str]:
