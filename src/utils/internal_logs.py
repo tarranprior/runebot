@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+import uuid
 from typing import Any
 
 
@@ -122,7 +123,8 @@ def ensure_internal_logs_schema(db_path: str) -> None:
                 metadata TEXT,
                 exception TEXT,
                 session_id TEXT,
-                trace_id TEXT
+                trace_id TEXT,
+                event_id TEXT
             )
             '''
         )
@@ -134,7 +136,13 @@ def ensure_internal_logs_schema(db_path: str) -> None:
             conn.execute('ALTER TABLE internal_logs ADD COLUMN trace_id TEXT')
         except Exception:
             pass
-        
+        try:
+            conn.execute('ALTER TABLE internal_logs ADD COLUMN event_id TEXT')
+        except Exception:
+            pass
+        conn.execute(
+            "UPDATE internal_logs SET event_id = lower(hex(randomblob(16))) WHERE event_id IS NULL"
+        )
         conn.execute(
             'CREATE INDEX IF NOT EXISTS idx_internal_logs_trace_id ON internal_logs(trace_id)'
         )
@@ -158,6 +166,9 @@ def ensure_internal_logs_schema(db_path: str) -> None:
         )
         conn.execute(
             'CREATE INDEX IF NOT EXISTS idx_internal_logs_session_timestamp_id ON internal_logs(session_id, timestamp DESC, id DESC)'
+        )
+        conn.execute(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_internal_logs_event_id ON internal_logs(event_id) WHERE event_id IS NOT NULL'
         )
         conn.commit()
 
@@ -195,6 +206,20 @@ def _validate_string_field(payload: dict[str, Any], field: str, required: bool =
     return normalized or None
 
 
+def _normalize_event_id(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ValueError('event_id must be a string')
+
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError('event_id is required')
+
+    try:
+        return uuid.UUID(normalized).hex
+    except ValueError as exc:
+        raise ValueError('event_id must be a valid UUID') from exc
+
+
 def normalize_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError('each log item must be a JSON object')
@@ -208,6 +233,7 @@ def normalize_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
     source = _validate_string_field(payload, 'source') or DEFAULT_SOURCE
     session_id = _validate_string_field(payload, 'session_id')
     trace_id = _validate_string_field(payload, 'trace_id')
+    event_id = _normalize_event_id(payload.get('event_id'))
 
     line = payload.get('line')
     if line is not None and (not isinstance(line, int) or isinstance(line, bool)):
@@ -238,10 +264,11 @@ def normalize_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
         'line': line,
         'message': message,
         'source': source,
-        'session_id': session_id,
-        'trace_id': trace_id,
         'metadata': metadata,
         'exception': exception_data,
+        'session_id': session_id,
+        'trace_id': trace_id,
+        'event_id': event_id,
     }
 
 
@@ -251,9 +278,10 @@ def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
 
     with sqlite3.connect(db_path, timeout=5) as conn:
         _configure_internal_logs_connection(conn)
+        before_changes = conn.total_changes
         conn.executemany(
             '''
-            INSERT INTO internal_logs (
+            INSERT OR IGNORE INTO internal_logs (
                 timestamp,
                 level,
                 logger,
@@ -265,9 +293,10 @@ def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
                 metadata,
                 exception,
                 session_id,
-                trace_id
+                trace_id,
+                event_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''',
             [
                 (
@@ -283,13 +312,15 @@ def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
                     json.dumps(item['exception'], separators=(',', ':')) if item['exception'] is not None else None,
                     item.get('session_id'),
                     item.get('trace_id'),
+                    item['event_id'],
                 )
                 for item in logs
             ],
         )
+        inserted_count = conn.total_changes - before_changes
         conn.commit()
 
-    return len(logs)
+    return inserted_count
 
 
 def query_internal_logs(
@@ -317,7 +348,7 @@ def query_internal_logs(
 
     count_sql = f'SELECT COUNT(*) FROM internal_logs {where_clause}'
     data_sql = (
-        'SELECT id, timestamp, level, logger, module, function, line, message, source, metadata, exception, session_id, trace_id '
+        'SELECT id, timestamp, level, logger, module, function, line, message, source, metadata, exception, session_id, trace_id, event_id '
         f'FROM internal_logs {where_clause} '
         'ORDER BY timestamp DESC, id DESC '
         'LIMIT ? OFFSET ?'
@@ -342,10 +373,11 @@ def query_internal_logs(
             'line': row['line'],
             'message': row['message'],
             'source': row['source'],
-            'session_id': row['session_id'],
-            'trace_id': row['trace_id'],
             'metadata': json.loads(row['metadata']) if row['metadata'] else {},
             'exception': json.loads(row['exception']) if row['exception'] else None,
+            'session_id': row['session_id'],
+            'trace_id': row['trace_id'],
+            'event_id': row['event_id'],
         }
         for row in rows
     ]

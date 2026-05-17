@@ -115,6 +115,7 @@ class InternalAPILogPipeline:
 
     def _build_payload(self, record: dict[str, Any]) -> dict[str, Any]:
         timestamp = record['time'].astimezone(timezone.utc).isoformat()
+        event_id = uuid.uuid4().hex
         exception = None
         record_exception = record.get('exception')
         if record_exception is not None:
@@ -150,10 +151,11 @@ class InternalAPILogPipeline:
             'line': record.get('line'),
             'message': record['message'],
             'source': 'bot',
-            'session_id': self.session_id,
-            'trace_id': trace_id,
             'metadata': self._make_json_safe(metadata),
             'exception': exception,
+            'session_id': self.session_id,
+            'trace_id': trace_id,
+            'event_id': event_id,
         }
 
     def _sink(self, message: Any) -> None:
