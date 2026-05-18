@@ -1,5 +1,26 @@
 #! /usr/bin/env python3
 
+'''
+This module contains the internal HTTP API server for Runebot runtime
+stats and internal log ingestion and query.
+
+Classes:
+    - `InternalStatsAPIServer`:
+            A class which manages startup, shutdown, and request handling
+            for internal statistics and log pipeline routes.
+
+Functions:
+    - `get_process_memory_bytes()`:
+            A function which returns process memory usage in bytes
+            on a best-effort basis.
+
+Each class and function has an associated docstring, providing details
+about its functionality, parameters, and return values.
+
+For more information about each function and its usage, refer to the
+docstrings.
+'''
+
 import asyncio
 import json
 import threading
@@ -29,7 +50,13 @@ MAX_LOGS_PAGE_SIZE = 500
 
 
 def get_process_memory_bytes() -> int | None:
-    """Return process memory in bytes, best-effort cross-platform."""
+    '''
+    Returns process memory usage in bytes on a best-effort basis.
+
+    :return: (Optional[Integer]) -
+        Current process RSS in bytes when available.
+    '''
+
     try:
         import psutil
     except ImportError:
@@ -54,6 +81,13 @@ def get_process_memory_bytes() -> int | None:
 
 
 class InternalStatsAPIServer:
+    '''
+    Internal API server wrapper for stats, ingest, and log query endpoints.
+
+    This class manages startup, shutdown, and request handling for
+    internal statistics and log pipeline routes.
+    '''
+
     def __init__(
         self,
         bot,
@@ -63,6 +97,27 @@ class InternalStatsAPIServer:
         logs_db_path: str = 'runebot-logs.db',
         log_pipeline=None,
     ) -> None:
+        '''
+        Initialises a new internal API server instance.
+
+        :param self: -
+            Represents this object.
+        :param bot: -
+            Represents the active bot instance.
+        :param token: (String) -
+            Represents the internal API bearer token.
+        :param host: (Optional[String]) -
+            Represents the bind host for the HTTP server.
+        :param port: (Optional[Integer]) -
+            Represents the bind port for the HTTP server.
+        :param logs_db_path: (Optional[String]) -
+            Represents the internal logs database path.
+        :param log_pipeline: (Optional[Any]) -
+            Represents the active log API pipeline instance.
+
+        :return: (None)
+        '''
+
         self.bot = bot
         self.token = token
         self.host = host
@@ -73,10 +128,30 @@ class InternalStatsAPIServer:
         self._thread = None
 
     async def _build_payload(self) -> dict:
+        '''
+        Builds the community stats payload from current runtime state.
+
+        :param self: -
+            Represents this object.
+
+        :return: (Dictionary) -
+            Community stats payload for API responses.
+        '''
+
         started_at_utc = getattr(self.bot, 'runtime_started_at_utc', None)
         return build_community_stats_payload(self.bot, started_at_utc)
 
     def _make_handler(self):
+        '''
+        Builds and returns the internal HTTP request handler class.
+
+        :param self: -
+            Represents this object.
+
+        :return: -
+            A configured BaseHTTPRequestHandler subclass.
+        '''
+
         outer = self
 
         class InternalStatsHandler(BaseHTTPRequestHandler):
@@ -585,6 +660,16 @@ class InternalStatsAPIServer:
         return InternalStatsHandler
 
     def start(self) -> bool:
+        '''
+        Starts the threaded internal API server.
+
+        :param self: -
+            Represents this object.
+
+        :return: (bool) -
+            True when startup completes.
+        '''
+
         ensure_internal_logs_schema(self.logs_db_path)
         handler = self._make_handler()
         self._server = ThreadingHTTPServer((self.host, self.port), handler)
@@ -655,6 +740,15 @@ class InternalStatsAPIServer:
         return True
 
     def stop(self) -> None:
+        '''
+        Stops and closes the internal API server if running.
+
+        :param self: -
+            Represents this object.
+
+        :return: (None)
+        '''
+
         if self._server is not None:
             self._server.shutdown()
             self._server.server_close()

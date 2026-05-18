@@ -1,5 +1,26 @@
 #! /usr/bin/env python3
 
+'''
+This module contains the background log pipeline sink for forwarding
+Loguru events to the internal API.
+
+Classes:
+    - `InternalAPILogPipeline`:
+            A class which manages queueing, batching, retry behaviour,
+            and optional session/file sink bootstrap for local run logs.
+
+Functions:
+    - `start_log_api_pipeline()`:
+            A function which starts (or returns) the process-wide
+            internal API log pipeline.
+
+Each class and function has an associated docstring, providing details
+about its functionality, parameters, and return values.
+
+For more information about each function and its usage, refer to the
+docstrings.
+'''
+
 import atexit
 import json
 import os
@@ -19,6 +40,10 @@ from .internal_logs import create_log_session, ensure_internal_logs_schema
 
 
 class InternalAPILogPipeline:
+    '''
+    Queued pipeline for forwarding bot log events to the internal log API.
+    '''
+
     def __init__(
         self,
         host: str,
@@ -30,6 +55,29 @@ class InternalAPILogPipeline:
         logs_db_path: str | None = None,
         logs_dir: str = 'logs',
     ) -> None:
+        '''
+        Initialises a new internal API log pipeline instance.
+
+        :param host: (String) -
+            Represents the internal API host.
+        :param port: (Integer) -
+            Represents the internal API port.
+        :param token: (String) -
+            Represents the bearer token used for log ingest requests.
+        :param queue_size: (Optional[Integer]) -
+            Represents the maximum number of queued log payloads.
+        :param flush_interval_seconds: (Optional[Float]) -
+            Represents the worker poll/flush interval in seconds.
+        :param batch_size: (Optional[Integer]) -
+            Represents the maximum number of logs per POST batch.
+        :param logs_db_path: (Optional[String]) -
+            Represents the local logs database path used for session tracking.
+        :param logs_dir: (Optional[String]) -
+            Represents the output directory for session log files.
+
+        :return: (None)
+        '''
+
         self.endpoint = f'http://{host}:{port}/internal/logs'
         self.token = token
         self.flush_interval_seconds = flush_interval_seconds
@@ -53,13 +101,33 @@ class InternalAPILogPipeline:
         self._total_post_failures = 0
         self._pending_retry: list[dict[str, Any]] | None = None
 
+
     def start(self) -> None:
+        '''
+        Starts the background worker and registers the Loguru sink.
+
+        :param self: -
+            Represents this object.
+
+        :return: (None)
+        '''
+
         self._thread.start()
         self._sink_id = logger.add(self._sink, catch=True)
         if self.logs_db_path:
             self._start_session()
 
+
     def _start_session(self) -> None:
+        '''
+        Creates a local log session and file sink when logs DB is enabled.
+
+        :param self: -
+            Represents this object.
+
+        :return: (None)
+        '''
+
         started_at_dt = datetime.now(timezone.utc)
         started_at = started_at_dt.isoformat()
         session_id = uuid.uuid4().hex
@@ -76,7 +144,17 @@ class InternalAPILogPipeline:
         self.session_id = session_id
         self._file_sink_id = logger.add(log_file, catch=True)
 
+
     def stop(self) -> None:
+        '''
+        Stops the background worker and removes active log sinks.
+
+        :param self: -
+            Represents this object.
+
+        :return: (None)
+        '''
+
         self._stop_event.set()
         if self._sink_id is not None:
             logger.remove(self._sink_id)
@@ -87,7 +165,18 @@ class InternalAPILogPipeline:
         if self._thread.is_alive():
             self._thread.join(timeout=max(2.0, self.flush_interval_seconds + 2.0))
 
+
     def get_stats(self) -> dict[str, int]:
+        '''
+        Returns queue and delivery counters for pipeline health reporting.
+
+        :param self: -
+            Represents this object.
+
+        :return: (Dictionary)
+            A dictionary of current pipeline counters.
+        '''
+
         with self._counters_lock:
             return {
                 'total_enqueued': self._total_enqueued,
@@ -113,7 +202,20 @@ class InternalAPILogPipeline:
             return [self._make_json_safe(v) for v in value]
         return str(value)
 
+
     def _build_payload(self, record: dict[str, Any]) -> dict[str, Any]:
+        '''
+        Converts a Loguru record into the normalised internal API payload.
+
+        :param self: -
+            Represents this object.
+        :param record: (Dictionary) -
+            Represents a Loguru record dictionary.
+
+        :return: (Dictionary)
+            Serialised log payload ready for ingestion.
+        '''
+
         timestamp = record['time'].astimezone(timezone.utc).isoformat()
         event_id = uuid.uuid4().hex
         exception = None
@@ -158,7 +260,19 @@ class InternalAPILogPipeline:
             'event_id': event_id,
         }
 
+
     def _sink(self, message: Any) -> None:
+        '''
+        Loguru sink callback that enqueues normalised payloads.
+
+        :param self: -
+            Represents this object.
+        :param message: (Any) -
+            Represents the Loguru sink message object.
+
+        :return: (None)
+        '''
+
         payload = self._build_payload(message.record)
         try:
             self.queue.put_nowait(payload)
@@ -166,6 +280,7 @@ class InternalAPILogPipeline:
         except queue.Full:
             self._increment_counter('_total_dropped')
             return
+
 
     def _post_batch(self, logs: list[dict[str, Any]]) -> bool:
         body = json.dumps({'logs': logs}).encode('utf-8')
@@ -200,7 +315,17 @@ class InternalAPILogPipeline:
                 break
         return batch
 
+
     def _worker(self) -> None:
+        '''
+        Background worker loop that posts queued log batches with retry support.
+
+        :param self: -
+            Represents this object.
+
+        :return: (None)
+        '''
+
         while not self._stop_event.is_set():
             if self._pending_retry:
                 if self._post_batch(self._pending_retry):
@@ -221,7 +346,19 @@ class InternalAPILogPipeline:
 
         self._flush_on_shutdown(timeout_seconds=2.0)
 
+
     def _flush_on_shutdown(self, timeout_seconds: float) -> None:
+        '''
+        Attempts a bounded flush of pending and queued logs during shutdown.
+
+        :param self: -
+            Represents this object.
+        :param timeout_seconds: (Float) -
+            Represents the maximum shutdown flush duration.
+
+        :return: (None)
+        '''
+
         deadline = time.monotonic() + timeout_seconds
 
         if self._pending_retry:
@@ -245,6 +382,24 @@ def start_log_api_pipeline(
     logs_db_path: str | None = None,
     logs_dir: str = 'logs',
 ) -> InternalAPILogPipeline | None:
+    '''
+    Starts (or returns) the process-wide internal API log pipeline.
+
+    :param host: (String) -
+        Represents the internal API host.
+    :param port: (Integer) -
+        Represents the internal API port.
+    :param token: (String) -
+        Represents the bearer token used for ingest authentication.
+    :param logs_db_path: (Optional[String]) -
+        Represents the local logs database path used for session tracking.
+    :param logs_dir: (Optional[String]) -
+        Represents the output directory for session log files.
+
+    :return: (Optional[InternalAPILogPipeline]) -
+        The active pipeline instance, or None when token is not configured.
+    '''
+
     if not token:
         return None
 

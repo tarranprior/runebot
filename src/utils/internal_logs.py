@@ -1,5 +1,38 @@
 #! /usr/bin/env python3
 
+'''
+This module contains SQLite storage and query helpers for Runebot
+internal logs.
+
+Functions:
+    - `ensure_internal_logs_schema()`:
+            A function which ensures internal log and session tables
+            and indexes exist in the database.
+    - `create_log_session()`:
+            A function which inserts a new log session record.
+    - `normalize_log_payload()`:
+            A function which validates and normalises a single internal
+            log payload item.
+    - `insert_internal_logs()`:
+            A function which inserts normalised internal log items
+            into storage.
+    - `query_internal_logs()`:
+            A function which queries internal logs with pagination
+            and optional filters.
+    - `query_internal_log_level_counts()`:
+            A function which aggregates per-level counts for the
+            current filter set.
+    - `query_log_sessions()`:
+            A function which returns persisted log sessions with
+            associated log counts.
+
+Each class and function has an associated docstring, providing details
+about its functionality, parameters, and return values.
+
+For more information about each function and its usage, refer to the
+docstrings.
+'''
+
 import json
 import sqlite3
 import uuid
@@ -95,6 +128,15 @@ def _configure_internal_logs_connection(conn: sqlite3.Connection, enable_wal: bo
 
 
 def ensure_internal_logs_schema(db_path: str) -> None:
+    '''
+    Ensures internal logs and session tables/indexes exist.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+
+    :return: (None)
+    '''
+
     with sqlite3.connect(db_path, timeout=5) as conn:
         _configure_internal_logs_connection(conn, enable_wal=True)
         conn.execute(
@@ -180,6 +222,23 @@ def create_log_session(
     log_file: str,
     source: str = DEFAULT_SOURCE,
 ) -> None:
+    '''
+    Inserts a new log session record.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+    :param session_id: (String) -
+        Represents a unique ID for the current logging session.
+    :param started_at: (String) -
+        Represents the UTC session start timestamp.
+    :param log_file: (String) -
+        Represents the session log file path.
+    :param source: (Optional[String]) -
+        Represents the source token for the session.
+
+    :return: (None)
+    '''
+
     with sqlite3.connect(db_path, timeout=5) as conn:
         _configure_internal_logs_connection(conn)
         conn.execute(
@@ -221,6 +280,16 @@ def _normalize_event_id(value: Any) -> str:
 
 
 def normalize_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    '''
+    Validates and normalises a single internal log payload item.
+
+    :param payload: (Dictionary) -
+        Represents a log object received by the internal ingest endpoint.
+
+    :return: (Dictionary) -
+        Normalised payload ready for persistence.
+    '''
+
     if not isinstance(payload, dict):
         raise ValueError('each log item must be a JSON object')
 
@@ -273,6 +342,18 @@ def normalize_log_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
+    '''
+    Inserts normalised internal log items into storage.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+    :param logs: (List[Dictionary]) -
+        Represents normalised log items ready for insertion.
+
+    :return: (Integer) -
+        Number of rows inserted.
+    '''
+
     if not logs:
         return 0
 
@@ -335,6 +416,34 @@ def query_internal_logs(
     start_time: str | None = None,
     end_time: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
+    '''
+    Queries internal logs with pagination and optional filters.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+    :param page: (Integer) -
+        Represents the result page number.
+    :param page_size: (Integer) -
+        Represents the number of records to return per page.
+    :param level: (Optional[String]) -
+        Represents one or more comma-delimited level filters.
+    :param module: (Optional[String]) -
+        Represents an optional module filter.
+    :param search: (Optional[String]) -
+        Represents an optional message search term.
+    :param source: (Optional[String]) -
+        Represents an optional source filter.
+    :param session_id: (Optional[String]) -
+        Represents an optional session ID filter.
+    :param start_time: (Optional[String]) -
+        Represents an optional ISO timestamp lower bound.
+    :param end_time: (Optional[String]) -
+        Represents an optional ISO timestamp upper bound.
+
+    :return: (Tuple[List[Dictionary], Integer]) -
+        A tuple containing result items and total count.
+    '''
+
     where_clause, params, _ = _build_internal_logs_filters(
         level=level,
         module=module,
@@ -395,6 +504,30 @@ def query_internal_log_level_counts(
     start_time: str | None = None,
     end_time: str | None = None,
 ) -> dict[str, int]:
+    '''
+    Aggregates per-level counts for the current filter set.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+    :param level: (Optional[String]) -
+        Represents one or more comma-delimited level filters.
+    :param module: (Optional[String]) -
+        Represents an optional module filter.
+    :param search: (Optional[String]) -
+        Represents an optional message search term.
+    :param source: (Optional[String]) -
+        Represents an optional source filter.
+    :param session_id: (Optional[String]) -
+        Represents an optional session ID filter.
+    :param start_time: (Optional[String]) -
+        Represents an optional ISO timestamp lower bound.
+    :param end_time: (Optional[String]) -
+        Represents an optional ISO timestamp upper bound.
+
+    :return: (Dictionary) -
+        A dictionary keyed by standard level names.
+    '''
+
     where_clause, params, _ = _build_internal_logs_filters(
         level=level,
         module=module,
@@ -428,6 +561,16 @@ def query_internal_log_level_counts(
 
 
 def query_log_sessions(db_path: str) -> list[dict[str, Any]]:
+    '''
+    Returns persisted log sessions with associated log counts.
+
+    :param db_path: (String) -
+        Represents the path to the SQLite database.
+
+    :return: (List[Dictionary]) -
+        Session records ordered by start time descending.
+    '''
+
     sql = (
         'SELECT ls.session_id, ls.started_at, ls.log_file, ls.source, '
         'COUNT(il.id) AS log_count '

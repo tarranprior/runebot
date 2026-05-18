@@ -1,3 +1,45 @@
+#! /usr/bin/env python3
+
+'''
+This module contains logging helper utilities for Runebot command
+and internal execution logs.
+
+Classes:
+    - `LogParam`:
+            A dataclass which represents a single structured log parameter
+            used in command and internal log payloads.
+    - `BoundCommandLogger`:
+            A class which wraps a bind function and provides convenience
+            methods for emitting command log events at each log level.
+
+Functions:
+    - `build_interaction_log_context()`:
+            A function which builds normalised interaction metadata for
+            structured command logs.
+    - `build_command_log_bind()`:
+            A function which builds a structured bind payload for
+            command-facing logs.
+    - `emit_command_log()`:
+            A function which emits a command log event at the provided level.
+    - `emit_bound_command_log()`:
+            A function which resolves bind payload via a bind function
+            and emits a command log.
+    - `emit_internal_log()`:
+            A function which emits an internal (non-command) structured
+            log event.
+    - `build_log_message()`:
+            A function which builds a canonical human-readable log message
+            from structured logging context.
+    - `build_internal_log_message()`:
+            A function which builds an internal execution log message.
+
+Each class and function has an associated docstring, providing details
+about its functionality, parameters, and return values.
+
+For more information about each function and its usage, refer to the
+docstrings.
+'''
+
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List
 from loguru import logger
@@ -18,6 +60,17 @@ def _snowflake_str(value: Any) -> str | None:
 
 
 def build_interaction_log_context(inter: Any) -> dict:
+    '''
+    Builds normalised interaction metadata for structured command logs.
+
+    :param inter: (Any) -
+        Represents a slash-command interaction or component interaction object.
+
+    :return: (Dictionary) -
+        A dictionary containing normalised user, guild, channel,
+        and interaction type fields.
+    '''
+
     user = getattr(inter, 'author', None) or getattr(inter, 'user', None)
     interaction_type = getattr(inter, 'type', None)
     return {
@@ -47,6 +100,42 @@ def build_command_log_bind(
     log_params: list | None = None,
     **extra,
 ) -> dict:
+    '''
+    Builds a structured bind payload for command-facing logs.
+
+    :param command: (String) -
+        Represents the command name (without slash prefix).
+    :param inter: (Any) -
+        Represents a slash-command interaction or component interaction object.
+    :param action: (String) -
+        Represents the action token for the log event.
+    :param stage: (String) -
+        Represents the execution stage token.
+    :param operation: (Optional[String]) -
+        Represents the operation name. Defaults to 'search'.
+    :param invocation_source: (Optional[String]) -
+        Represents the invocation source (slash command, component etc.).
+    :param invocation_mode: (Optional[String]) -
+        Represents the invocation mode context, if available.
+    :param search_query: (Optional[String]) -
+        Represents the original user query.
+    :param resolved_search_term: (Optional[String]) -
+        Represents the resolved search term.
+    :param resolved_page_title: (Optional[String]) -
+        Represents the resolved page title.
+    :param resolution_source: (Optional[String]) -
+        Represents the resolution source metadata.
+    :param trace_id: (Optional[String]) -
+        Represents the trace ID for correlation.
+    :param log_params: (Optional[List]) -
+        Represents structured log params for rendering/query.
+    :param extra: -
+        Represents additional bind fields to include.
+
+    :return: (Dictionary) -
+        A filtered payload containing only non-None values.
+    '''
+
     payload = {
         'command': command,
         'trace_id': trace_id,
@@ -73,6 +162,21 @@ def emit_command_log(
     message: str,
     exc: Exception | None = None,
 ) -> None:
+    '''
+    Emits a command log event at the provided level.
+
+    :param level: (String) -
+        Represents the log level to emit (debug/info/success/warning/error).
+    :param bind_payload: (Dictionary) -
+        Represents structured metadata fields bound to the logger.
+    :param message: (String) -
+        Represents the final human-readable log message.
+    :param exc: (Optional[Exception]) -
+        Represents an exception to attach when emitting an error log.
+
+    :return: (None)
+    '''
+
     bound_logger = logger.bind(**bind_payload)
 
     if level == 'error':
@@ -106,6 +210,25 @@ def emit_bound_command_log(
     exc: Exception | None = None,
     **bind_kwargs,
 ) -> None:
+    '''
+    Resolves bind payload via a bind function and emits a command log.
+
+    :param bind_func: -
+        Represents a callable that builds bind payload from interaction context.
+    :param inter: -
+        Represents an interaction object used by the bind function.
+    :param level: (String) -
+        Represents the log level to emit.
+    :param message: (String) -
+        Represents the log message to emit.
+    :param exc: (Optional[Exception]) -
+        Represents an exception for error logs.
+    :param bind_kwargs: -
+        Represents keyword arguments forwarded to the bind function.
+
+    :return: (None)
+    '''
+
     bind_payload = bind_func(inter, **bind_kwargs)
     emit_command_log(
         level=level,
@@ -116,7 +239,24 @@ def emit_bound_command_log(
 
 
 class BoundCommandLogger:
+    '''
+    Convenience wrapper for emitting command logs using a shared bind function.
+
+    The provided bind function is reused across all helper methods to
+    keep command logging payloads consistent.
+    '''
+
     def __init__(self, bind_func) -> None:
+        '''
+        Initialises a bound command logger.
+
+        :param bind_func: -
+            Represents a callable that builds a bind payload from
+            interaction context and bind keyword arguments.
+
+        :return: (None)
+        '''
+
         self._bind_func = bind_func
 
     def debug(self, inter, message: str, **bind_kwargs) -> None:
@@ -432,6 +572,29 @@ def emit_internal_log(
     log_params: list | None = None,
     **extra,
 ) -> None:
+    '''
+    Emits an internal (non-command) structured log event.
+
+    :param level: (String) -
+        Represents the log level to emit.
+    :param stage: (String) -
+        Represents the execution stage token.
+    :param operation: (String) -
+        Represents the operation name for the event.
+    :param subject: (Optional[String]) -
+        Represents the subject token for the event.
+    :param resolved: (Optional[String]) -
+        Represents resolved output used by resolve-stage events.
+    :param trace_id: (Optional[String]) -
+        Represents the trace ID for correlation.
+    :param log_params: (Optional[List]) -
+        Represents structured log parameters for rendering/query.
+    :param extra: -
+        Represents additional metadata fields to bind to the event.
+
+    :return: (None)
+    '''
+
     message = build_internal_log_message(
         stage=stage,
         operation=operation,

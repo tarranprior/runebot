@@ -271,8 +271,6 @@ def parse_description(page_content) -> List[str]:
 
     if len(description) < 34 or description is None:
         raise exceptions.StubArticle
-        # No description(s) over 36 characters nullifies article and returns
-        # StubArticle error.
 
     return [description]
 
@@ -398,7 +396,6 @@ def parse_levelup_table(page_div: BeautifulSoup) -> str:
           To view more information about this page, click the button below.')
     ]
     _ = page_div
-    # Do more stuff later...
 
     return ''.join(levelup_details)
 
@@ -532,12 +529,6 @@ def parse_thumbnail(page_content) -> Optional[str]:
     '''
 
     try:
-
-    #   img_src = page_content.find(
-    #       'div', class_='floatleft').find(
-    #       'a', class_='image').find('img').attrs['src']
-    #   thumbnail_url = f'https://oldschool.runescape.wiki/{img_src}'
-
         img_src = page_content.find(
             'figure', class_='mw-halign-left').find('img').attrs['src']
         thumbnail_url = f'https://oldschool.runescape.wiki/{img_src}'

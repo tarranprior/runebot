@@ -67,7 +67,7 @@ class EmbedFactory:
             Represents an emoji for the embed's button.
 
         :return: (None)
-    '''
+        '''
 
         self.title = kwargs.get('title')
         self.description = kwargs.get('description')

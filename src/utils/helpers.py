@@ -148,7 +148,7 @@ def normalise_price(price: int) -> Optional[str]:
         Represents a price integer.
 
     :return: (String or None) -
-        The normalized price value in a formatted string,
+        The normalised price value in a formatted string,
         or None if price is negative.
     '''
 
