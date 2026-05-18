@@ -35,13 +35,13 @@ import uuid
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
     build_unexpected_user_visible_failure_metadata,
-    emit_command_log,
 )
 
 import exceptions
@@ -68,6 +68,7 @@ class Alchemy(commands.Cog, name='alchemy'):
         '''
 
         self.bot = bot
+        self._alchemy_log = BoundCommandLogger(self._alchemy_bind)
     
     @staticmethod
     def _invocation_source(inter: ApplicationCommandInteraction) -> str:
@@ -108,74 +109,6 @@ class Alchemy(commands.Cog, name='alchemy'):
             item_id=item_id,
             **extra,
         )
-
-
-    def _log_alchemy_debug(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._alchemy_bind(inter, **bind_kwargs),
-            message=message,
-        )
-    
-
-    def _log_alchemy_info(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._alchemy_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_alchemy_success(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._alchemy_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_alchemy_error(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._alchemy_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-    
-
-    def _log_alchemy_warning(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._alchemy_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
 
     async def search_alchemy(
         self,
@@ -225,7 +158,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             title = parse_title(page_content)
             resolved_search_term = title
 
-            self._log_alchemy_info(
+            self._alchemy_log.info(
                 inter,
                 build_log_message(
                     command='alchemy',
@@ -326,7 +259,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             return embed, resolved_search_term, title, item_id
 
         except exceptions.NoAlchemyData as exc:
-            self._log_alchemy_warning(
+            self._alchemy_log.warning(
                 inter,
                 build_log_message(
                     command='alchemy',
@@ -355,7 +288,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             raise
 
         except exceptions.Nonexistence as exc:
-            self._log_alchemy_warning(
+            self._alchemy_log.warning(
                 inter,
                 build_log_message(
                     command='alchemy',
@@ -413,7 +346,7 @@ class Alchemy(commands.Cog, name='alchemy'):
         resolution_source = 'wiki_random_item' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
 
-        self._log_alchemy_info(
+        self._alchemy_log.info(
             inter,
             build_log_message(
                 command='alchemy',
@@ -439,7 +372,7 @@ class Alchemy(commands.Cog, name='alchemy'):
             )
             await inter.followup.send(embed=embed)
 
-            self._log_alchemy_success(
+            self._alchemy_log.success(
                 inter,
                 build_log_message(
                     command='alchemy',
@@ -490,14 +423,14 @@ class Alchemy(commands.Cog, name='alchemy'):
             return
 
         except Exception as exc:
-            self._log_alchemy_error(
+            self._alchemy_log.error(
                 inter,
                 build_log_message(
                     command='alchemy',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',

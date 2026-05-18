@@ -42,9 +42,9 @@ from config import *
 from templates.bot import Bot
 from utils import *
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
     build_log_message,
-    emit_command_log,
 )
 
 
@@ -66,6 +66,8 @@ class Price(commands.Cog, name='price'):
         '''
 
         self.bot = bot
+        self._price_log = BoundCommandLogger(self._price_bind)
+
 
     @staticmethod
     def _invocation_source(inter: ApplicationCommandInteraction | MessageInteraction) -> str:
@@ -119,73 +121,6 @@ class Price(commands.Cog, name='price'):
         )
 
 
-    def _log_price_debug(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._price_bind(inter, **bind_kwargs),
-            message=message,
-        )
-    
-
-    def _log_price_info(
-        self,
-        inter: ApplicationCommandInteraction  | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._price_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_price_warning(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._price_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_price_success(
-        self,
-        inter: ApplicationCommandInteraction  | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._price_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_price_error(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._price_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-
-
     def _cleanup_price_artifact(
         self,
         inter: ApplicationCommandInteraction | MessageInteraction,
@@ -217,7 +152,7 @@ class Price(commands.Cog, name='price'):
             cleanup_errors['remove_exception'] = str(exc)
 
         if cleanup_errors:
-            self._log_price_debug(
+            self._price_log.debug(
                 inter,
                 '<artifact>: <cleanup> failure.',
                 action='fail',
@@ -299,7 +234,7 @@ class Price(commands.Cog, name='price'):
             title = parse_title(page_content)
             resolved_search_term = title
 
-            self._log_price_info(
+            self._price_log.info(
                 inter,
                 build_log_message(
                     command='price',
@@ -329,7 +264,7 @@ class Price(commands.Cog, name='price'):
             return info, resolved_search_term, title
 
         except exceptions.NoPriceData as exc:
-            self._log_price_warning(
+            self._price_log.warning(
                 inter,
                 build_log_message(
                     command='price',
@@ -362,7 +297,7 @@ class Price(commands.Cog, name='price'):
             raise
 
         except (exceptions.Nonexistence, exceptions.WikiRequestFailed) as exc:
-            self._log_price_warning(
+            self._price_log.warning(
                 inter,
                 build_log_message(
                     command='price',
@@ -653,7 +588,7 @@ class Price(commands.Cog, name='price'):
         loading_view = build_loading_button_view(inter)
         await inter.response.edit_message(view=loading_view)
 
-        self._log_price_info(
+        self._price_log.info(
             inter,
             build_log_message(
                 command='price',
@@ -679,7 +614,7 @@ class Price(commands.Cog, name='price'):
                 trace_id=trace_id,
             )
 
-            self._log_price_info(
+            self._price_log.info(
                 inter,
                 build_log_message(
                     command='price',
@@ -739,7 +674,7 @@ class Price(commands.Cog, name='price'):
                     button_action='refresh',
                 )
 
-            self._log_price_success(
+            self._price_log.success(
                 inter,
                 build_log_message(
                     command='price',
@@ -769,7 +704,7 @@ class Price(commands.Cog, name='price'):
             else:
                 expected_description = str(exceptions.NoPriceData())
 
-            self._log_price_warning(
+            self._price_log.warning(
                 inter,
                 build_log_message(
                     command='price',
@@ -805,14 +740,14 @@ class Price(commands.Cog, name='price'):
             await inter.edit_original_response(embed=embed, view=view, attachments=[])
 
         except Exception as exc:
-            self._log_price_error(
+            self._price_log.error(
                 inter,
                 build_log_message(
                     command='price',
                     stage='runtime_failure',
                     operation='refresh',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='refresh',
@@ -869,7 +804,7 @@ class Price(commands.Cog, name='price'):
         resolution_source = 'wiki_random_item' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
 
-        self._log_price_info(
+        self._price_log.info(
             inter,
             build_log_message(
                 command='price',
@@ -930,7 +865,7 @@ class Price(commands.Cog, name='price'):
                     resolution_source=resolution_source,
                 )
 
-            self._log_price_success(
+            self._price_log.success(
                 inter,
                 build_log_message(
                     command='price',
@@ -974,7 +909,7 @@ class Price(commands.Cog, name='price'):
                     log_params.append({'kind': 'page_title', 'label': 'resolved_page_title', 'value': resolved_page_title})
                 log_params.append({'kind': 'item', 'label': 'item_id', 'value': item_id})
 
-                self._log_price_warning(
+                self._price_log.warning(
                     inter,
                     build_log_message(
                         command='price',
@@ -1016,14 +951,14 @@ class Price(commands.Cog, name='price'):
             return
 
         except Exception as exc:
-            self._log_price_error(
+            self._price_log.error(
                 inter,
                 build_log_message(
                     command='price',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',

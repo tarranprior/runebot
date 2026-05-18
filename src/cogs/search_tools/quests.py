@@ -35,13 +35,13 @@ import uuid
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
     build_unexpected_user_visible_failure_metadata,
-    emit_command_log,
 )
 
 import exceptions
@@ -68,6 +68,7 @@ class Quests(commands.Cog, name='quests'):
         '''
 
         self.bot = bot
+        self._quests_log = BoundCommandLogger(self._quests_bind)
 
 
     @staticmethod
@@ -109,74 +110,6 @@ class Quests(commands.Cog, name='quests'):
             resolution_source=resolution_source,
             **extra,
         )
-
-
-    def _log_quests_debug(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._quests_bind(inter, **bind_kwargs),
-            message=message,
-        )
-    
-
-    def _log_quests_info(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._quests_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_quests_success(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._quests_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_quests_error(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._quests_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-
-
-    def _log_quests_warning(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._quests_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
 
     async def search_quest(
         self,
@@ -231,7 +164,7 @@ class Quests(commands.Cog, name='quests'):
             title = parse_title(page_content)
             resolved_search_term = title
 
-            self._log_quests_info(
+            self._quests_log.info(
                 inter,
                 build_log_message(
                     command='quests',
@@ -293,7 +226,7 @@ class Quests(commands.Cog, name='quests'):
             return embed, view, resolved_search_term, title
 
         except exceptions.NoQuestData as exc:
-            self._log_quests_warning(
+            self._quests_log.warning(
                 inter,
                 build_log_message(
                     command='quests',
@@ -319,7 +252,7 @@ class Quests(commands.Cog, name='quests'):
             raise
 
         except exceptions.Nonexistence as exc:
-            self._log_quests_warning(
+            self._quests_log.warning(
                 inter,
                 build_log_message(
                     command='quests',
@@ -377,7 +310,7 @@ class Quests(commands.Cog, name='quests'):
         resolution_source = 'wiki_random_quest' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
 
-        self._log_quests_info(
+        self._quests_log.info(
             inter,
             build_log_message(
                 command='quests',
@@ -403,7 +336,7 @@ class Quests(commands.Cog, name='quests'):
             )
             await inter.followup.send(embed=embed, view=view)
 
-            self._log_quests_success(
+            self._quests_log.success(
                 inter,
                 build_log_message(
                     command='quests',
@@ -449,14 +382,14 @@ class Quests(commands.Cog, name='quests'):
             return
 
         except Exception as exc:
-            self._log_quests_error(
+            self._quests_log.error(
                 inter,
                 build_log_message(
                     command='quests',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',

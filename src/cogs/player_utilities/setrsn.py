@@ -34,9 +34,9 @@ from templates.bot import Bot
 from config import *
 from utils import *
 from utils.logging import (
+    BoundCommandLogger,
     build_log_message,
     build_command_log_bind,
-    emit_command_log
 )
 
 
@@ -57,6 +57,7 @@ class Setrsn(commands.Cog, name='setrsn'):
         return: (None)
         '''
         self.bot = bot
+        self._setrsn_log = BoundCommandLogger(self._setrsn_bind)
 
 
     @staticmethod
@@ -100,73 +101,6 @@ class Setrsn(commands.Cog, name='setrsn'):
         )
 
 
-    def _log_setrsn_debug(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
-            message=message,
-        )
-    
-
-    def _log_setrsn_info(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_setrsn_success(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_setrsn_error(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-
-
-    def _log_setrsn_warning(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._setrsn_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
     async def set_username(
         self,
         inter: ApplicationCommandInteraction,
@@ -192,7 +126,7 @@ class Setrsn(commands.Cog, name='setrsn'):
         '''
 
         if len(username) > MAX_CHARS or any(char in username for char in BLACKLIST_CHARS):
-            self._log_setrsn_warning(
+            self._setrsn_log.warning(
                 inter,
                 build_log_message(
                     command='setrsn',
@@ -227,7 +161,7 @@ class Setrsn(commands.Cog, name='setrsn'):
         resolved_username = username
         resolved_account_type = account_type
 
-        self._log_setrsn_info(
+        self._setrsn_log.info(
             inter,
             build_log_message(
                 command='setrsn',
@@ -309,7 +243,7 @@ class Setrsn(commands.Cog, name='setrsn'):
 
         trace_id = uuid.uuid4().hex
 
-        self._log_setrsn_info(
+        self._setrsn_log.info(
             inter,
             build_log_message(
                 command='setrsn',
@@ -337,7 +271,7 @@ class Setrsn(commands.Cog, name='setrsn'):
             )
             await inter.send(embed=embed, view=view, ephemeral=True)
 
-            self._log_setrsn_success(
+            self._setrsn_log.success(
                 inter,
                 build_log_message(
                     command='setrsn',
@@ -363,14 +297,14 @@ class Setrsn(commands.Cog, name='setrsn'):
             raise
 
         except Exception as exc:
-            self._log_setrsn_error(
+            self._setrsn_log.error(
                 inter,
                 build_log_message(
                     command='setrsn',
                     stage='runtime_failure',
                     operation='set',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='set',
@@ -385,6 +319,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 user_visible=False,
             )
             raise
+
 
     @setrsn.autocomplete('account_type')
     async def account_type_autocomplete(self, account_type: str) -> List[str]:

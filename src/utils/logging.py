@@ -98,6 +98,74 @@ def emit_command_log(
     raise ValueError(f'Unsupported log level: {level}')
 
 
+def emit_bound_command_log(
+    bind_func,
+    inter,
+    level: str,
+    message: str,
+    exc: Exception | None = None,
+    **bind_kwargs,
+) -> None:
+    bind_payload = bind_func(inter, **bind_kwargs)
+    emit_command_log(
+        level=level,
+        bind_payload=bind_payload,
+        message=message,
+        exc=exc,
+    )
+
+
+class BoundCommandLogger:
+    def __init__(self, bind_func) -> None:
+        self._bind_func = bind_func
+
+    def debug(self, inter, message: str, **bind_kwargs) -> None:
+        emit_bound_command_log(
+            self._bind_func,
+            inter,
+            level='debug',
+            message=message,
+            **bind_kwargs,
+        )
+
+    def info(self, inter, message: str, **bind_kwargs) -> None:
+        emit_bound_command_log(
+            self._bind_func,
+            inter,
+            level='info',
+            message=message,
+            **bind_kwargs,
+        )
+
+    def success(self, inter, message: str, **bind_kwargs) -> None:
+        emit_bound_command_log(
+            self._bind_func,
+            inter,
+            level='success',
+            message=message,
+            **bind_kwargs,
+        )
+
+    def warning(self, inter, message: str, **bind_kwargs) -> None:
+        emit_bound_command_log(
+            self._bind_func,
+            inter,
+            level='warning',
+            message=message,
+            **bind_kwargs,
+        )
+
+    def error(self, inter, message: str, exc: Exception, **bind_kwargs) -> None:
+        emit_bound_command_log(
+            self._bind_func,
+            inter,
+            level='error',
+            message=message,
+            exc=exc,
+            **bind_kwargs,
+        )
+
+
 def serialize_params(params: List[LogParam]) -> List[dict]:
     return [param.to_dict() for param in params]
 
@@ -339,7 +407,7 @@ def build_internal_log_message(
         return f'{subject_token}: start {operation_token}.'
 
     if stage == 'complete':
-        return f' {subject_token}: {operation_token} complete.'
+        return f'{subject_token}: {operation_token} complete.'
 
     if stage == 'runtime_failure':
         return f'{subject_token}: {operation_token} runtime failure.'

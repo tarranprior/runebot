@@ -43,10 +43,10 @@ from config import *
 from templates.bot import Bot
 from utils import *
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
     build_interaction_log_context,
     build_log_message,
-    emit_command_log,
 )
 
 
@@ -68,6 +68,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         '''
 
         self.bot = bot
+        self._wiki_log = BoundCommandLogger(self._wiki_bind)
 
 
     @staticmethod
@@ -114,74 +115,6 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             **extra,
         )
 
-
-    def _log_wiki_debug(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._wiki_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_wiki_info(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._wiki_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_wiki_warning(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._wiki_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_wiki_success(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._wiki_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_wiki_error(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._wiki_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-
-
     async def search_wikipedia(
         self,
         inter: ApplicationCommandInteraction | disnake.MessageInteraction,
@@ -223,7 +156,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             options = attributes['options']
             thumbnail_url = attributes['thumbnail_url']
 
-            self._log_wiki_info(
+            self._wiki_log.info(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -296,7 +229,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                     )
                 return embed, view, resolved_search_term, title
 
-            self._log_wiki_debug(
+            self._wiki_log.debug(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -337,7 +270,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             return embed, view, resolved_search_term, title
 
         except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
-            self._log_wiki_warning(
+            self._wiki_log.warning(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -409,7 +342,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         resolved_search_term = FEELING_LUCKY if invocation_mode == 'feeling_lucky' else search_query
         trace_id = uuid.uuid4().hex
 
-        self._log_wiki_info(
+        self._wiki_log.info(
             inter,
             build_log_message(
                 command='wikipedia',
@@ -444,7 +377,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             else:
                 await inter.followup.send(embed=embed, view=view)
 
-            self._log_wiki_success(
+            self._wiki_log.success(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -499,14 +432,14 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             return
 
         except Exception as exc:
-            self._log_wiki_error(
+            self._wiki_log.error(
                 inter,
                 build_log_message(
                     command='wikipedia',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',
@@ -600,7 +533,7 @@ class Dropdown(disnake.ui.StringSelect):
 
         selected_value = self.values[0] if self.values else None
 
-        self._cog._log_wiki_info(
+        self._cog._wiki_log.info(
             inter,
             build_log_message(
                 command='wikipedia',
@@ -625,7 +558,7 @@ class Dropdown(disnake.ui.StringSelect):
         )
 
         try:
-            self._cog._log_wiki_debug(
+            self._cog._wiki_log.debug(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -650,7 +583,7 @@ class Dropdown(disnake.ui.StringSelect):
                 invocation_mode_override='dropdown_selection',
             )
 
-            self._cog._log_wiki_debug(
+            self._cog._wiki_log.debug(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -674,7 +607,7 @@ class Dropdown(disnake.ui.StringSelect):
             else:
                 await inter.followup.send(embed=embed, view=view)
 
-            self._cog._log_wiki_debug(
+            self._cog._wiki_log.debug(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -691,7 +624,7 @@ class Dropdown(disnake.ui.StringSelect):
                 selected_value=selected_value,
             )
 
-            self._cog._log_wiki_success(
+            self._cog._wiki_log.success(
                 inter,
                 build_log_message(
                     command='wikipedia',
@@ -746,14 +679,14 @@ class Dropdown(disnake.ui.StringSelect):
             return
 
         except Exception as exc:
-            self._cog._log_wiki_error(
+            self._cog._wiki_log.error(
                 inter,
                 build_log_message(
                     command='wikipedia',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',
@@ -893,9 +826,9 @@ class DropdownView(disnake.ui.View):
             if 'invocation_mode' not in helper_kwargs:
                 helper_kwargs['invocation_mode'] = 'dropdown_selection'
             if level == 'info':
-                self._cog._log_wiki_info(inter, message, **helper_kwargs)
+                self._cog._wiki_log.info(inter, message, **helper_kwargs)
             else:
-                self._cog._log_wiki_debug(inter, message, **helper_kwargs)
+                self._cog._wiki_log.debug(inter, message, **helper_kwargs)
             return
 
         bound_logger = logger.bind(**payload)

@@ -35,13 +35,13 @@ import uuid
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
     build_unexpected_user_visible_failure_metadata,
-    emit_command_log,
 )
 
 import exceptions
@@ -68,6 +68,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         '''
 
         self.bot = bot
+        self._bestiary_log = BoundCommandLogger(self._bestiary_bind)
 
     @staticmethod
     def _invocation_source(
@@ -110,74 +111,6 @@ class Bestiary(commands.Cog, name='bestiary'):
             monster_id=monster_id,
             **extra,
         )
-
-
-    def _log_bestiary_debug(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-    
-    def _log_bestiary_info(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_bestiary_success(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_bestiary_error(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
-        )
-
-
-    def _log_bestiary_warning(
-        self,
-        inter: ApplicationCommandInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._bestiary_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
 
     async def search_bestiary(
         self,
@@ -228,7 +161,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             resolved_search_term = title
             description = parse_description(page_content).pop()
 
-            self._log_bestiary_info(
+            self._bestiary_log.info(
                 inter,
                 build_log_message(
                     command='bestiary',
@@ -319,7 +252,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             return embed, view, resolved_search_term, title, monster_id
 
         except exceptions.NoMonsterData as exc:
-            self._log_bestiary_warning(
+            self._bestiary_log.warning(
                 inter,
                 build_log_message(
                     command='bestiary',
@@ -344,7 +277,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             raise
 
         except exceptions.Nonexistence as exc:
-            self._log_bestiary_warning(
+            self._bestiary_log.warning(
                 inter,
                 build_log_message(
                     command='bestiary',
@@ -402,7 +335,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         resolution_source = 'wiki_random_monster' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
 
-        self._log_bestiary_info(
+        self._bestiary_log.info(
             inter,
             build_log_message(
                 command='bestiary',
@@ -428,7 +361,7 @@ class Bestiary(commands.Cog, name='bestiary'):
             )
             await inter.followup.send(embed=embed, view=view)
 
-            self._log_bestiary_success(
+            self._bestiary_log.success(
                 inter,
                 build_log_message(
                     command='bestiary',
@@ -478,14 +411,14 @@ class Bestiary(commands.Cog, name='bestiary'):
             return
 
         except Exception as exc:
-            self._log_bestiary_error(
+            self._bestiary_log.error(
                 inter,
                 build_log_message(
                     command='bestiary',
                     stage='runtime_failure',
                     operation='search',
                 ),
-                exc,
+                exc=exc,
                 action='fail',
                 stage='runtime_failure',
                 operation='search',

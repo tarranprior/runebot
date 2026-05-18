@@ -37,8 +37,8 @@ from templates.bot import Bot
 from config import *
 from utils import *
 from utils.logging import (
+    BoundCommandLogger,
     build_command_log_bind,
-    emit_command_log,
     LogParam,
     serialize_params,
     serialize_resolved_username,
@@ -65,6 +65,7 @@ class Stats(commands.Cog, name='stats'):
         :return: (None)
         '''
         self.bot = bot
+        self._stats_log = BoundCommandLogger(self._stats_bind)
     
 
     def _stats_bind(
@@ -106,6 +107,7 @@ class Stats(commands.Cog, name='stats'):
             **extra,
         )
     
+
     @staticmethod
     def _invocation_source(
         inter: ApplicationCommandInteraction | MessageInteraction
@@ -114,73 +116,6 @@ class Stats(commands.Cog, name='stats'):
             'component_callback'
             if isinstance(inter, disnake.MessageInteraction)
             else 'slash_command'
-        )
-
-
-    def _log_stats_debug(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='debug',
-            bind_payload=self._stats_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_stats_info(
-        self,
-        inter: ApplicationCommandInteraction  | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='info',
-            bind_payload=self._stats_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_stats_warning(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='warning',
-            bind_payload=self._stats_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_stats_success(
-        self,
-        inter: ApplicationCommandInteraction  | MessageInteraction,
-        message: str,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='success',
-            bind_payload=self._stats_bind(inter, **bind_kwargs),
-            message=message,
-        )
-
-
-    def _log_stats_error(
-        self,
-        inter: ApplicationCommandInteraction | MessageInteraction,
-        message: str,
-        exc: Exception,
-        **bind_kwargs,
-    ) -> None:
-        emit_command_log(
-            level='error',
-            bind_payload=self._stats_bind(inter, **bind_kwargs),
-            message=message,
-            exc=exc,
         )
 
 
@@ -473,7 +408,7 @@ class Stats(commands.Cog, name='stats'):
             resolved_account_type = account_type
             primary_param = params[0] if params else None
 
-            self._log_stats_info(
+            self._stats_log.info(
                 inter,
                 build_log_message(
                     command='stats',
@@ -699,7 +634,7 @@ class Stats(commands.Cog, name='stats'):
                 default_account_id=default_account_id,
                 account_type=account_type,
             )
-            self._log_stats_warning(
+            self._stats_log.warning(
                 inter,
                 build_log_message(
                     command='stats',
@@ -783,7 +718,7 @@ class Stats(commands.Cog, name='stats'):
             )
         primary_param = params[0] if params else None
 
-        self._log_stats_info(
+        self._stats_log.info(
             inter,
             build_log_message(
                 command='stats',
@@ -817,7 +752,7 @@ class Stats(commands.Cog, name='stats'):
                 view=view
             )
 
-            self._log_stats_success(
+            self._stats_log.success(
                 inter,
                 build_log_message(
                     command='stats',
@@ -877,14 +812,14 @@ class Stats(commands.Cog, name='stats'):
             return
 
         except Exception as exc:
-            self._log_stats_error(
+            self._stats_log.error(
                 inter,
                 build_log_message(
                     command='stats',
                     stage='runtime_failure',
                     operation='lookup',
                 ),
-                exc,
+                exc=exc,
                 invocation_source=self._invocation_source(inter),
                 action='fail',
                 stage='runtime_failure',
@@ -955,7 +890,7 @@ class Stats(commands.Cog, name='stats'):
                 await inter.response.defer()
                 await inter.delete_original_response()
 
-                self._log_stats_info(
+                self._stats_log.info(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1014,7 +949,7 @@ class Stats(commands.Cog, name='stats'):
                             ephemeral=True
                         )
 
-                    self._log_stats_success(
+                    self._stats_log.success(
                         inter,
                         build_log_message(
                             command='stats',
@@ -1031,14 +966,14 @@ class Stats(commands.Cog, name='stats'):
                         account_id=account_id,
                     )
             except Exception as exc:
-                self._log_stats_error(
+                self._stats_log.error(
                     inter,
                     build_log_message(
                         command='stats',
                         stage='runtime_failure',
                         operation='account_delete_confirm',
                     ),
-                    exc,
+                    exc=exc,
                     trace_id=trace_id,
                     invocation_source=self._invocation_source(inter),
                     action='fail',
@@ -1083,7 +1018,7 @@ class Stats(commands.Cog, name='stats'):
                     default_account = await get_default_account(self, int(owner_id))
                     accounts = await get_user_accounts(self, int(owner_id))
 
-                    self._log_stats_info(
+                    self._stats_log.info(
                         inter,
                         build_log_message(
                             command='stats',
@@ -1120,7 +1055,7 @@ class Stats(commands.Cog, name='stats'):
                     )
                     await inter.edit_original_response(embed=embed, view=view)
 
-                    self._log_stats_success(
+                    self._stats_log.success(
                         inter,
                         build_log_message(
                             command='stats',
@@ -1142,14 +1077,14 @@ class Stats(commands.Cog, name='stats'):
                     )
 
                 except Exception as exc:
-                    self._log_stats_error(
+                    self._stats_log.error(
                         inter,
                         build_log_message(
                             command='stats',
                             stage='runtime_failure',
                             operation='account_manager_refresh',
                         ),
-                        exc,
+                        exc=exc,
                         trace_id=trace_id,
                         invocation_source=self._invocation_source(inter),
                         action='fail',
@@ -1196,7 +1131,7 @@ class Stats(commands.Cog, name='stats'):
 
                 trace_id = uuid.uuid4().hex
 
-                self._log_stats_info(
+                self._stats_log.info(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1260,14 +1195,14 @@ class Stats(commands.Cog, name='stats'):
                         ephemeral=True
                     )
                 except Exception as exc:
-                    self._log_stats_error(
+                    self._stats_log.error(
                         inter,
                         build_log_message(
                             command='stats',
                             stage='runtime_failure',
                             operation='account_delete',
                         ),
-                        exc,
+                        exc=exc,
                         trace_id=trace_id,
                         invocation_source=self._invocation_source(inter),
                         action='fail',
@@ -1314,7 +1249,7 @@ class Stats(commands.Cog, name='stats'):
                 default_account = await get_default_account(self, int(owner_id))
                 accounts = await get_user_accounts(self, int(owner_id))
 
-                self._log_stats_info(
+                self._stats_log.info(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1341,7 +1276,7 @@ class Stats(commands.Cog, name='stats'):
                     default_account=default_account,
                     accounts=accounts,
                 )
-                self._log_stats_success(
+                self._stats_log.success(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1362,14 +1297,14 @@ class Stats(commands.Cog, name='stats'):
                     default_account_type=getattr(default_account, 'account_type', None),
                 )
             except Exception as exc:
-                self._log_stats_error(
+                self._stats_log.error(
                     inter,
                     build_log_message(
                         command='stats',
                         stage='runtime_failure',
                         operation='account_manager',
                     ),
-                    exc,
+                    exc=exc,
                     trace_id=trace_id,
                     invocation_source=self._invocation_source(inter),
                     action='fail',
@@ -1411,7 +1346,7 @@ class Stats(commands.Cog, name='stats'):
         trace_id = uuid.uuid4().hex
 
         if action == 'navigate':
-            self._log_stats_info(
+            self._stats_log.info(
                 inter,
                 build_log_message(
                     command='stats',
@@ -1436,7 +1371,7 @@ class Stats(commands.Cog, name='stats'):
                 ),
             )
         else:
-            self._log_stats_info(
+            self._stats_log.info(
                 inter,
                 build_log_message(
                     command='stats',
@@ -1480,7 +1415,7 @@ class Stats(commands.Cog, name='stats'):
             )
 
             if action == 'navigate':
-                self._log_stats_success(
+                self._stats_log.success(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1505,7 +1440,7 @@ class Stats(commands.Cog, name='stats'):
                     ),
                 )
             else:
-                self._log_stats_success(
+                self._stats_log.success(
                     inter,
                     build_log_message(
                         command='stats',
@@ -1575,14 +1510,14 @@ class Stats(commands.Cog, name='stats'):
                 int(owner_id)
             )
             await inter.edit_original_response(view=view)
-            self._log_stats_error(
+            self._stats_log.error(
                 inter,
                 build_log_message(
                     command='stats',
                     stage='runtime_failure',
                     operation=action,
                 ),
-                exc,
+                exc=exc,
                 trace_id=trace_id,
                 invocation_source=self._invocation_source(inter),
                 action='fail',
@@ -1655,7 +1590,7 @@ class Stats(commands.Cog, name='stats'):
         selected_username = selected_account[1] if selected_account else None
         selected_account_type = selected_account[2] if selected_account else None
 
-        self._log_stats_info(
+        self._stats_log.info(
             inter,
             build_log_message(
                 command='stats',
@@ -1691,7 +1626,7 @@ class Stats(commands.Cog, name='stats'):
             view = self._build_account_manager_view(accounts, default_account, user_id)
             await inter.edit_original_response(embed=embed, view=view)
 
-            self._log_stats_success(
+            self._stats_log.success(
                 inter,
                 build_log_message(
                     command='stats',
@@ -1711,14 +1646,14 @@ class Stats(commands.Cog, name='stats'):
             )
 
         except Exception as exc:
-            self._log_stats_error(
+            self._stats_log.error(
                 inter,
                 build_log_message(
                     command='stats',
                     stage='runtime_failure',
                     operation='default_account_select',
                 ),
-                exc,
+                exc=exc,
                 trace_id=trace_id,
                 invocation_source=self._invocation_source(inter),
                 action='fail',
