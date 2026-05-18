@@ -419,3 +419,38 @@ def build_internal_log_message(
         return f'{subject_token}: {operation_token} failure.'
 
     return f'{subject_token}: {operation_token}.'
+
+
+def emit_internal_log(
+    *,
+    level: str,
+    stage: str,
+    operation: str,
+    subject: str | None = None,
+    resolved: str | None = None,
+    trace_id: str | None = None,
+    log_params: list | None = None,
+    **extra,
+) -> None:
+    message = build_internal_log_message(
+        stage=stage,
+        operation=operation,
+        subject=subject,
+        resolved=resolved,
+    )
+
+    payload = {
+        'trace_id': trace_id,
+        'action': operation,
+        'stage': stage,
+        'operation': operation,
+        'subject': subject,
+        'resolved': resolved,
+        'log_params': log_params,
+        **extra,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+    bound_logger = logger.bind(**payload)
+
+    log_method = getattr(bound_logger, level, bound_logger.debug)
+    log_method(message)

@@ -47,14 +47,13 @@ import os
 import uuid
 from typing import List, Optional
 import requests
-from loguru import logger
 
 from bs4 import BeautifulSoup
 import matplotlib
 import matplotlib.pyplot as plotter
 matplotlib.use('Agg')
 
-from utils.logging import build_internal_log_message
+from utils.logging import emit_internal_log
 
 import exceptions
 from utils.helpers import normalise_price, slugify
@@ -70,28 +69,16 @@ def parser_log(
     log_params: list | None = None,
     **extra,
 ) -> None:
-    message = build_internal_log_message(
+    emit_internal_log(
+        level=level,
         stage=stage,
         operation=operation,
         subject=subject,
         resolved=resolved,
-    )
-
-    payload = {
-        'trace_id': trace_id,
-        'action': operation,
-        'stage': stage,
-        'operation': operation,
-        'subject': subject,
-        'resolved': resolved,
-        'log_params': log_params,
+        trace_id=trace_id,
+        log_params=log_params,
         **extra,
-    }
-    payload = {k: v for k, v in payload.items() if v is not None}
-    bound_logger = logger.bind(**payload)
-
-    log_method = getattr(bound_logger, level, bound_logger.debug)
-    log_method(message)
+    )
 
 
 def parse_all(page_content: BeautifulSoup) -> dict:
