@@ -452,7 +452,7 @@ class Stats(commands.Cog, name='stats'):
                         [working_username],
                         trace_id=trace_id,
                     )
-                except IndexError as exc1:
+                except (IndexError, exceptions.NoHiscoreData) as exc1:
                     try:
                         hiscore_data = parse_hiscores(
                             NORMAL_API,
@@ -461,7 +461,7 @@ class Stats(commands.Cog, name='stats'):
                             [working_username],
                             trace_id=trace_id,
                         )
-                    except IndexError as exc2:
+                    except (IndexError, exceptions.NoHiscoreData) as exc2:
                         raise exceptions.NoHiscoreData from exc2
                     raise exceptions.NoGameModeData from exc1
 
