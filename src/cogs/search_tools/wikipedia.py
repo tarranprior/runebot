@@ -414,11 +414,20 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
             expected_description = str(exc)
 
+            if isinstance(exc, exceptions.StubArticle):
+                title = 'This project page is a stub.'
+                thumbnail_url = THUMBNAILS['stub']
+                colour = 0x60533E
+            else:
+                title = 'Nothing interesting happens.'
+                thumbnail_url = GRAYSCALE_THUMBNAILS['filler']
+                colour = 0x8B8B8B
+
             embed, view = EmbedFactory().create(
-                title='Nothing interesting happens.',
+                title=title,
                 description=expected_description,
-                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
-                colour=0x8B8B8B,
+                thumbnail_url=thumbnail_url,
+                colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
             )
@@ -661,11 +670,20 @@ class Dropdown(disnake.ui.StringSelect):
                 ],
             )
         except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
+            if isinstance(exc, exceptions.StubArticle):
+                title = 'This project page is a stub.'
+                thumbnail_url = THUMBNAILS['stub']
+                colour = 0x60533E
+            else:
+                title = 'Nothing interesting happens.'
+                thumbnail_url = GRAYSCALE_THUMBNAILS['filler']
+                colour = 0x8B8B8B
+
             embed, view = EmbedFactory().create(
-                title='Nothing interesting happens.',
+                title=title,
                 description=str(exc),
-                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
-                colour=0x8B8B8B,
+                thumbnail_url=thumbnail_url,
+                colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
             )
