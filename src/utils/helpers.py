@@ -15,7 +15,7 @@ Functions:
             Reformats (normalises) price integers into RuneScape currency.
     - `slugify()`:
             Replaces spaces with underscores in a search query for parsing purposes (URL formatting).
-        - `build_loading_button_view()`:
+    - `build_loading_button_view()`:
             Builds a temporary view from the current message components and disables only the clicked button.
 
 Each function has an associated docstring, providing details
