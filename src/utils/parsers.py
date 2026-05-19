@@ -56,7 +56,7 @@ matplotlib.use('Agg')
 from utils.logging import emit_internal_log
 
 import exceptions
-from utils.helpers import normalise_price, slugify
+from utils.helpers import normalize_price, slugify
 
 
 def parser_log(
@@ -579,9 +579,9 @@ async def generate_graph(data: dict) -> str:
             min(prices)
         ],
         [
-            normalise_price(max(prices)),
-            normalise_price(sum(prices) / len(prices)),
-            normalise_price(min(prices))
+            normalize_price(max(prices)),
+            normalize_price(sum(prices) / len(prices)),
+            normalize_price(min(prices))
         ]
     )
     plotter.xticks([])

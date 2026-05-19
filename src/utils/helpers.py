@@ -11,7 +11,7 @@ Functions:
             Reads the configuration file (config.json) and returns its contents as a dictionary.
     - `extract_colour()`:
             Extracts the most frequent colour from an image with a given URL.
-    - `normalise_price()`:
+    - `normalize_price()`:
             Reformats (normalises) price integers into RuneScape currency.
     - `slugify()`:
             Replaces spaces with underscores in a search query for parsing purposes (URL formatting).
@@ -139,7 +139,7 @@ async def extract_colour(
     ))
 
 
-def normalise_price(price: int) -> Optional[str]:
+def normalize_price(price: int) -> Optional[str]:
     '''
     Helper function which reformats (normalises) price integers into
     RuneScape currency (eg. 550000 to 550K gp)
@@ -153,15 +153,15 @@ def normalise_price(price: int) -> Optional[str]:
     '''
 
     if price < 1000:
-        normalised_price = f'{price:,.0f} gp'
+        normalized_price = f'{price:,.0f} gp'
     elif price < 1000000:
-        normalised_price = f'{price / 1000:,.1f} K gp'
+        normalized_price = f'{price / 1000:,.1f} K gp'
     elif price < 1000000000:
-        normalised_price = f'{price / 1000000:,.1f} M gp'
+        normalized_price = f'{price / 1000000:,.1f} M gp'
     else:
         return f'{price / 1000000000:,.2f} B gp'
 
-    return normalised_price
+    return normalized_price
 
 
 def slugify(search_query: str) -> str:

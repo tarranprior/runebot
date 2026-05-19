@@ -77,6 +77,7 @@ class EmbedFactory:
         self.thumbnail_url = kwargs.get('thumbnail_url')
         self.button_label = kwargs.get('button_label')
         self.button_url = kwargs.get('button_url')
+        self.button_emoji = kwargs.get('button_emoji')
 
 
     def create(
