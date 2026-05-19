@@ -13,6 +13,11 @@ from utils.helpers import configuration
 # GENERAL
 MAX_CHARS = 12 # Represents maximum character limit for usernames.
 
+# SLASH MENTIONS
+MENTION_STRINGS = {
+    'setrsn': '</setrsn:1114968268864753754>',
+}
+
 # URL / HEADERS
 HEADERS = configuration()['headers']
 URLS = configuration()['urls']

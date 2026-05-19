@@ -180,11 +180,13 @@ class EmbedFactory:
             An embed providing an overview of the user\'s saved accounts.
         '''
 
-        emotes = account_emotes or {}
-
+        emotes = account_emotes or {}        
         embed = disnake.Embed(
             title='<:account:1482896847239381065> Account Manager (Beta)',
-            description='View and manage accounts saved with Runebot.\n\nUse the dropdown below to select an account (sets it as default), and use the buttons to manage it.',
+            description=
+                'View and manage accounts saved with Runebot.\n\n '
+                'Use the dropdown below to select an account (sets it as default), '
+                'and use the buttons to manage it.',
             colour=self.colour
         )
         
@@ -195,7 +197,8 @@ class EmbedFactory:
                 for acc in accounts
             )
         else:
-            accounts_text = "You don't have any accounts yet."
+            from config import MENTION_STRINGS
+            accounts_text = f"You don't have any accounts yet. Use {MENTION_STRINGS['setrsn']} to add your first account."
 
         embed.add_field(
             name=f'Accounts ({len(accounts)} of 5)',
