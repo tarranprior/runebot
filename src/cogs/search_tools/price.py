@@ -335,9 +335,15 @@ class Price(commands.Cog, name='price'):
             trace_id=trace_id,
         )
 
+        item = api_data.get('item') if isinstance(api_data, dict) else None
+        item_name = item.get('name') if isinstance(item, dict) else None
+
+        if not isinstance(item_name, str) or not item_name.strip():
+            raise exceptions.NoPriceData
+
         page_content = parse_page(
             BASE_URL,
-            slugify(api_data['item']['name']),
+            slugify(item_name),
             HEADERS,
             trace_id=trace_id,
         )
