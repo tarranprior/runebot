@@ -191,8 +191,8 @@ class Setrsn(commands.Cog, name='setrsn'):
         embed, view = EmbedFactory().create(
             title=f'Account has been set.',
             description=f'Your default account has now been set to **{username}**.\n\n'
-            'You can set a new default at any time by using </setrsn:1114968268864753754>, '
-            f'or use the {disnake.PartialEmoji(name="account", id=1482896847239381065)} Account Manager under </stats:1479843945956769934> to manage all of your accounts.',
+            f'You can set a new default at any time by using {SLASH_MENTIONS["setrsn"]}, '
+            f'or use the {disnake.PartialEmoji(name="account", id=1482896847239381065)} Account Manager under {SLASH_MENTIONS["stats"]} to manage all of your accounts.',
             button_label='Hiscores',
             button_url=f'{HISCORE_URLS.get(account_type)}{slugify(username)}'
         )

@@ -197,8 +197,8 @@ class EmbedFactory:
                 for acc in accounts
             )
         else:
-            from config import MENTION_STRINGS
-            accounts_text = f"You don't have any accounts yet. Use {MENTION_STRINGS['setrsn']} to add your first account."
+            from config import SLASH_MENTIONS
+            accounts_text = f"You don't have any accounts yet. Use {SLASH_MENTIONS['setrsn']} to add your first account."
 
         embed.add_field(
             name=f'Accounts ({len(accounts)} of 5)',

@@ -14,8 +14,10 @@ from utils.helpers import configuration
 MAX_CHARS = 12 # Represents maximum character limit for usernames.
 
 # SLASH MENTIONS
-MENTION_STRINGS = {
+SLASH_MENTIONS = {
+    'price': '</price:1109231440996077656>',
     'setrsn': '</setrsn:1114968268864753754>',
+    'stats': '</stats:1479843945956769934>'
 }
 
 # URL / HEADERS
