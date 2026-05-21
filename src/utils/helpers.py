@@ -180,6 +180,41 @@ def slugify(search_query: str) -> str:
     return search_query
 
 
+def get_component_custom_id_metadata(
+    custom_id: str | None
+) -> tuple[str | None, str | None]:
+    '''
+    Safely extracts component metadata from a custom_id value.
+
+    :param custom_id: (String[Optional]) -
+        Represents a component custom_id.
+
+    :return: (Tuple[String[Optional], String[Optional]]) -
+        The component prefix and action, or None values when unavailable.
+    '''
+
+    if not isinstance(custom_id, str) or not custom_id:
+        return None, None
+
+    prefix_parts = custom_id.split(':', 1)
+    component_prefix = prefix_parts[0] or None
+    component_action = None
+
+    if len(prefix_parts) > 1 and prefix_parts[1]:
+        payload = prefix_parts[1]
+        separator_indexes = [
+            idx
+            for idx in (payload.find(':'), payload.find(','))
+            if idx != -1
+        ]
+        split_index = min(separator_indexes) if separator_indexes else -1
+        component_action = payload[:split_index] if split_index != -1 else payload
+        if component_action == '':
+            component_action = None
+
+    return component_prefix, component_action
+
+
 def build_loading_button_view(inter: disnake.MessageInteraction) -> disnake.ui.View:
     '''
     Builds a temporary view from message components and disables only

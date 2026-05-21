@@ -119,6 +119,52 @@ class Stats(commands.Cog, name='stats'):
         )
 
 
+    async def _ack_invalid_stats_component(self, inter: MessageInteraction) -> None:
+        custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
+        component_prefix, component_action = get_component_custom_id_metadata(custom_id)
+
+        try:
+            self._stats_log.warning(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='failure',
+                    operation='invalid_component',
+                ),
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='failure',
+                operation='invalid_component',
+                component_type='component',
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                component_prefix=component_prefix,
+                component_action=component_action,
+            )
+        except Exception:
+            pass
+
+        embed, view = EmbedFactory().create(
+            title='Nothing interesting happens.',
+            description=f'This stats control is no longer valid. Please run {SLASH_MENTIONS["stats"]} again.',
+            thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+            colour=0x8B8B8B,
+            button_label='Support Server',
+            button_url=SUPPORT_SERVER
+        )
+        embed.timestamp = inter.created_at
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+        try:
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view, ephemeral=True)
+            else:
+                await inter.response.send_message(embed=embed, view=view, ephemeral=True)
+        except Exception:
+            return
+
+
     def _build_stats_view(
         self,
         hiscore_category: str,
@@ -875,6 +921,7 @@ class Stats(commands.Cog, name='stats'):
             params = payload.split(',')
 
             if len(params) != 5:
+                await self._ack_invalid_stats_component(inter)
                 return
 
             action, owner_id, account_id, manager_message_id, trace_id = params
@@ -909,6 +956,7 @@ class Stats(commands.Cog, name='stats'):
                 return
 
             if action != 'ok':
+                await self._ack_invalid_stats_component(inter)
                 return
 
             try:
@@ -994,12 +1042,14 @@ class Stats(commands.Cog, name='stats'):
             params = payload.split(',')
 
             if not params:
+                await self._ack_invalid_stats_component(inter)
                 return
 
             action = params[0]
 
             if action == 'refresh':
                 if len(params) != 2:
+                    await self._ack_invalid_stats_component(inter)
                     return
 
                 _, owner_id = params
@@ -1110,6 +1160,7 @@ class Stats(commands.Cog, name='stats'):
 
             if action == 'delete':
                 if len(params) != 3:
+                    await self._ack_invalid_stats_component(inter)
                     return
 
                 _, owner_id, account_id = params
@@ -1218,6 +1269,7 @@ class Stats(commands.Cog, name='stats'):
                     raise
                 return
 
+            await self._ack_invalid_stats_component(inter)
             return
 
         if not custom_id.startswith('stats:'):
@@ -1227,12 +1279,14 @@ class Stats(commands.Cog, name='stats'):
         params = payload.split(',')
 
         if not params:
+            await self._ack_invalid_stats_component(inter)
             return
 
         action = params[0]
 
         if action == 'account_manager':
             if len(params) != 2:
+                await self._ack_invalid_stats_component(inter)
                 return
             owner_id = params[1]
             if str(inter.author.id) != owner_id:
@@ -1329,9 +1383,11 @@ class Stats(commands.Cog, name='stats'):
             return
 
         if action not in ['navigate', 'refresh']:
+            await self._ack_invalid_stats_component(inter)
             return
 
         if len(params) != 5:
+            await self._ack_invalid_stats_component(inter)
             return
 
         _, hiscore_category, account_type, resolved_username, owner_id = params
@@ -1562,11 +1618,13 @@ class Stats(commands.Cog, name='stats'):
         params = payload.split(',')
 
         if len(params) != 2:
+            await self._ack_invalid_stats_component(inter)
             return
 
         action, owner_id = params
 
         if action != 'select':
+            await self._ack_invalid_stats_component(inter)
             return
 
         if str(inter.author.id) != owner_id:

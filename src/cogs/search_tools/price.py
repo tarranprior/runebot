@@ -177,6 +177,51 @@ class Price(commands.Cog, name='price'):
             )
 
 
+    async def _ack_invalid_price_component(self, inter: MessageInteraction) -> None:
+        custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
+        component_prefix, component_action = get_component_custom_id_metadata(custom_id)
+
+        try:
+            self._price_log.warning(
+                inter,
+                build_log_message(
+                    command='price',
+                    stage='failure',
+                    operation='invalid_component',
+                ),
+                action='fail',
+                stage='failure',
+                operation='invalid_component',
+                component_type='component',
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                component_prefix=component_prefix,
+                component_action=component_action,
+            )
+        except Exception:
+            pass
+
+        embed, view = EmbedFactory().create(
+            title='Nothing interesting happens.',
+            description=f'This price control is no longer valid. Please run {SLASH_MENTIONS["price"]} again.',
+            thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+            colour=0x8B8B8B,
+            button_label='Support Server',
+            button_url=SUPPORT_SERVER
+        )
+        embed.timestamp = inter.created_at
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+        try:
+            if inter.response.is_done():
+                await inter.followup.send(embed=embed, view=view, ephemeral=True)
+            else:
+                await inter.response.send_message(embed=embed, view=view, ephemeral=True)
+        except Exception:
+            return
+
+
     def _validate_price_info(self, info: dict) -> None:
         try:
             info['Value']
@@ -576,11 +621,13 @@ class Price(commands.Cog, name='price'):
         parts = payload.split(':')
 
         if len(parts) != 3:
+            await self._ack_invalid_price_component(inter)
             return
 
         action, item_id, owner_id = parts
 
         if action != 'refresh':
+            await self._ack_invalid_price_component(inter)
             return
         
         if str(inter.author.id) != owner_id:
