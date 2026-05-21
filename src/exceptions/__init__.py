@@ -350,10 +350,9 @@ class UsernameNonexistent(Exception):
     '''
 
     def __init__(self, message: str = (
-        'Oops! You haven\'t yet setup a username for this account. You can '
-        'use `/setrsn` to set one up.\n\n> Note: If you\'d rather '
-        'not set a username, use the `username` argument under `/stats`. '
-        'See the usage info below for more details.\n\n'
+        'You don\'t have any accounts yet. Use </setrsn:1114968268864753754> '
+        'to add your first account, or add the `username` argument to '
+        '</stats:1479843945956769934>.\n\n'
         '**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''

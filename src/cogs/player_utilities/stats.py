@@ -380,6 +380,8 @@ class Stats(commands.Cog, name='stats'):
         owner_id: int = None,
         trace_id: str | None = None,
         operation: str = 'lookup',
+        default_account=None,
+        default_account_checked: bool = False,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         Function which takes a username and returns hiscore
@@ -416,9 +418,10 @@ class Stats(commands.Cog, name='stats'):
 
             if not working_username:
                 resolution_source = 'default_account'
-                default_account = await get_default_account(self, request_user_id)
+                if not default_account_checked:
+                    default_account = await get_default_account(self, request_user_id)
                 if not default_account:
-                    raise exceptions.UsernameNonexistent
+                    raise exceptions.UsernameNonexistent()
                 default_account_id = default_account.account_id
                 working_username = default_account.username
                 default_account_type = default_account.account_type
@@ -784,7 +787,15 @@ class Stats(commands.Cog, name='stats'):
         )
 
         try:
-            await inter.response.defer()
+            default_account = None
+            default_account_checked = False
+            defer_ephemeral = False
+            if not username:
+                default_account = await get_default_account(self, inter.author.id)
+                default_account_checked = True
+                defer_ephemeral = default_account is None
+
+            await inter.response.defer(ephemeral=defer_ephemeral)
             embed, view, resolved_username, resolved_account_type, resolution_source = await self.search_hiscores(
                 inter,
                 hiscore_category,
@@ -792,6 +803,8 @@ class Stats(commands.Cog, name='stats'):
                 username,
                 inter.author.id,
                 trace_id=trace_id,
+                default_account=default_account,
+                default_account_checked=default_account_checked,
             )
             await inter.followup.send(
                 embed=embed,
@@ -830,6 +843,11 @@ class Stats(commands.Cog, name='stats'):
             exceptions.NoGameModeData,
             exceptions.WikiRequestFailed,
         ) as exc:
+            is_missing_saved_username = (
+                isinstance(exc, exceptions.UsernameNonexistent)
+                and not username
+            )
+
             if isinstance(exc, (
                 exceptions.NoHiscoreData,
                 exceptions.UsernameInvalid,
@@ -852,9 +870,17 @@ class Stats(commands.Cog, name='stats'):
             embed.timestamp = inter.created_at
             embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
             if inter.response.is_done():
-                await inter.followup.send(embed=embed, view=view)
+                await inter.followup.send(
+                    embed=embed,
+                    view=view,
+                    ephemeral=is_missing_saved_username
+                )
             else:
-                await inter.response.send_message(embed=embed, view=view)
+                await inter.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=is_missing_saved_username
+                )
             return
 
         except Exception as exc:
