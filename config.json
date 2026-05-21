@@ -44,14 +44,9 @@
     "thumbs": {
         "filler": "https://oldschool.runescape.wiki/images/Bank_filler_detail.png",
         "bucket": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
-        "lever": "https://oldschool.runescape.wiki/images/Lever.png",
         "quest": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
         "minigame": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
         "stub": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"
-    },
-    "grayscale_thumbs": {
-        "filler": "https://runebot.org/thumbs/crxQibA.png",
-        "bucket": "https://runebot.org/thumbs/TElZtHn.png"
     },
     "skill_emotes": {
         "overall": "<:Overall:1477837332475412540>",

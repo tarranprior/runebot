@@ -148,7 +148,7 @@ class Stats(commands.Cog, name='stats'):
         embed, view = EmbedFactory().create(
             title='Nothing interesting happens.',
             description=f'This stats control is no longer valid. Please run {SLASH_MENTIONS["stats"]} again.',
-            thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+            thumbnail_url=None,
             colour=0x8B8B8B,
             button_label='Support Server',
             button_url=SUPPORT_SERVER
@@ -856,7 +856,7 @@ class Stats(commands.Cog, name='stats'):
                 thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
             else:
-                thumbnail = GRAYSCALE_THUMBNAILS['filler']
+                thumbnail = None
                 colour = 0x8B8B8B
 
             embed, view = EmbedFactory().create(
@@ -908,7 +908,7 @@ class Stats(commands.Cog, name='stats'):
             embed, view = EmbedFactory().create(
                 title='Nothing interesting happens.',
                 description='Something went wrong while handling that request. Please try again.',
-                thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                thumbnail_url=None,
                 colour=0x8B8B8B,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
@@ -1568,7 +1568,7 @@ class Stats(commands.Cog, name='stats'):
                 thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
             else:
-                thumbnail = GRAYSCALE_THUMBNAILS['filler']
+                thumbnail = None
                 colour = 0x8B8B8B
 
             embed, _ = EmbedFactory().create(

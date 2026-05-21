@@ -412,7 +412,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['bucket'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -428,7 +428,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -461,7 +461,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -477,7 +477,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -493,7 +493,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -509,7 +509,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url=GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url=None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -575,7 +575,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER
@@ -609,7 +609,7 @@ class Bot(commands.InteractionBot):
                 embed, view = EmbedFactory().create(
                     title='Nothing interesting happens.',
                     description=str(error.__cause__),
-                    thumbnail_url = GRAYSCALE_THUMBNAILS['filler'],
+                    thumbnail_url = None,
                     colour=0x8B8B8B,
                     button_label='Support Server',
                     button_url=SUPPORT_SERVER

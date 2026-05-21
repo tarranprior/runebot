@@ -397,29 +397,17 @@ SKILL_EMOTES = configuration()['skill_emotes']
 # THUMBNAILS
 FILLER = configuration()['thumbs']['filler']
 BUCKET = configuration()['thumbs']['bucket']
-LEVER = configuration()['thumbs']['lever']
 MINIGAME = configuration()['thumbs']['minigame']
 QUEST = configuration()['thumbs']['quest']
 STUB = configuration()['thumbs']['stub']
-
-# GRAYSCALE THUMBNAILS
-FILLER_GRAYSCALE = configuration()['grayscale_thumbs']['filler']
-BUCKET_GRAYSCALE = configuration()['grayscale_thumbs']['bucket']
 
 # THUMBNAIL DICT
 THUMBNAILS = {
     'filler': FILLER,
     'bucket': BUCKET,
-    'lever': LEVER,
     'minigame': MINIGAME,
     'quest': QUEST,
     'stub': STUB
-}
-
-# GRAYSCALE THUMBNAIL DICT
-GRAYSCALE_THUMBNAILS = {
-    'filler': FILLER_GRAYSCALE,
-    'bucket': BUCKET_GRAYSCALE
 }
 
 # BLACKLISTS

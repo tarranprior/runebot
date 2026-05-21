@@ -420,7 +420,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 colour = 0x60533E
             else:
                 title = 'Nothing interesting happens.'
-                thumbnail_url = GRAYSCALE_THUMBNAILS['filler']
+                thumbnail_url = None
                 colour = 0x8B8B8B
 
             embed, view = EmbedFactory().create(
@@ -676,7 +676,7 @@ class Dropdown(disnake.ui.StringSelect):
                 colour = 0x60533E
             else:
                 title = 'Nothing interesting happens.'
-                thumbnail_url = GRAYSCALE_THUMBNAILS['filler']
+                thumbnail_url = None
                 colour = 0x8B8B8B
 
             embed, view = EmbedFactory().create(
