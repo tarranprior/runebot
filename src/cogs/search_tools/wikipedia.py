@@ -690,10 +690,20 @@ class Dropdown(disnake.ui.StringSelect):
             embed.timestamp = inter.created_at
             embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
 
+            is_public_dropdown_result = isinstance(exc, exceptions.StubArticle)
+
             if inter.response.is_done():
-                await inter.followup.send(embed=embed, view=view)
+                await inter.followup.send(
+                    embed=embed,
+                    view=view,
+                    ephemeral=not is_public_dropdown_result,
+                )
             else:
-                await inter.response.send_message(embed=embed, view=view)
+                await inter.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=not is_public_dropdown_result,
+                )
             return
 
         except Exception as exc:

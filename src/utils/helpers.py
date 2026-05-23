@@ -215,6 +215,34 @@ def get_component_custom_id_metadata(
     return component_prefix, component_action
 
 
+def is_invalid_username(
+    username: str | None,
+    max_chars: int,
+    blacklist_chars: list[str],
+) -> bool:
+    '''
+    Returns whether a username violates OSRS length or character rules.
+
+    :param username: (String[Optional]) -
+        Represents a username value.
+    :param max_chars: (Integer) -
+        Represents the maximum allowed username length.
+    :param blacklist_chars: (List[String]) -
+        Represents disallowed username characters.
+
+    :return: (Boolean) -
+        True when the username is invalid, otherwise False.
+    '''
+
+    if username is None:
+        return False
+
+    if len(username) > max_chars:
+        return True
+
+    return any(char in username for char in blacklist_chars)
+
+
 def build_loading_button_view(inter: disnake.MessageInteraction) -> disnake.ui.View:
     '''
     Builds a temporary view from message components and disables only

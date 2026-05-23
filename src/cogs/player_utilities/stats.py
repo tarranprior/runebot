@@ -436,7 +436,7 @@ class Stats(commands.Cog, name='stats'):
                     if not working_username:
                         raise exceptions.UsernameNonexistent
             
-            if len(working_username) > MAX_CHARS or any(char in working_username for char in BLACKLIST_CHARS):
+            if is_invalid_username(working_username, MAX_CHARS, BLACKLIST_CHARS):
                 raise exceptions.UsernameInvalid
 
             if not account_type:
@@ -794,6 +794,8 @@ class Stats(commands.Cog, name='stats'):
                 default_account = await get_default_account(self, inter.author.id)
                 default_account_checked = True
                 defer_ephemeral = default_account is None
+            elif is_invalid_username(username, MAX_CHARS, BLACKLIST_CHARS):
+                defer_ephemeral = True
 
             await inter.response.defer(ephemeral=defer_ephemeral)
             embed, view, resolved_username, resolved_account_type, resolution_source = await self.search_hiscores(
@@ -843,10 +845,10 @@ class Stats(commands.Cog, name='stats'):
             exceptions.NoGameModeData,
             exceptions.WikiRequestFailed,
         ) as exc:
-            is_missing_saved_username = (
-                isinstance(exc, exceptions.UsernameNonexistent)
-                and not username
-            )
+            is_ephemeral_failure = defer_ephemeral and isinstance(exc, (
+                exceptions.UsernameNonexistent,
+                exceptions.UsernameInvalid,
+            ))
 
             if isinstance(exc, (
                 exceptions.NoHiscoreData,
@@ -873,13 +875,13 @@ class Stats(commands.Cog, name='stats'):
                 await inter.followup.send(
                     embed=embed,
                     view=view,
-                    ephemeral=is_missing_saved_username
+                    ephemeral=is_ephemeral_failure
                 )
             else:
                 await inter.response.send_message(
                     embed=embed,
                     view=view,
-                    ephemeral=is_missing_saved_username
+                    ephemeral=is_ephemeral_failure
                 )
             return
 
