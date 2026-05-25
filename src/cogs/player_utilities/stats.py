@@ -1208,9 +1208,13 @@ class Stats(commands.Cog, name='stats'):
                     return
 
                 if account_id == '0':
-                    await inter.response.send_message(
-                        'You do not have a default account to delete.',
-                        ephemeral=True
+                    await ack_component_failure(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        description='You do not have a default account to delete.',
+                        operation='account_delete_no_default',
+                        invocation_source=self._invocation_source(inter),
                     )
                     return
 

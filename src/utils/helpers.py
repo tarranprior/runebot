@@ -223,18 +223,71 @@ async def ack_wrong_component_user(
     operation: str = 'wrong_component_user',
     invocation_source: str | None = None,
 ) -> None:
-    """
-    Send a standard neutral ephemeral embed when a component is used
-    by a user who is not the original author. Meant to be shared across
-    cogs (stats, price, etc.).
-    """
+    '''
+    Sends a neutral ephemeral acknowledgement when a component is used
+    by someone other than the original author.
+
+    :param inter: (MessageInteraction) -
+        Represents the component interaction.
+    :param bound_logger: (BoundCommandLogger) -
+        Represents the command logger used for structured warning logs.
+    :param command: (String) -
+        Represents the command name used in log output.
+    :param operation: (String) -
+        Represents the component failure operation.
+    :param invocation_source: (String[Optional]) -
+        Represents the source of the interaction.
+
+    :return: (None)
+    '''
+    await ack_component_failure(
+        inter,
+        bound_logger,
+        command,
+        description='Only the original author can use these buttons.',
+        title='Nothing interesting happens.',
+        operation=operation,
+        invocation_source=invocation_source,
+    )
+
+
+async def ack_component_failure(
+    inter,
+    bound_logger,
+    command: str,
+    *,
+    description: str,
+    title: str = 'Nothing interesting happens.',
+    operation: str = 'component_failure',
+    invocation_source: str | None = None,
+) -> None:
+    '''
+    Sends a neutral ephemeral acknowledgement for a handled component
+    failure.
+
+    :param inter: (MessageInteraction) -
+        Represents the component interaction.
+    :param bound_logger: (BoundCommandLogger) -
+        Represents the command logger used for structured warning logs.
+    :param command: (String) -
+        Represents the command name used in log output.
+    :param description: (String) -
+        Represents the embed description shown to the user.
+    :param title: (String) -
+        Represents the embed title shown to the user.
+    :param operation: (String) -
+        Represents the component failure operation.
+    :param invocation_source: (String[Optional]) -
+        Represents the source of the interaction.
+
+    :return: (None)
+    '''
     from disnake import MessageInteraction
 
     custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
     component_prefix, component_action = get_component_custom_id_metadata(custom_id)
 
     try:
-        # local import to avoid import-cycle during module load
         from utils.logging import build_log_message
 
         computed_invocation_source = (
@@ -269,8 +322,8 @@ async def ack_wrong_component_user(
         from config import SUPPORT_SERVER
 
         embed, view = EmbedFactory().create(
-            title='Nothing interesting happens.',
-            description='Only the original author can use these buttons.',
+            title=title,
+            description=description,
             thumbnail_url=None,
             colour=0x8B8B8B,
             button_label='Support Server',
