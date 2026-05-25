@@ -955,9 +955,11 @@ class Stats(commands.Cog, name='stats'):
             action, owner_id, account_id, manager_message_id, trace_id = params
 
             if str(inter.author.id) != owner_id:
-                await inter.response.send_message(
-                    'Only the original author can use these buttons.',
-                    ephemeral=True
+                await ack_wrong_component_user(
+                    inter,
+                    self._stats_log,
+                    'stats',
+                    invocation_source=self._invocation_source(inter),
                 )
                 return
 
@@ -1084,9 +1086,11 @@ class Stats(commands.Cog, name='stats'):
                 trace_id = uuid.uuid4().hex
 
                 if str(inter.author.id) != owner_id:
-                    await inter.response.send_message(
-                        'Only the original author can use these buttons.',
-                        ephemeral=True
+                    await ack_wrong_component_user(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        invocation_source=self._invocation_source(inter),
                     )
                     return
 
@@ -1195,9 +1199,11 @@ class Stats(commands.Cog, name='stats'):
                 manager_message_id = str(inter.message.id)
 
                 if str(inter.author.id) != owner_id:
-                    await inter.response.send_message(
-                        'Only the original author can use these buttons.',
-                        ephemeral=True
+                    await ack_wrong_component_user(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        invocation_source=self._invocation_source(inter),
                     )
                     return
 
@@ -1318,9 +1324,11 @@ class Stats(commands.Cog, name='stats'):
                 return
             owner_id = params[1]
             if str(inter.author.id) != owner_id:
-                await inter.response.send_message(
-                    'Only the original author can use these buttons.',
-                    ephemeral=True
+                await ack_wrong_component_user(
+                    inter,
+                    self._stats_log,
+                    'stats',
+                    invocation_source=self._invocation_source(inter),
                 )
                 return
 
@@ -1421,9 +1429,11 @@ class Stats(commands.Cog, name='stats'):
         _, hiscore_category, account_type, resolved_username, owner_id = params
 
         if str(inter.author.id) != owner_id:
-            await inter.response.send_message(
-                'Only the original author can use these buttons.',
-                ephemeral=True
+            await ack_wrong_component_user(
+                inter,
+                self._stats_log,
+                'stats',
+                invocation_source=self._invocation_source(inter),
             )
             return
 
@@ -1656,9 +1666,11 @@ class Stats(commands.Cog, name='stats'):
             return
 
         if str(inter.author.id) != owner_id:
-            await inter.response.send_message(
-                'Only the original author can use these buttons.',
-                ephemeral=True
+            await ack_wrong_component_user(
+                inter,
+                self._stats_log,
+                'stats',
+                invocation_source=self._invocation_source(inter),
             )
             return
 

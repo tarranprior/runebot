@@ -631,10 +631,7 @@ class Price(commands.Cog, name='price'):
             return
         
         if str(inter.author.id) != owner_id:
-            await inter.response.send_message(
-                'Only the original author can use these buttons.',
-                ephemeral=True
-            )
+            await ack_wrong_component_user(inter, self._price_log, 'price')
             return
 
         trace_id = uuid.uuid4().hex

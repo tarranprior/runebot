@@ -215,6 +215,78 @@ def get_component_custom_id_metadata(
     return component_prefix, component_action
 
 
+async def ack_wrong_component_user(
+    inter,
+    bound_logger,
+    command: str,
+    *,
+    operation: str = 'wrong_component_user',
+    invocation_source: str | None = None,
+) -> None:
+    """
+    Send a standard neutral ephemeral embed when a component is used
+    by a user who is not the original author. Meant to be shared across
+    cogs (stats, price, etc.).
+    """
+    from disnake import MessageInteraction
+
+    custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
+    component_prefix, component_action = get_component_custom_id_metadata(custom_id)
+
+    try:
+        # local import to avoid import-cycle during module load
+        from utils.logging import build_log_message
+
+        computed_invocation_source = (
+            'component_callback' if isinstance(inter, MessageInteraction) else 'slash_command'
+        )
+        invocation = invocation_source or computed_invocation_source
+
+        bound_logger.warning(
+            inter,
+            build_log_message(
+                command=command,
+                stage='failure',
+                operation=operation,
+            ),
+            invocation_source=invocation,
+            action='fail',
+            stage='failure',
+            operation=operation,
+            component_type='component',
+            handled=True,
+            expected_failure=True,
+            user_visible=True,
+            component_prefix=component_prefix,
+            component_action=component_action,
+        )
+    except Exception:
+        pass
+
+    try:
+        from utils.embeds import EmbedFactory
+        from version import DISPLAY_VERSION
+        from config import SUPPORT_SERVER
+
+        embed, view = EmbedFactory().create(
+            title='Nothing interesting happens.',
+            description='Only the original author can use these buttons.',
+            thumbnail_url=None,
+            colour=0x8B8B8B,
+            button_label='Support Server',
+            button_url=SUPPORT_SERVER,
+        )
+        embed.timestamp = inter.created_at
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+        if inter.response.is_done():
+            await inter.followup.send(embed=embed, view=view, ephemeral=True)
+        else:
+            await inter.response.send_message(embed=embed, view=view, ephemeral=True)
+    except Exception:
+        return
+
+
 def is_invalid_username(
     username: str | None,
     max_chars: int,
