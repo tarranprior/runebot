@@ -340,6 +340,52 @@ async def ack_component_failure(
         return
 
 
+async def ack_runtime_failure(
+    inter,
+    *,
+    description: str = 'Something went wrong while handling that request. Please try again.',
+    title: str = 'Nothing interesting happens.',
+    ephemeral: bool = True,
+) -> None:
+    '''
+    Sends a neutral ephemeral acknowledgement for a generic runtime
+    failure without emitting additional logs.
+
+    :param inter: (Interaction) -
+        Represents the interaction to acknowledge.
+    :param description: (String) -
+        Represents the embed description shown to the user.
+    :param title: (String) -
+        Represents the embed title shown to the user.
+    :param ephemeral: (Boolean) -
+        Determines whether the acknowledgement is only visible to the user.
+
+    :return: (None)
+    '''
+    try:
+        from utils.embeds import EmbedFactory
+        from version import DISPLAY_VERSION
+        from config import SUPPORT_SERVER
+
+        embed, view = EmbedFactory().create(
+            title=title,
+            description=description,
+            thumbnail_url=None,
+            colour=0x8B8B8B,
+            button_label='Support Server',
+            button_url=SUPPORT_SERVER,
+        )
+        embed.timestamp = inter.created_at
+        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+        if inter.response.is_done():
+            await inter.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+        else:
+            await inter.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+    except Exception:
+        return
+
+
 def is_invalid_username(
     username: str | None,
     max_chars: int,

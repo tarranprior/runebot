@@ -442,16 +442,7 @@ class Alchemy(commands.Cog, name='alchemy'):
                 **build_unexpected_user_visible_failure_metadata(),
             )
 
-            if inter.response.is_done():
-                await inter.followup.send(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
-            else:
-                await inter.response.send_message(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
+            await ack_runtime_failure(inter)
             return
 
 

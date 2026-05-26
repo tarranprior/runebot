@@ -812,10 +812,7 @@ class Price(commands.Cog, name='price'):
             )
             view = self._build_price_view(item_id, int(owner_id))
             await inter.edit_original_response(view=view)
-            await inter.followup.send(
-                'Something went wrong while handling that request.',
-                ephemeral=True,
-            )
+            await ack_runtime_failure(inter)
             return
 
 
@@ -1021,16 +1018,7 @@ class Price(commands.Cog, name='price'):
                 expected_failure=False,
                 user_visible=True,
             )
-            if inter.response.is_done():
-                await inter.followup.send(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
-            else:
-                await inter.response.send_message(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
+            await ack_runtime_failure(inter)
             return
 
     @price.autocomplete('search_query')

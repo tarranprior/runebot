@@ -907,20 +907,7 @@ class Stats(commands.Cog, name='stats'):
                 expected_failure=False,
                 user_visible=True,
             )
-            embed, view = EmbedFactory().create(
-                title='Nothing interesting happens.',
-                description='Something went wrong while handling that request. Please try again.',
-                thumbnail_url=None,
-                colour=0x8B8B8B,
-                button_label='Support Server',
-                button_url=SUPPORT_SERVER
-            )
-            embed.timestamp = inter.created_at
-            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-            if inter.response.is_done():
-                await inter.followup.send(embed=embed, view=view)
-            else:
-                await inter.response.send_message(embed=embed, view=view)
+            await ack_runtime_failure(inter)
             return
 
 

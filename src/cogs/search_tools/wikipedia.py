@@ -462,16 +462,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 user_visible=True,
             )
 
-            if inter.response.is_done():
-                await inter.followup.send(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
-            else:
-                await inter.response.send_message(
-                    'Something went wrong while handling that request.',
-                    ephemeral=True,
-                )
+            await ack_runtime_failure(inter)
             return
 
 
