@@ -76,7 +76,7 @@ class NoAlchemyData(Exception):
     def __init__(self, message: str = (
         'The term you have searched for does not appear to have any `AlchemyData`. '
         'Try selecting one of the options from the list of autocomplete suggestions.'
-        '\n\n**Usage**: `/alchemy <ITEM_NAME>`'
+        '\n\n**Usage**: `/alchemy <SEARCH_QUERY>`'
     )) -> None:
         '''
         Initialises a new instance of the NoAlchemyData class.
@@ -107,8 +107,7 @@ class NoHiscoreData(Exception):
     def __init__(self, message: str = (
         'The player you have searched for doesn\'t appear to exist '
         'on the **Hiscores**, or the **API** is currently unavailable. '
-        'Please try another username or try again later.\n\n'
-        '**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
+        'Please try another username or try again later.'
     )) -> None:
         '''
         Initialises a new instance of the NoHiscoreData class.
@@ -139,7 +138,7 @@ class NoMinigameData(Exception):
         'The term you have searched for does not appear to have any `MinigameData`. '
         'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Minigames) '
-        'for a full list of minigames.\n\n**Usage**: `/minigames <MINIGAME_NAME>`'
+        'for a full list of minigames.\n\n**Usage**: `/minigames <SEARCH_QUERY>`'
     )) -> None:
         '''
         Initialises a new instance of the NoMinigameData class.
@@ -170,7 +169,7 @@ class NoMonsterData(Exception):
         'The term you have searched for does not appear to have any `MonsterData`. '
         'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Bestiary) '
-        'for a full list of monsters.\n\n**Usage**: `/bestiary <MONSTER_NAME>`'
+        'for a full list of monsters.\n\n**Usage**: `/bestiary <SEARCH_QUERY>`'
     )) -> None:
         '''
         Initialises a new instance of the NoMonsterData class.
@@ -200,7 +199,7 @@ class NoPriceData(Exception):
     def __init__(self, message: str = (
         'The term you have searched for does not have any `PriceData`. '
         'Try selecting one of the options from the list of autocomplete suggestions.\n\n'
-        '**Usage**: `/price <ITEM_NAME>`'
+        '**Usage**: `/price <SEARCH_QUERY>`'
     )) -> None:
         '''
         Initialises a new instance of the NoPriceData class.
@@ -231,7 +230,7 @@ class NoQuestData(Exception):
         'The term you have searched for does not have any `QuestData`. '
         'Try selecting one of the options from the list of autocomplete suggestions, '
         'or visit [this page](https://oldschool.runescape.wiki/w/Quests/List) '
-        'for a full list of quests.\n\n**Usage**: `/quests <QUEST_NAME>`'
+        'for a full list of quests.\n\n**Usage**: `/quests <SEARCH_QUERY>`'
     )) -> None:
         '''
         Initialises a new instance of the NoQuestData class.
@@ -249,8 +248,8 @@ class NoQuestData(Exception):
 
 class NoAdministratorPermissions(Exception):
     '''
-    Thrown when a user without administritive permissions
-    tries to invoke a administrator command.
+    Thrown when a user without administrative permissions
+    tries to invoke an administrator command.
 
     :param message: (String) -
         A custom message to display when the exception is raised.
@@ -261,7 +260,7 @@ class NoAdministratorPermissions(Exception):
 
     def __init__(self, message: str = (
         'This command can only be used by **administrators**. For more '
-        'informationon commands, use `/help`.'
+        'information on commands, use `/help`.'
     )) -> None:
         '''
         Initialises a new instance of the NoAdministratorPermissions class.
@@ -353,7 +352,7 @@ class UsernameNonexistent(Exception):
         'You don\'t have any accounts yet. Use </setrsn:1114968268864753754> '
         'to add your first account, or add the `username` argument to '
         '</stats:1479843945956769934>.\n\n'
-        '**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
+        '**Usage**: `/stats` or `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''
         Initialises a new instance of the UsernameNonexistent class.
@@ -384,7 +383,8 @@ class NoGameModeData(Exception):
     def __init__(self, message: str = (
         'The username provided doesn\'t appear to exist under this '
         '`account_type`. Please select a different `account_type`, or try '
-        'another username.\n\n**Usage**: `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
+        'another username.\n\n'
+        '**Usage**: `/stats` or `/stats <USERNAME> [ACCOUNT_TYPE (optional)]`'
     )) -> None:
         '''
         Initialises a new instance of the NoGameModeData class.

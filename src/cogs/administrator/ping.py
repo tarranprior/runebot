@@ -76,7 +76,7 @@ class Ping(commands.Cog, name='ping'):
 
         :return: (None)
         '''
-        # Raise an error if the user does not have administritive
+        # Raise an error if the user does not have administrative 
         # permissions.
         if not inter.user.id == inter.guild.owner_id:
             raise exceptions.NoAdministratorPermissions
