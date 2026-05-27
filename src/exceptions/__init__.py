@@ -368,6 +368,37 @@ class UsernameNonexistent(Exception):
         super().__init__(self.message)
 
 
+class MentionedUserAccountNonexistent(Exception):
+    '''
+    Thrown when a Discord-mentioned user does not have a saved RuneScape
+    account in Runebot.
+
+    :param message: (String) -
+        A custom message to display when the exception is raised. Defaults to
+        a pre-defined message.
+
+    :return: (None)
+    '''
+
+    def __init__(self, message: str = (
+        'The user you mentioned does not have a default RuneScape account set. '
+        'Ask them to use </setrsn:1114968268864753754> to set a default account, '
+        'or search with a RuneScape username.'
+    )) -> None:
+        '''
+        Initialises a new instance of the MentionedUserAccountNonexistent class.
+
+        :param message: (Optional[String]) -
+            A custom message to display when the exception is raised. Defaults to
+            a pre-defined message.
+
+        :return: (None)
+        '''
+
+        self.message = message
+        super().__init__(self.message)
+
+
 class NoGameModeData(Exception):
     '''
     Thrown when the provided username does not appear to exist under the

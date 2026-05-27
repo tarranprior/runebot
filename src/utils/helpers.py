@@ -414,6 +414,42 @@ def is_invalid_username(
     return any(char in username for char in blacklist_chars)
 
 
+def is_discord_mention(value: str | None) -> bool:
+    '''
+    Returns True when the provided value is a Discord user mention.
+
+    :param value: (String[Optional]) -
+        Represents the value to test for Discord mention shape.
+    :return: (Boolean) -
+        True when the value looks like a Discord mention, otherwise False.
+    '''
+
+    if value is None:
+        return False
+
+    if not isinstance(value, str):
+        return False
+
+    return value.startswith('<@') and value.endswith('>')
+
+
+def get_discord_mention_id(value: str) -> str:
+    '''
+    Extracts the numeric user ID from a Discord mention string.
+
+    :param value: (String) -
+        Represents the mention string to extract from.
+    :return: (String) -
+        Represents the numeric ID.
+    '''
+
+    if value.startswith('<@!'):
+        return value[3:-1]
+    if value.startswith('<@'):
+        return value[2:-1]
+    return value
+
+
 def build_loading_button_view(inter: disnake.MessageInteraction) -> disnake.ui.View:
     '''
     Builds a temporary view from message components and disables only

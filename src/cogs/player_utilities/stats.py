@@ -428,13 +428,13 @@ class Stats(commands.Cog, name='stats'):
                 if account_type is None:
                     account_type = default_account_type
             else:
-                if working_username.startswith('<@') and working_username.endswith('>'):
+                if is_discord_mention(working_username):
                     resolution_source = 'discord_mention_lookup'
                     working_username, account_type = await get_username(
-                        self, working_username.replace('<@', '').replace('>', '')
+                        self, get_discord_mention_id(working_username)
                     )
                     if not working_username:
-                        raise exceptions.UsernameNonexistent
+                        raise exceptions.MentionedUserAccountNonexistent()
             
             if is_invalid_username(working_username, MAX_CHARS, BLACKLIST_CHARS):
                 raise exceptions.UsernameInvalid
@@ -671,6 +671,7 @@ class Stats(commands.Cog, name='stats'):
 
         except (
             exceptions.UsernameNonexistent,
+            exceptions.MentionedUserAccountNonexistent,
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
@@ -758,13 +759,22 @@ class Stats(commands.Cog, name='stats'):
 
         params = []
         if username is not None:
-            params.append(
-                LogParam(
-                    kind='username',
-                    label='username',
-                    value=username,
+            if is_discord_mention(username):
+                params.append(
+                    LogParam(
+                        kind='discord_user',
+                        label='discord-user',
+                        value=username,
+                    )
                 )
-            )
+            else:
+                params.append(
+                    LogParam(
+                        kind='username',
+                        label='username',
+                        value=username,
+                    )
+                )
         primary_param = params[0] if params else None
 
         self._stats_log.info(
@@ -840,13 +850,15 @@ class Stats(commands.Cog, name='stats'):
 
         except (
             exceptions.UsernameNonexistent,
+            exceptions.MentionedUserAccountNonexistent,
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
             exceptions.WikiRequestFailed,
         ) as exc:
-            is_ephemeral_failure = defer_ephemeral and isinstance(exc, (
+            is_ephemeral_failure = isinstance(exc, (
                 exceptions.UsernameNonexistent,
+                exceptions.MentionedUserAccountNonexistent,
                 exceptions.UsernameInvalid,
             ))
 
@@ -1552,6 +1564,7 @@ class Stats(commands.Cog, name='stats'):
 
         except (
             exceptions.UsernameNonexistent,
+            exceptions.MentionedUserAccountNonexistent,
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
