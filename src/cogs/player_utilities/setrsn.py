@@ -25,7 +25,7 @@ docstrings.
 '''
 
 from disnake.ext import commands
-from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
+from disnake import ApplicationCommandInteraction, Option, OptionType
 
 import uuid
 
@@ -256,9 +256,11 @@ class Setrsn(commands.Cog, name='setrsn'):
             operation='set',
             trace_id=trace_id,
             username=username,
+            account_type=account_type or 'Normal',
             invocation_mode='explicit',
             log_params=[
-                {'kind': 'username', 'label': 'username', 'value': username}
+                {'kind': 'username', 'label': 'username', 'value': username},
+                {'kind': 'account_type', 'label': 'account_type', 'value': account_type or 'Normal'},
             ],
         )
 
@@ -295,6 +297,51 @@ class Setrsn(commands.Cog, name='setrsn'):
             )
         except exceptions.UsernameInvalid:
             raise
+
+        except exceptions.MaximumAccountsReached as exc:
+            self._setrsn_log.warning(
+                inter,
+                build_log_message(
+                    command='setrsn',
+                    stage='failure',
+                    operation='set',
+                ),
+                action='fail',
+                stage='failure',
+                operation='set',
+                trace_id=trace_id,
+                username=username,
+                account_type=account_type or 'Normal',
+                resolved_account_type=account_type or 'Normal',
+                resolution_source='provided_username',
+                invocation_mode='explicit',
+                log_params=[
+                    {'kind': 'username', 'label': 'username', 'value': username},
+                    {
+                        'kind': 'account_type',
+                        'label': 'account_type',
+                        'value': account_type or 'Normal',
+                    },
+                ],
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+
+            embed, view = EmbedFactory().create(
+                title='Nothing interesting happens.',
+                description=str(exc),
+                thumbnail_url=THUMBNAILS['filler'],
+                colour=0xB72615,
+                button_label='Support Server',
+                button_url=SUPPORT_SERVER
+            )
+            embed.timestamp = inter.created_at
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            await inter.send(embed=embed, view=view, ephemeral=True)
+            return
 
         except Exception as exc:
             self._setrsn_log.error(
