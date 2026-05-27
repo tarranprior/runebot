@@ -222,6 +222,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                     button_url=button_url
                 )
                 embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+                embed.timestamp = inter.created_at
 
                 if len(embed.description) < 84:
                     embed.set_footer(
@@ -265,6 +266,8 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                     f'{title} may refer to several articles. Use the dropdown below to select an option.'
                 )
             )
+            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+            embed.timestamp = inter.created_at
 
             view = DropdownView(options, self, trace_id=trace_id)
             return embed, view, resolved_search_term, title
