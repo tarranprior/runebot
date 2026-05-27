@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
 
 def configure_logging() -> None:
     logger.remove()
-    logger.add(sys.stderr, level='INFO')
+    logger.add(sys.stderr, level='INFO', backtrace=False, diagnose=False)
 
 
 def main() -> None:

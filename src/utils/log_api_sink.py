@@ -113,7 +113,7 @@ class InternalAPILogPipeline:
         '''
 
         self._thread.start()
-        self._sink_id = logger.add(self._sink, catch=True)
+        self._sink_id = logger.add(self._sink, catch=True, backtrace=False, diagnose=False)
         if self.logs_db_path:
             self._start_session()
 
@@ -142,7 +142,8 @@ class InternalAPILogPipeline:
             log_file=log_file,
         )
         self.session_id = session_id
-        self._file_sink_id = logger.add(log_file, catch=True)
+        # File sink should also avoid rich/local-variable tracebacks.
+        self._file_sink_id = logger.add(log_file, catch=True, backtrace=False, diagnose=False)
 
 
     def stop(self) -> None:
