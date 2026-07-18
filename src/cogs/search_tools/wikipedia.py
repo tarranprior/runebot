@@ -421,6 +421,10 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 title = 'This project page is a stub.'
                 thumbnail_url = THUMBNAILS['stub']
                 colour = 0x60533E
+            elif isinstance(exc, exceptions.WikiRequestFailed):
+                title = 'Nothing interesting happens.'
+                thumbnail_url = None
+                colour = 0xB72615
             else:
                 title = 'Nothing interesting happens.'
                 thumbnail_url = None
@@ -668,6 +672,10 @@ class Dropdown(disnake.ui.StringSelect):
                 title = 'This project page is a stub.'
                 thumbnail_url = THUMBNAILS['stub']
                 colour = 0x60533E
+            elif isinstance(exc, exceptions.WikiRequestFailed):
+                title = 'Nothing interesting happens.'
+                thumbnail_url = None
+                colour = 0xB72615
             else:
                 title = 'Nothing interesting happens.'
                 thumbnail_url = None

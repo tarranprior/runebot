@@ -753,6 +753,7 @@ class Price(commands.Cog, name='price'):
                 expected_description = str(exc)
             else:
                 expected_description = str(exceptions.NoPriceData())
+            colour = 0xB72615 if isinstance(exc, exceptions.WikiRequestFailed) else 0x8B8B8B
 
             self._price_log.warning(
                 inter,
@@ -781,7 +782,7 @@ class Price(commands.Cog, name='price'):
                 title='Nothing interesting happens.',
                 description=expected_description,
                 thumbnail_url=None,
-                colour=0x8B8B8B,
+                colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
             )
@@ -945,6 +946,7 @@ class Price(commands.Cog, name='price'):
                 expected_description = str(exc)
             else:
                 expected_description = str(exceptions.NoPriceData())
+            colour = 0xB72615 if isinstance(exc, exceptions.WikiRequestFailed) else 0x8B8B8B
 
             if 'item_id' in locals():
                 log_params = [
@@ -985,7 +987,7 @@ class Price(commands.Cog, name='price'):
                 title='Nothing interesting happens.',
                 description=expected_description,
                 thumbnail_url=None,
-                colour=0x8B8B8B,
+                colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
             )
