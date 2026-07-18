@@ -42,8 +42,6 @@
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36"
     },
     "thumbs": {
-        "filler": "https://oldschool.runescape.wiki/images/Bank_filler_detail.png",
-        "bucket": "https://oldschool.runescape.wiki/images/thumb/Weird_gloop_detail.png/75px-Weird_gloop_detail.png",
         "quest": "https://oldschool.runescape.wiki/images/thumb/Quests.png/130px-Quests.png",
         "minigame": "https://oldschool.runescape.wiki/images/thumb/Minigames.png/120px-Minigames.png",
         "stub": "https://oldschool.runescape.wiki/images/thumb/Woodcutting_stump.png/200px-Woodcutting_stump.png"

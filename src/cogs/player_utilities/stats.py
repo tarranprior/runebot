@@ -864,16 +864,14 @@ class Stats(commands.Cog, name='stats'):
                 exceptions.NoHiscoreData,
                 exceptions.UsernameInvalid,
             )):
-                thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
             else:
-                thumbnail = None
                 colour = 0x8B8B8B
 
             embed, view = EmbedFactory().create(
                 title='Nothing interesting happens.',
                 description=str(exc),
-                thumbnail_url=thumbnail,
+                thumbnail_url=None,
                 colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
@@ -1576,16 +1574,14 @@ class Stats(commands.Cog, name='stats'):
                 exceptions.NoHiscoreData,
                 exceptions.UsernameInvalid,
             )):
-                thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
             else:
-                thumbnail = None
                 colour = 0x8B8B8B
 
             embed, _ = EmbedFactory().create(
                 title='Nothing interesting happens.',
                 description=str(exc),
-                thumbnail_url=thumbnail,
+                thumbnail_url=None,
                 colour=colour,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER

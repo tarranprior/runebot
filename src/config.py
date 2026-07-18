@@ -395,16 +395,12 @@ CLUE_EMOTES = configuration()['clue_emotes']
 SKILL_EMOTES = configuration()['skill_emotes']
 
 # THUMBNAILS
-FILLER = configuration()['thumbs']['filler']
-BUCKET = configuration()['thumbs']['bucket']
 MINIGAME = configuration()['thumbs']['minigame']
 QUEST = configuration()['thumbs']['quest']
 STUB = configuration()['thumbs']['stub']
 
 # THUMBNAIL DICT
 THUMBNAILS = {
-    'filler': FILLER,
-    'bucket': BUCKET,
     'minigame': MINIGAME,
     'quest': QUEST,
     'stub': STUB

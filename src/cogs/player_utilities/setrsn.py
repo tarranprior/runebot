@@ -333,7 +333,6 @@ class Setrsn(commands.Cog, name='setrsn'):
             embed, view = EmbedFactory().create(
                 title='Nothing interesting happens.',
                 description=str(exc),
-                thumbnail_url=THUMBNAILS['filler'],
                 colour=0xB72615,
                 button_label='Support Server',
                 button_url=SUPPORT_SERVER
