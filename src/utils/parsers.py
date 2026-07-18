@@ -665,10 +665,7 @@ def parse_hiscores(
                  'usernames_count': len(usernames)}
             ],
         )
-        status_code = getattr(exc.response, 'status_code', None)
-        if status_code == 404:
-            raise exceptions.NoHiscoreData from exc
-        raise exceptions.WikiRequestFailed() from exc
+        raise exceptions.NoHiscoreData from exc
 
     except requests.RequestException as exc:
         parser_log(
@@ -679,7 +676,7 @@ def parse_hiscores(
             trace_id=trace_id,
             log_params=[{'url': url, 'error': str(exc), 'usernames_count': len(usernames)}],
         )
-        raise exceptions.WikiRequestFailed() from exc
+        raise exceptions.NoHiscoreData from exc
 
     except Exception as exc:
         parser_log(

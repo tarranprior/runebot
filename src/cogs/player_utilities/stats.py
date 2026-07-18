@@ -675,7 +675,6 @@ class Stats(commands.Cog, name='stats'):
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
-            exceptions.WikiRequestFailed,
         ) as exc:
             fail_params = build_stats_failure_params(
                 original_username=input_username,
@@ -854,7 +853,6 @@ class Stats(commands.Cog, name='stats'):
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
-            exceptions.WikiRequestFailed,
         ) as exc:
             is_ephemeral_failure = isinstance(exc, (
                 exceptions.UsernameNonexistent,
@@ -865,7 +863,6 @@ class Stats(commands.Cog, name='stats'):
             if isinstance(exc, (
                 exceptions.NoHiscoreData,
                 exceptions.UsernameInvalid,
-                exceptions.WikiRequestFailed,
             )):
                 thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
@@ -1568,7 +1565,6 @@ class Stats(commands.Cog, name='stats'):
             exceptions.UsernameInvalid,
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
-            exceptions.WikiRequestFailed,
         ) as exc:
             view = self._build_stats_view(
                 hiscore_category,
@@ -1579,7 +1575,6 @@ class Stats(commands.Cog, name='stats'):
             if isinstance(exc, (
                 exceptions.NoHiscoreData,
                 exceptions.UsernameInvalid,
-                exceptions.WikiRequestFailed,
             )):
                 thumbnail = THUMBNAILS['filler']
                 colour = 0xB72615
