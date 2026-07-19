@@ -351,7 +351,6 @@ async def ack_runtime_failure(
     *,
     description: str = 'Something went wrong while handling that request. Please try again.',
     title: str = 'Nothing interesting happens.',
-    ephemeral: bool = True,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement for a generic runtime
@@ -363,9 +362,6 @@ async def ack_runtime_failure(
         Represents the embed description shown to the user.
     :param title: (String) -
         Represents the embed title shown to the user.
-    :param ephemeral: (Boolean) -
-        Determines whether the acknowledgement is only visible to the user.
-
     :return: (None)
     '''
     try:
@@ -385,9 +381,9 @@ async def ack_runtime_failure(
         embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
 
         if inter.response.is_done():
-            await inter.followup.send(embed=embed, view=view, ephemeral=ephemeral)
+            await inter.followup.send(embed=embed, view=view, ephemeral=True)
         else:
-            await inter.response.send_message(embed=embed, view=view, ephemeral=ephemeral)
+            await inter.response.send_message(embed=embed, view=view, ephemeral=True)
     except Exception:
         return
 

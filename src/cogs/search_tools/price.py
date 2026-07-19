@@ -203,6 +203,7 @@ class Price(commands.Cog, name='price'):
         inter: ApplicationCommandInteraction,
         search_query: str,
         trace_id: str | None = None,
+        lucky_selection: str | None = None,
     ) -> Tuple[dict, str, str]:
         '''
         Resolves a search query to item information and resolved page metadata.
@@ -225,7 +226,7 @@ class Price(commands.Cog, name='price'):
 
         try:
             if invocation_mode == 'feeling_lucky':
-                random_selection = random.choice(
+                random_selection = lucky_selection or random.choice(
                     [i for i in await get_suggestions(self, ['Tradeable items']) if not any(w in i for w in BLACKLIST_ITEMS)]
                 )
                 resolved_search_term = random_selection
@@ -849,11 +850,18 @@ class Price(commands.Cog, name='price'):
         )
 
         try:
+            lucky_selection = None
+            if invocation_mode == 'feeling_lucky':
+                lucky_selection = random.choice(
+                    [i for i in await get_suggestions(self, ['Tradeable items']) if not any(w in i for w in BLACKLIST_ITEMS)]
+                )
+
             await inter.response.defer()
             info, resolved_search_term, resolved_page_title = await self._resolve_item_info(
                 inter,
                 search_query,
                 trace_id=trace_id,
+                lucky_selection=lucky_selection,
             )
             item_id = info['Item ID']
             api_data = parse_price_data(
