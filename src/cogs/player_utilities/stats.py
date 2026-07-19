@@ -120,49 +120,14 @@ class Stats(commands.Cog, name='stats'):
 
 
     async def _ack_invalid_stats_component(self, inter: MessageInteraction) -> None:
-        custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
-        component_prefix, component_action = get_component_custom_id_metadata(custom_id)
-
-        try:
-            self._stats_log.warning(
-                inter,
-                build_log_message(
-                    command='stats',
-                    stage='failure',
-                    operation='invalid_component',
-                ),
-                invocation_source=self._invocation_source(inter),
-                action='fail',
-                stage='failure',
-                operation='invalid_component',
-                component_type='component',
-                handled=True,
-                expected_failure=True,
-                user_visible=True,
-                component_prefix=component_prefix,
-                component_action=component_action,
-            )
-        except Exception:
-            pass
-
-        embed, view = EmbedFactory().create(
-            title='Nothing interesting happens.',
+        await ack_component_failure(
+            inter,
+            self._stats_log,
+            'stats',
             description=f'This stats control is no longer valid. Please run {SLASH_MENTIONS["stats"]} again.',
-            thumbnail_url=None,
-            colour=0x8B8B8B,
-            button_label='Support Server',
-            button_url=SUPPORT_SERVER
+            operation='invalid_component',
+            invocation_source=self._invocation_source(inter),
         )
-        embed.timestamp = inter.created_at
-        embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-
-        try:
-            if inter.response.is_done():
-                await inter.followup.send(embed=embed, view=view, ephemeral=True)
-            else:
-                await inter.response.send_message(embed=embed, view=view, ephemeral=True)
-        except Exception:
-            return
 
 
     def _build_stats_view(
