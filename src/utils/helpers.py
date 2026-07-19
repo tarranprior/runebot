@@ -31,9 +31,8 @@ import io
 import json
 from datetime import datetime, timezone
 
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 from urllib.request import Request, urlopen
-from loguru import logger
 from humanfriendly import format_timespan
 import disnake
 from colorthief import ColorThief as ColourThief
@@ -94,7 +93,9 @@ async def extract_colour(
     guild_id: int,
     guild_owner_id: int,
     image_url: str,
-    headers: str) -> Optional[Tuple[int, int, int]]:
+    headers: str,
+    on_failure: Callable[[Exception], None] | None = None,
+) -> Optional[Tuple[int, int, int]]:
     '''
     Helper function which extracts the most frequent colour from an image with
     a given URL, using color-thief-py.
@@ -110,6 +111,9 @@ async def extract_colour(
         Represents the URL/to/image.
     :param headers: (String) -
         Represents HTTP request headers for the web request.
+    :param on_failure: (Optional[Callable]) -
+        Receives a handled colour-extraction exception before the fallback
+        colour is returned.
 
     :return: (Tuple) -
         A tuple representing the dominant RGB color value of the image,
@@ -128,10 +132,12 @@ async def extract_colour(
                 colour_thief = ColourThief(image_data)
                 dominant_colour = colour_thief.get_color(quality=1)
                 return (dominant_colour)
-            except Exception:
-                logger.error(
-                    'Empty pixels when quantize. Ignoring colour extraction.'
-                )
+            except Exception as exc:
+                if on_failure is not None:
+                    try:
+                        on_failure(exc)
+                    except Exception:
+                        pass
     return ((
         disnake.Colour.og_blurple().r,
         disnake.Colour.og_blurple().g,

@@ -43,6 +43,7 @@ from utils.logging import (
     BoundCommandLogger,
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
+    log_colour_extraction_failure,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
@@ -209,7 +210,24 @@ class Minigames(commands.Cog, name='minigames'):
                         inter.guild_id,
                         inter.guild.owner_id,
                         thumbnail_url,
-                        HEADERS
+                        HEADERS,
+                        on_failure=lambda exc: log_colour_extraction_failure(
+                            self._minigames_log,
+                            inter,
+                            'minigames',
+                            thumbnail_url,
+                            exc,
+                            trace_id=trace_id,
+                            log_params=[
+                                {'kind': 'minigame', 'label': 'minigame', 'value': title},
+                                {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                            ],
+                            search_query=search_query,
+                            resolved_search_term=resolved_search_term,
+                            resolved_page_title=title,
+                            resolution_source=resolution_source,
+                            invocation_mode=invocation_mode,
+                        ),
                     )
                 )
 

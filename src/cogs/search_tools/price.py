@@ -45,6 +45,7 @@ from utils.logging import (
     BoundCommandLogger,
     build_command_log_bind,
     build_log_message,
+    log_colour_extraction_failure,
 )
 
 
@@ -452,13 +453,25 @@ class Price(commands.Cog, name='price'):
         filename = await generate_graph(graphapi_data)
 
         thumbnail_url = api_data['item']['icon_large']
+
         colour = disnake.Colour.from_rgb(
             *await extract_colour(
                 self,
                 inter.guild_id,
                 inter.guild.owner_id,
                 thumbnail_url,
-                HEADERS
+                HEADERS,
+                on_failure=lambda exc: log_colour_extraction_failure(
+                    self._price_log,
+                    inter,
+                    'price',
+                    thumbnail_url,
+                    exc,
+                    trace_id=trace_id,
+                    log_params=[{'kind': 'item', 'label': 'item_id', 'value': item_id}],
+                    item_id=item_id,
+                    thumbnail_url=thumbnail_url,
+                ),
             )
         )
 

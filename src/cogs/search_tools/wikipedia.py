@@ -47,6 +47,7 @@ from utils.logging import (
     build_command_log_bind,
     build_interaction_log_context,
     build_log_message,
+    log_colour_extraction_failure,
 )
 
 
@@ -209,7 +210,24 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                     inter.guild_id,
                     inter.guild.owner_id,
                     thumbnail_url,
-                    HEADERS
+                    HEADERS,
+                    on_failure=lambda exc: log_colour_extraction_failure(
+                        self._wiki_log,
+                        inter,
+                        'wikipedia',
+                        thumbnail_url,
+                        exc,
+                        trace_id=trace_id,
+                        log_params=[
+                            {'kind': 'query', 'label': 'search_query', 'value': original_query},
+                            {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title},
+                        ],
+                        search_query=original_query,
+                        resolved_search_term=resolved_search_term,
+                        resolved_page_title=title,
+                        resolution_source=resolution_source,
+                        invocation_mode=invocation_mode,
+                    ),
                 )
             )
 

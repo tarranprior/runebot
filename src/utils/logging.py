@@ -42,6 +42,7 @@ docstrings.
 
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 from loguru import logger
 
 @dataclass
@@ -304,6 +305,54 @@ class BoundCommandLogger:
             exc=exc,
             **bind_kwargs,
         )
+
+
+def log_colour_extraction_failure(
+    bound_logger: BoundCommandLogger,
+    inter,
+    command: str,
+    image_url: str,
+    exc: Exception,
+    *,
+    trace_id: str | None = None,
+    log_params: list | None = None,
+    **context,
+) -> None:
+    '''
+    Emits a structured warning event for a handled colour fallback.
+    '''
+
+    image_host = None
+    if image_url:
+        try:
+            image_host = urlparse(str(image_url)).hostname
+        except Exception:
+            image_host = None
+
+    bound_logger.warning(
+        inter,
+        build_log_message(
+            command=command,
+            stage='failure',
+            operation='colour_extraction',
+        ),
+        action='fail',
+        stage='failure',
+        operation='colour_extraction',
+        trace_id=trace_id,
+        log_params=log_params,
+        handled=True,
+        expected_failure=False,
+        user_visible=False,
+        fatal=False,
+        fallback_used=True,
+        fallback_colour='og_blurple',
+        image_url=image_url,
+        image_host=image_host,
+        exception_type=type(exc).__name__,
+        exception=str(exc),
+        **context,
+    )
 
 
 def serialize_params(params: List[LogParam]) -> List[dict]:

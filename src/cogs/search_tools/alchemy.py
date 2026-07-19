@@ -38,6 +38,7 @@ from utils.logging import (
     BoundCommandLogger,
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
+    log_colour_extraction_failure,
     build_log_message,
     build_resolved_search_log_params,
     build_search_query_log_params,
@@ -185,13 +186,29 @@ class Alchemy(commands.Cog, name='alchemy'):
             info = parse_infobox(page_content)
             item_id = info.get('Item ID')
             thumbnail_url = parse_thumbnail(page_content)
+
             colour = disnake.Colour.from_rgb(
                 *await extract_colour(
                     self,
                     inter.guild_id,
                     inter.guild.owner_id,
                     thumbnail_url,
-                    HEADERS
+                    HEADERS,
+                    on_failure=lambda exc: log_colour_extraction_failure(
+                        self._alchemy_log,
+                        inter,
+                        'alchemy',
+                        thumbnail_url,
+                        exc,
+                        trace_id=trace_id,
+                        log_params=[{'kind': 'item', 'label': 'item_id', 'value': item_id}],
+                        search_query=search_query,
+                        resolved_search_term=resolved_search_term,
+                        resolved_page_title=title,
+                        resolution_source=resolution_source,
+                        invocation_mode=invocation_mode,
+                        item_id=item_id,
+                    ),
                 )
             )
 
