@@ -37,9 +37,16 @@ from templates.bot import Bot
 from utils import *
 
 import time
+import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction
+from utils.logging import (
+    BoundCommandLogger,
+    build_command_log_bind,
+    build_expected_user_visible_failure_metadata,
+    build_log_message,
+)
 
 
 class Ping(commands.Cog, name='ping'):
@@ -60,6 +67,29 @@ class Ping(commands.Cog, name='ping'):
         '''
 
         self.bot = bot
+        self._ping_log = BoundCommandLogger(self._ping_bind)
+
+
+    def _ping_bind(
+        self,
+        inter: ApplicationCommandInteraction,
+        *,
+        action: str,
+        stage: str,
+        operation: str = 'latency',
+        trace_id: str | None = None,
+        **extra,
+    ) -> dict:
+        return build_command_log_bind(
+            command='ping',
+            inter=inter,
+            action=action,
+            stage=stage,
+            operation=operation,
+            invocation_source='slash_command',
+            trace_id=trace_id,
+            **extra,
+        )
 
 
     async def calculate_ping(
@@ -76,8 +106,7 @@ class Ping(commands.Cog, name='ping'):
 
         :return: (None)
         '''
-        # Raise an error if the user does not have administrative 
-        # permissions.
+
         if not inter.user.id == inter.guild.owner_id:
             raise exceptions.NoAdministratorPermissions
 
@@ -145,8 +174,74 @@ class Ping(commands.Cog, name='ping'):
 
         :return: (None)
         '''
-        await inter.response.defer()
-        await self.calculate_ping(inter)
+        trace_id = uuid.uuid4().hex
+
+        self._ping_log.info(
+            inter,
+            build_log_message(
+                command='ping',
+                stage='start',
+                operation='latency',
+            ),
+            action='start',
+            stage='start',
+            operation='latency',
+            trace_id=trace_id,
+        )
+
+        try:
+            await inter.response.defer()
+            await self.calculate_ping(inter)
+
+            self._ping_log.success(
+                inter,
+                build_log_message(
+                    command='ping',
+                    stage='complete',
+                    operation='latency',
+                ),
+                action='complete',
+                stage='complete',
+                operation='latency',
+                trace_id=trace_id,
+            )
+
+        except exceptions.NoAdministratorPermissions as exc:
+            self._ping_log.warning(
+                inter,
+                build_log_message(
+                    command='ping',
+                    stage='failure',
+                    operation='latency',
+                ),
+                action='fail',
+                stage='failure',
+                operation='latency',
+                trace_id=trace_id,
+                **build_expected_user_visible_failure_metadata(exc),
+            )
+            raise
+
+        except Exception as exc:
+            self._ping_log.error(
+                inter,
+                build_log_message(
+                    command='ping',
+                    stage='runtime_failure',
+                    operation='latency',
+                ),
+                exc=exc,
+                action='fail',
+                stage='runtime_failure',
+                operation='latency',
+                trace_id=trace_id,
+                handled=False,
+                expected_failure=False,
+                user_visible=False,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+            )
+            raise
 
 
 def setup(bot) -> None:
