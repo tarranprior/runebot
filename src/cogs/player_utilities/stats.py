@@ -16,7 +16,7 @@ Key Functions:
             `stats` command.
     - `button_listener(...)`:
             Cog listener which listens for button events.
-    - `callback(self, inter: disnake.MessageInteraction)`:
+    - `callback(self, inter: MessageInteraction)`:
             A callback function for dropdown selection.
     - `setup(bot: Bot)`:
             A function for defining the bot setup for the `stats` command.
@@ -116,12 +116,16 @@ class Stats(commands.Cog, name='stats'):
     ) -> str:
         return (
             'component_callback'
-            if isinstance(inter, disnake.MessageInteraction)
+            if isinstance(inter, MessageInteraction)
             else 'slash_command'
         )
 
 
-    async def _ack_invalid_stats_component(self, inter: MessageInteraction) -> None:
+    async def _ack_invalid_stats_component(
+        self,
+        inter: MessageInteraction,
+        trace_id: str,
+    ) -> None:
         await ack_component_failure(
             inter,
             self._stats_log,
@@ -129,6 +133,26 @@ class Stats(commands.Cog, name='stats'):
             description=f'This stats control is no longer valid. Please run {SLASH_MENTIONS["stats"]} again.',
             operation='invalid_component',
             invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
+        )
+
+
+    def _log_component_start(
+        self,
+        inter: MessageInteraction,
+        trace_id: str,
+        operation: str,
+        **metadata,
+    ) -> None:
+        self._stats_log.info(
+            inter,
+            build_log_message(command='stats', stage='start', operation=operation),
+            trace_id=trace_id,
+            invocation_source='component_callback',
+            action='start',
+            stage='start',
+            operation=operation,
+            **metadata,
         )
 
 
@@ -302,7 +326,7 @@ class Stats(commands.Cog, name='stats'):
 
     async def _send_account_manager(
         self,
-        inter: disnake.MessageInteraction,
+        inter: MessageInteraction,
         user_id: int,
         default_account=None,
         accounts=None,
@@ -313,7 +337,7 @@ class Stats(commands.Cog, name='stats'):
 
         :param self: -
             Represents this object.
-        :param inter: (disnake.MessageInteraction) -
+        :param inter: (MessageInteraction) -
             Represents the interaction that triggered the Account Manager.
         :param user_id: (Integer) -
             Represents the Discord user ID of the command author.
@@ -340,7 +364,7 @@ class Stats(commands.Cog, name='stats'):
 
     async def search_hiscores(
         self,
-        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        inter: ApplicationCommandInteraction | MessageInteraction,
         hiscore_category: str,
         account_type: str,
         username: str = None,
@@ -357,7 +381,7 @@ class Stats(commands.Cog, name='stats'):
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction | disnake.MessageInteraction) -
+        :param inter: (ApplicationCommandInteraction | MessageInteraction) -
             Represents an interaction with an application command or component.
         :param hiscore_category: (String) -
             Represents the Hiscore category (Ex: Bosses, Skills etc.)
@@ -894,14 +918,14 @@ class Stats(commands.Cog, name='stats'):
     @commands.Cog.listener('on_button_click')
     async def button_listener(
         self,
-        inter: disnake.MessageInteraction
+        inter: MessageInteraction
     ) -> None:
         '''
         Cog listener which handles button clicks for /stats navigation and refresh.
 
         :param self: -
             Represents this object.
-        :param inter: (disnake.MessageInteraction) -
+        :param inter: (MessageInteraction) -
             Represents a message component interaction triggered by a stats button.
 
         :return: (None)
@@ -911,15 +935,55 @@ class Stats(commands.Cog, name='stats'):
         if not custom_id:
             return
 
+        if not custom_id.startswith(('acct_del:', 'acct_manager:', 'stats:')):
+            return
+
+        trace_id = uuid.uuid4().hex
+        raw_payload = custom_id.split(':', 1)[1]
+        raw_params = raw_payload.split(',')
+        raw_action = raw_params[0] if raw_params else None
+        component_prefix = custom_id.split(':', 1)[0]
+        operation = {
+            ('acct_del', 'no', 5): 'account_delete_cancel',
+            ('acct_del', 'ok', 5): 'account_delete_confirm',
+            ('acct_manager', 'refresh', 2): 'account_manager_refresh',
+            ('acct_manager', 'delete', 3): 'account_delete',
+            ('stats', 'account_manager', 2): 'account_manager',
+            ('stats', 'navigate', 5): 'navigate',
+            ('stats', 'refresh', 5): 'refresh',
+        }.get(
+            (component_prefix, raw_action, len(raw_params)),
+            'invalid_component',
+        )
+        origin_candidate = raw_params[4] if len(raw_params) == 5 else None
+        origin_trace_id = (
+            origin_candidate
+            if (
+                component_prefix == 'acct_del'
+                and raw_action in ('no', 'ok')
+                and isinstance(origin_candidate, str)
+                and len(origin_candidate) == 32
+                and all(char in '0123456789abcdefABCDEF' for char in origin_candidate)
+            )
+            else None
+        )
+        self._log_component_start(
+            inter,
+            trace_id,
+            operation,
+            component_type='button',
+            origin_trace_id=origin_trace_id,
+        )
+
         if custom_id.startswith('acct_del:'):
             payload = custom_id.removeprefix('acct_del:')
             params = payload.split(',')
 
             if len(params) != 5:
-                await self._ack_invalid_stats_component(inter)
+                await self._ack_invalid_stats_component(inter, trace_id)
                 return
 
-            action, owner_id, account_id, manager_message_id, trace_id = params
+            action, owner_id, account_id, manager_message_id, _raw_origin_trace_id = params
 
             if str(inter.author.id) != owner_id:
                 await ack_wrong_component_user(
@@ -927,33 +991,58 @@ class Stats(commands.Cog, name='stats'):
                     self._stats_log,
                     'stats',
                     invocation_source=self._invocation_source(inter),
+                    trace_id=trace_id,
                 )
                 return
 
             if action == 'no':
-                await inter.response.defer()
-                await inter.delete_original_response()
-
-                self._stats_log.info(
-                    inter,
-                    build_log_message(
-                        command='stats',
+                try:
+                    await inter.response.defer()
+                    await inter.delete_original_response()
+                    self._stats_log.success(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='complete',
+                            operation='account_delete_cancel',
+                        ),
+                        trace_id=trace_id,
+                        origin_trace_id=origin_trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='complete',
                         stage='complete',
                         operation='account_delete_cancel',
-                    ),
-                    trace_id=trace_id,
-                    invocation_source=self._invocation_source(inter),
-                    action='complete',
-                    stage='complete',
-                    operation='account_delete_cancel',
-                    owner_id=owner_id,
-                    component_type='button',
-                    account_id=account_id,
-                )
+                        owner_id=owner_id,
+                        component_type='button',
+                        account_id=account_id,
+                    )
+                except Exception as exc:
+                    self._stats_log.error(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='runtime_failure',
+                            operation='account_delete_cancel',
+                        ),
+                        exc=exc,
+                        trace_id=trace_id,
+                        origin_trace_id=origin_trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='fail',
+                        stage='runtime_failure',
+                        operation='account_delete_cancel',
+                        owner_id=owner_id,
+                        component_type='button',
+                        account_id=account_id,
+                        handled=False,
+                        expected_failure=False,
+                        user_visible=False,
+                    )
+                    raise
                 return
 
             if action != 'ok':
-                await self._ack_invalid_stats_component(inter)
+                await self._ack_invalid_stats_component(inter, trace_id)
                 return
 
             try:
@@ -994,22 +1083,24 @@ class Stats(commands.Cog, name='stats'):
                             ephemeral=True
                         )
 
-                    self._stats_log.success(
-                        inter,
-                        build_log_message(
-                            command='stats',
-                            stage='complete',
-                            operation='account_delete_confirm',
-                        ),
-                        trace_id=trace_id,
-                        invocation_source=self._invocation_source(inter),
-                        action='complete',
+                self._stats_log.success(
+                    inter,
+                    build_log_message(
+                        command='stats',
                         stage='complete',
                         operation='account_delete_confirm',
-                        owner_id=owner_id,
-                        component_type='button',
-                        account_id=account_id,
-                    )
+                    ),
+                    trace_id=trace_id,
+                    origin_trace_id=origin_trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='complete',
+                    stage='complete',
+                    operation='account_delete_confirm',
+                    owner_id=owner_id,
+                    component_type='button',
+                    account_id=account_id,
+                    deleted=deleted,
+                )
             except Exception as exc:
                 self._stats_log.error(
                     inter,
@@ -1020,6 +1111,7 @@ class Stats(commands.Cog, name='stats'):
                     ),
                     exc=exc,
                     trace_id=trace_id,
+                    origin_trace_id=origin_trace_id,
                     invocation_source=self._invocation_source(inter),
                     action='fail',
                     stage='runtime_failure',
@@ -1039,25 +1131,24 @@ class Stats(commands.Cog, name='stats'):
             params = payload.split(',')
 
             if not params:
-                await self._ack_invalid_stats_component(inter)
+                await self._ack_invalid_stats_component(inter, trace_id)
                 return
 
             action = params[0]
 
             if action == 'refresh':
                 if len(params) != 2:
-                    await self._ack_invalid_stats_component(inter)
+                    await self._ack_invalid_stats_component(inter, trace_id)
                     return
 
                 _, owner_id = params
-                trace_id = uuid.uuid4().hex
-
                 if str(inter.author.id) != owner_id:
                     await ack_wrong_component_user(
                         inter,
                         self._stats_log,
                         'stats',
                         invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
                     )
                     return
 
@@ -1066,27 +1157,6 @@ class Stats(commands.Cog, name='stats'):
                 try:
                     default_account = await get_default_account(self, int(owner_id))
                     accounts = await get_user_accounts(self, int(owner_id))
-
-                    self._stats_log.info(
-                        inter,
-                        build_log_message(
-                            command='stats',
-                            stage='start',
-                            operation='account_manager_refresh',
-                        ),
-                        trace_id=trace_id,
-                        invocation_source=self._invocation_source(inter),
-                        action='start',
-                        stage='start',
-                        operation='account_manager_refresh',
-                        owner_id=owner_id,
-                        component_type='button',
-                        accounts_count=len(accounts),
-                        has_default_account=bool(default_account),
-                        default_account_id=getattr(default_account, 'account_id', None),
-                        default_username=getattr(default_account, 'username', None),
-                        default_account_type=getattr(default_account, 'account_type', None),
-                    )
 
                     loading_view = build_loading_button_view(inter)
                     await inter.response.edit_message(view=loading_view)
@@ -1159,7 +1229,7 @@ class Stats(commands.Cog, name='stats'):
 
             if action == 'delete':
                 if len(params) != 3:
-                    await self._ack_invalid_stats_component(inter)
+                    await self._ack_invalid_stats_component(inter, trace_id)
                     return
 
                 _, owner_id, account_id = params
@@ -1171,6 +1241,7 @@ class Stats(commands.Cog, name='stats'):
                         self._stats_log,
                         'stats',
                         invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
                     )
                     return
 
@@ -1182,27 +1253,9 @@ class Stats(commands.Cog, name='stats'):
                         description='You do not have a default account to delete.',
                         operation='account_delete_no_default',
                         invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
                     )
                     return
-
-                trace_id = uuid.uuid4().hex
-
-                self._stats_log.info(
-                    inter,
-                    build_log_message(
-                        command='stats',
-                        stage='start',
-                        operation='account_delete',
-                    ),
-                    trace_id=trace_id,
-                    invocation_source=self._invocation_source(inter),
-                    action='start',
-                    stage='start',
-                    operation='account_delete',
-                    owner_id=owner_id,
-                    component_type='button',
-                    account_id=account_id,
-                )
 
                 try:
                     owner_accounts = await get_user_accounts(self, int(owner_id))
@@ -1250,6 +1303,22 @@ class Stats(commands.Cog, name='stats'):
                         view=confirm_view,
                         ephemeral=True
                     )
+                    self._stats_log.success(
+                        inter,
+                        build_log_message(
+                            command='stats',
+                            stage='complete',
+                            operation='account_delete',
+                        ),
+                        trace_id=trace_id,
+                        invocation_source=self._invocation_source(inter),
+                        action='complete',
+                        stage='complete',
+                        operation='account_delete',
+                        owner_id=owner_id,
+                        component_type='button',
+                        account_id=account_id,
+                    )
                 except Exception as exc:
                     self._stats_log.error(
                         inter,
@@ -1274,7 +1343,7 @@ class Stats(commands.Cog, name='stats'):
                     raise
                 return
 
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         if not custom_id.startswith('stats:'):
@@ -1284,14 +1353,14 @@ class Stats(commands.Cog, name='stats'):
         params = payload.split(',')
 
         if not params:
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         action = params[0]
 
         if action == 'account_manager':
             if len(params) != 2:
-                await self._ack_invalid_stats_component(inter)
+                await self._ack_invalid_stats_component(inter, trace_id)
                 return
             owner_id = params[1]
             if str(inter.author.id) != owner_id:
@@ -1300,36 +1369,15 @@ class Stats(commands.Cog, name='stats'):
                     self._stats_log,
                     'stats',
                     invocation_source=self._invocation_source(inter),
+                    trace_id=trace_id,
                 )
                 return
 
-            trace_id = uuid.uuid4().hex
             default_account = None
             accounts = None
             try:
                 default_account = await get_default_account(self, int(owner_id))
                 accounts = await get_user_accounts(self, int(owner_id))
-
-                self._stats_log.info(
-                    inter,
-                    build_log_message(
-                        command='stats',
-                        stage='start',
-                        operation='account_manager',
-                    ),
-                    trace_id=trace_id,
-                    invocation_source=self._invocation_source(inter),
-                    action='start',
-                    stage='start',
-                    operation='account_manager',
-                    owner_id=owner_id,
-                    component_type='button',
-                    accounts_count=len(accounts),
-                    has_default_account=bool(default_account),
-                    default_account_id=getattr(default_account, 'account_id', None),
-                    default_username=getattr(default_account, 'username', None),
-                    default_account_type=getattr(default_account, 'account_type', None),
-                )
 
                 await self._send_account_manager(
                     inter,
@@ -1390,11 +1438,11 @@ class Stats(commands.Cog, name='stats'):
             return
 
         if action not in ['navigate', 'refresh']:
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         if len(params) != 5:
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         _, hiscore_category, account_type, resolved_username, owner_id = params
@@ -1405,66 +1453,14 @@ class Stats(commands.Cog, name='stats'):
                 self._stats_log,
                 'stats',
                 invocation_source=self._invocation_source(inter),
+                trace_id=trace_id,
             )
             return
 
-        trace_id = uuid.uuid4().hex
-
-        if action == 'navigate':
-            self._stats_log.info(
-                inter,
-                build_log_message(
-                    command='stats',
-                    stage='start',
-                    operation='navigate',
-                ),
-                trace_id=trace_id,
-                invocation_source=self._invocation_source(inter),
-                action='start',
-                stage='start',
-                operation='navigate',
-                hiscore_category=hiscore_category,
-                account_type=account_type,
-                resolved_username=resolved_username,
-                resolved_account_type=account_type,
-                owner_id=owner_id,
-                component_type='button',
-                log_params=serialize_resolved_username(
-                    resolved_username,
-                    account_type=account_type,
-                    resolution_source='button_navigate',
-                ),
-            )
-        else:
-            self._stats_log.info(
-                inter,
-                build_log_message(
-                    command='stats',
-                    stage='start',
-                    operation='refresh',
-                ),
-                trace_id=trace_id,
-                invocation_source=self._invocation_source(inter),
-                action='start',
-                stage='start',
-                operation='refresh',
-                hiscore_category=hiscore_category,
-                account_type=account_type,
-                resolved_username=resolved_username,
-                resolved_account_type=account_type,
-                owner_id=owner_id,
-                component_type='button',
-                log_params=serialize_resolved_username(
-                    resolved_username,
-                    account_type=account_type,
-                    resolution_source='button_refresh',
-                ),
-            )
-        
-        loading_view = build_loading_button_view(inter)
-        await inter.response.edit_message(view=loading_view)
-
         try:
+            loading_view = build_loading_button_view(inter)
+            await inter.response.edit_message(view=loading_view)
+
             embed, view, resolved_username, resolved_account_type, _ = await self.search_hiscores(
                 inter,
                 hiscore_category,
@@ -1601,14 +1597,14 @@ class Stats(commands.Cog, name='stats'):
     @commands.Cog.listener('on_dropdown')
     async def dropdown_listener(
         self,
-        inter: disnake.MessageInteraction
+        inter: MessageInteraction
     ) -> None:
         '''
         Cog listener which handles dropdown selections for the Account Manager.
 
         :param self: -
             Represents this object.
-        :param inter: (disnake.MessageInteraction) -
+        :param inter: (MessageInteraction) -
             Represents a message component interaction triggered by the
             Account Manager select menu.
 
@@ -1620,17 +1616,25 @@ class Stats(commands.Cog, name='stats'):
         if not custom_id or not custom_id.startswith('acct_manager:'):
             return
 
+        trace_id = uuid.uuid4().hex
+        self._log_component_start(
+            inter,
+            trace_id,
+            'default_account_select',
+            component_type='dropdown',
+        )
+
         payload = custom_id.removeprefix('acct_manager:')
         params = payload.split(',')
 
         if len(params) != 2:
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         action, owner_id = params
 
         if action != 'select':
-            await self._ack_invalid_stats_component(inter)
+            await self._ack_invalid_stats_component(inter, trace_id)
             return
 
         if str(inter.author.id) != owner_id:
@@ -1639,43 +1643,57 @@ class Stats(commands.Cog, name='stats'):
                 self._stats_log,
                 'stats',
                 invocation_source=self._invocation_source(inter),
+                trace_id=trace_id,
             )
             return
 
-        selected_value = inter.values[0]
+        selected_value = inter.values[0] if inter.values else None
+        if selected_value is None:
+            await self._ack_invalid_stats_component(inter, trace_id)
+            return
         if selected_value == 'none':
+            self._stats_log.warning(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='failure',
+                    operation='default_account_select',
+                ),
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='failure',
+                operation='default_account_select',
+                component_type='dropdown',
+                owner_id=owner_id,
+                selected_value=selected_value,
+                handled=True,
+                expected_failure=True,
+                user_visible=False,
+            )
             await inter.response.defer()
             return
 
-        trace_id = uuid.uuid4().hex
-
-        all_accounts = await get_user_accounts(self, int(owner_id))
-        selected_account = next(
-            (acc for acc in all_accounts if str(acc[0]) == selected_value), None
-        )
-        selected_username = selected_account[1] if selected_account else None
-        selected_account_type = selected_account[2] if selected_account else None
-
-        self._stats_log.info(
-            inter,
-            build_log_message(
-                command='stats',
-                stage='start',
-                operation='default_account_select',
-            ),
-            trace_id=trace_id,
-            invocation_source=self._invocation_source(inter),
-            action='start',
-            stage='start',
-            operation='default_account_select',
-            owner_id=owner_id,
-            component_type='dropdown',
-            selected_value=selected_value,
-            selected_username=selected_username,
-            selected_account_type=selected_account_type,
-        )
-
+        selected_username = None
+        selected_account_type = None
         try:
+            all_accounts = await get_user_accounts(self, int(owner_id))
+            selected_account = next(
+                (acc for acc in all_accounts if str(acc[0]) == selected_value), None
+            )
+            if selected_account is None:
+                await ack_component_failure(
+                    inter,
+                    self._stats_log,
+                    'stats',
+                    description='That account is no longer available. Please refresh the account manager.',
+                    operation='default_account_select',
+                    invocation_source=self._invocation_source(inter),
+                    trace_id=trace_id,
+                )
+                return
+            selected_username = selected_account[1] if selected_account else None
+            selected_account_type = selected_account[2] if selected_account else None
             await inter.response.defer()
 
             user_id = int(owner_id)

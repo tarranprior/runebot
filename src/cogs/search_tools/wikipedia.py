@@ -20,7 +20,7 @@ Key Functions:
             Functions for searching for and retrieving Wikipedia articles,
             as well as creating a slash command and autocomplete query for
             the `wikipedia` command.
-    - `callback(self, inter: disnake.MessageInteraction)`:
+    - `callback(self, inter: MessageInteraction)`:
             A callback function for dropdown selection.
     - `setup(bot: Bot)`:
             A function for defining the bot setup for the `wikipedia` command.
@@ -38,6 +38,7 @@ import uuid
 
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
+from loguru import logger
 
 import exceptions
 from config import *
@@ -76,18 +77,18 @@ class Wikipedia(commands.Cog, name='wikipedia'):
 
     @staticmethod
     def _invocation_source(
-        inter: ApplicationCommandInteraction | disnake.MessageInteraction
+        inter: ApplicationCommandInteraction | MessageInteraction
     ) -> str:
         return (
             'component_callback'
-            if isinstance(inter, disnake.MessageInteraction)
+            if isinstance(inter, MessageInteraction)
             else 'slash_command'
         )
 
 
     def _wiki_bind(
         self,
-        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        inter: ApplicationCommandInteraction | MessageInteraction,
         *,
         action: str,
         stage: str,
@@ -120,7 +121,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
 
     async def search_wikipedia(
         self,
-        inter: ApplicationCommandInteraction | disnake.MessageInteraction,
+        inter: ApplicationCommandInteraction | MessageInteraction,
         search_query: str,
         trace_id: str | None = None,
         invocation_mode_override: str | None = None,
@@ -132,7 +133,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
 
         :param self: -
             Represents this object.
-        :param inter: (ApplicationCommandInteraction | disnake.MessageInteraction) -
+        :param inter: (ApplicationCommandInteraction | MessageInteraction) -
             Represents an interaction with an application command or component callback.
         :param search_query: (String) -
             Represents a search query.
@@ -554,18 +555,20 @@ class Dropdown(disnake.ui.StringSelect):
         )
 
 
-    async def callback(self, inter: disnake.MessageInteraction):
+    async def callback(self, inter: MessageInteraction):
         '''
         The callback function for dropdown selection (Select Menu.)
 
         :param self: -
             Represents this object.
-        :param inter: (disnake.MessageInteraction) -
+        :param inter: (MessageInteraction) -
             Represents a message component interaction triggered by the dropdown.
 
         :return: (None)
         '''
 
+        trace_id = uuid.uuid4().hex
+        origin_trace_id = self.trace_id
         selected_value = self.values[0] if self.values else None
 
         self._cog._wiki_log.info(
@@ -578,7 +581,8 @@ class Dropdown(disnake.ui.StringSelect):
             action='start',
             stage='start',
             operation='search',
-            trace_id=self.trace_id,
+            trace_id=trace_id,
+            origin_trace_id=origin_trace_id,
             invocation_mode='dropdown_selection',
             search_query=selected_value,
             component_type='dropdown',
@@ -604,7 +608,8 @@ class Dropdown(disnake.ui.StringSelect):
                 action='defer',
                 stage='start',
                 operation='defer',
-                trace_id=self.trace_id,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
                 invocation_mode='dropdown_selection',
                 component_type='dropdown',
                 selected_value=selected_value,
@@ -614,7 +619,7 @@ class Dropdown(disnake.ui.StringSelect):
             embed, view, resolved_search_term, resolved_page_title = await self._cog.search_wikipedia(
                 inter,
                 selected_value,
-                trace_id=self.trace_id,
+                trace_id=trace_id,
                 invocation_mode_override='dropdown_selection',
             )
 
@@ -629,7 +634,8 @@ class Dropdown(disnake.ui.StringSelect):
                 action='start',
                 stage='start',
                 operation='followup_send',
-                trace_id=self.trace_id,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
                 invocation_mode='dropdown_selection',
                 component_type='dropdown',
                 selected_value=selected_value,
@@ -653,7 +659,8 @@ class Dropdown(disnake.ui.StringSelect):
                 action='complete',
                 stage='complete',
                 operation='followup_send',
-                trace_id=self.trace_id,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
                 invocation_mode='dropdown_selection',
                 component_type='dropdown',
                 selected_value=selected_value,
@@ -670,7 +677,8 @@ class Dropdown(disnake.ui.StringSelect):
                 stage='complete',
                 operation='search',
                 invocation_mode='dropdown_selection',
-                trace_id=self.trace_id,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
                 search_query=selected_value,
                 resolved_search_term=resolved_search_term,
                 resolved_page_title=resolved_page_title,
@@ -752,7 +760,8 @@ class Dropdown(disnake.ui.StringSelect):
                 search_query=selected_value,
                 component_type='dropdown',
                 selected_value=selected_value,
-                trace_id=self.trace_id if hasattr(self, 'trace_id') else None,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
@@ -799,7 +808,7 @@ class DropdownView(disnake.ui.View):
 
     def attach_interaction_context(
         self,
-        inter: disnake.ApplicationCommandInteraction | disnake.MessageInteraction,
+        inter: disnake.ApplicationCommandInteraction | MessageInteraction,
         *,
         invocation_mode: str | None = None,
     ) -> None:
@@ -827,7 +836,7 @@ class DropdownView(disnake.ui.View):
     def _log_lifecycle_event(
         self,
         *,
-        inter: disnake.MessageInteraction | None,
+        inter: MessageInteraction | None,
         event: str,
         trace_id: str | None,
         stage: str,
@@ -901,7 +910,7 @@ class DropdownView(disnake.ui.View):
     async def deactivate(
         self,
         *,
-        inter: disnake.MessageInteraction | None = None,
+        inter: MessageInteraction | None = None,
         event: str,
         trace_id: str | None = None,
     ) -> None:

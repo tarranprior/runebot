@@ -35,6 +35,7 @@ from typing import Callable, Optional, Tuple
 from urllib.request import Request, urlopen
 from humanfriendly import format_timespan
 import disnake
+from disnake import MessageInteraction
 from colorthief import ColorThief as ColourThief
 
 
@@ -228,6 +229,7 @@ async def ack_wrong_component_user(
     *,
     operation: str = 'wrong_component_user',
     invocation_source: str | None = None,
+    trace_id: str | None = None,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement when a component is used
@@ -254,6 +256,7 @@ async def ack_wrong_component_user(
         title='Nothing interesting happens.',
         operation=operation,
         invocation_source=invocation_source,
+        trace_id=trace_id,
     )
 
 
@@ -266,6 +269,7 @@ async def ack_component_failure(
     title: str = 'Nothing interesting happens.',
     operation: str = 'component_failure',
     invocation_source: str | None = None,
+    trace_id: str | None = None,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement for a handled component
@@ -312,6 +316,7 @@ async def ack_component_failure(
             action='fail',
             stage='failure',
             operation=operation,
+            trace_id=trace_id,
             component_type='component',
             handled=True,
             expected_failure=True,
@@ -452,12 +457,12 @@ def get_discord_mention_id(value: str) -> str:
     return value
 
 
-def build_loading_button_view(inter: disnake.MessageInteraction) -> disnake.ui.View:
+def build_loading_button_view(inter: MessageInteraction) -> disnake.ui.View:
     '''
     Builds a temporary view from message components and disables only
     the clicked button.
 
-    :param inter: (disnake.MessageInteraction) -
+    :param inter: (MessageInteraction) -
         Represents a message component interaction triggered by a button.
 
     :return: (disnake.ui.View) -

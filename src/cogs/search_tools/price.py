@@ -180,7 +180,11 @@ class Price(commands.Cog, name='price'):
             )
 
 
-    async def _ack_invalid_price_component(self, inter: MessageInteraction) -> None:
+    async def _ack_invalid_price_component(
+        self,
+        inter: MessageInteraction,
+        trace_id: str,
+    ) -> None:
         await ack_component_failure(
             inter,
             self._price_log,
@@ -188,6 +192,7 @@ class Price(commands.Cog, name='price'):
             description=f'This price control is no longer valid. Please run {SLASH_MENTIONS["price"]} again.',
             operation='invalid_component',
             invocation_source=self._invocation_source(inter),
+            trace_id=trace_id,
         )
 
 
@@ -591,7 +596,7 @@ class Price(commands.Cog, name='price'):
 
         :param self: -
             Represents this object.
-        :param inter: (disnake.MessageInteraction) -
+        :param inter: (MessageInteraction) -
             Represents a message component interaction triggered by a button.
 
         :return: (None)
@@ -602,48 +607,47 @@ class Price(commands.Cog, name='price'):
         if not custom_id or not custom_id.startswith('price:'):
             return
 
+        trace_id = uuid.uuid4().hex
         payload = custom_id.removeprefix('price:')
         parts = payload.split(':')
+        operation = (
+            'refresh'
+            if len(parts) == 3 and parts[0] == 'refresh'
+            else 'invalid_component'
+        )
+        self._price_log.info(
+            inter,
+            build_log_message(command='price', stage='start', operation=operation),
+            action='start',
+            stage='start',
+            operation=operation,
+            trace_id=trace_id,
+            component_type='button',
+            button_action=parts[0] if parts else None,
+        )
 
         if len(parts) != 3:
-            await self._ack_invalid_price_component(inter)
+            await self._ack_invalid_price_component(inter, trace_id)
             return
 
         action, item_id, owner_id = parts
 
         if action != 'refresh':
-            await self._ack_invalid_price_component(inter)
+            await self._ack_invalid_price_component(inter, trace_id)
             return
         
         if str(inter.author.id) != owner_id:
-            await ack_wrong_component_user(inter, self._price_log, 'price')
+            await ack_wrong_component_user(
+                inter,
+                self._price_log,
+                'price',
+                trace_id=trace_id,
+            )
             return
 
-        trace_id = uuid.uuid4().hex
-        loading_view = build_loading_button_view(inter)
-        await inter.response.edit_message(view=loading_view)
-
-        self._price_log.info(
-            inter,
-            build_log_message(
-                command='price',
-                stage='start',
-                operation='refresh',
-            ),
-            action='start',
-            stage='start',
-            operation='refresh',
-            trace_id=trace_id,
-            component_type='button',
-            button_action='refresh',
-            item_id=item_id,
-            owner_id=owner_id,
-            log_params=[
-                {'kind': 'item', 'label': 'item_id', 'value': item_id},
-            ],
-        )
-
         try:
+            loading_view = build_loading_button_view(inter)
+            await inter.response.edit_message(view=loading_view)
             api_data, info, title = self._resolve_item_info_by_id(
                 item_id,
                 trace_id=trace_id,
