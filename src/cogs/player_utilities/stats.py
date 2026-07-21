@@ -1483,6 +1483,7 @@ class Stats(commands.Cog, name='stats'):
             )
             return
 
+        resolved_account_type = None
         try:
             loading_view = build_loading_button_view(inter)
             await inter.response.edit_message(view=loading_view)
