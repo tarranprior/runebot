@@ -357,7 +357,8 @@ class Price(commands.Cog, name='price'):
         item_id: str,
         trace_id: str | None = None,
     ) -> Tuple[dict, dict, str]:
-        api_data = parse_price_data(
+        api_data = await asyncio.to_thread(
+            parse_price_data,
             f"{PRICEAPI_URL}{item_id}",
             HEADERS,
             trace_id=trace_id,
@@ -461,7 +462,8 @@ class Price(commands.Cog, name='price'):
             An embed, view, and filename containing the price information.
         '''
 
-        graphapi_data = parse_price_data(
+        graphapi_data = await asyncio.to_thread(
+            parse_price_data,
             f"{GRAPHAPI_URL}{item_id}.json",
             HEADERS,
             trace_id=trace_id,
@@ -506,7 +508,8 @@ class Price(commands.Cog, name='price'):
 
         try:
             # Calculating the profit margin.
-            price_data = parse_price_data(
+            price_data = await asyncio.to_thread(
+                parse_price_data,
                 f'{WIKIAPI_URL}{item_id}',
                 HEADERS,
                 trace_id=trace_id,
@@ -941,7 +944,8 @@ class Price(commands.Cog, name='price'):
                 started_at=started_at,
             )
             item_id = info['Item ID']
-            api_data = parse_price_data(
+            api_data = await asyncio.to_thread(
+                parse_price_data,
                 f"{PRICEAPI_URL}{item_id}",
                 HEADERS,
                 trace_id=trace_id,

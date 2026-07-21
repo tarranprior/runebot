@@ -245,7 +245,8 @@ class Alchemy(commands.Cog, name='alchemy'):
             try:
 
                 # Gets the latest `high_price` of the item.
-                price_data = parse_price_data(
+                price_data = await asyncio.to_thread(
+                    parse_price_data,
                     f'{WIKIAPI_URL}{info["Item ID"]}',
                     HEADERS,
                     trace_id=trace_id,
@@ -253,7 +254,8 @@ class Alchemy(commands.Cog, name='alchemy'):
                 high_price = price_data['data'][info['Item ID']]['high']
 
                 # Gets the latest price of Nature Runes (ID: 561)
-                nature_data = parse_price_data(
+                nature_data = await asyncio.to_thread(
+                    parse_price_data,
                     f'{WIKIAPI_URL}561',
                     HEADERS,
                     trace_id=trace_id,
