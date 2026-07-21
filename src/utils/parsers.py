@@ -43,20 +43,23 @@ docstrings.
 
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+
+import asyncio
 import os
+import threading
 import uuid
 from typing import List, Optional
 import requests
 
 from bs4 import BeautifulSoup
-import matplotlib
-import matplotlib.pyplot as plotter
-matplotlib.use('Agg')
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 
 from utils.logging import emit_internal_log
-
 import exceptions
 from utils.helpers import normalize_price, slugify
+
+_GRAPH_RENDER_LOCK = threading.Lock()
 
 
 def parser_log(
@@ -562,45 +565,71 @@ def parse_title(page_content: BeautifulSoup) -> str:
     return page_title
 
 
+def _render_graph(data: dict) -> str:
+    '''
+    Helper function which synchronously renders price data to a PNG graph.
+
+    This function contains the blocking Matplotlib rendering and filesystem
+    work so it can be executed outside the Discord event loop. Matplotlib
+    access is serialized because the library is not thread-safe.
+
+    :param data: (Dictionary) -
+        Represents historical and average item-price data.
+
+    :return: (String) -
+        The filename of the generated PNG graph.
+    '''
+
+    with _GRAPH_RENDER_LOCK:
+        prices = data['daily'].values()
+        average = data['average'].values()
+        filename = str(uuid.uuid4())
+        output = f'artifacts/{filename}.png'
+        figure = Figure(figsize=(8, 3))
+
+        try:
+            FigureCanvasAgg(figure)
+            axes = figure.subplots()
+            axes.set_frame_on(False)
+            axes.set_yticks(
+                [
+                    max(prices),
+                    sum(prices) / len(prices),
+                    min(prices)
+                ],
+                [
+                    normalize_price(max(prices)),
+                    normalize_price(sum(prices) / len(prices)),
+                    normalize_price(min(prices))
+                ]
+            )
+            axes.tick_params(axis='y', colors='lightslategrey')
+            axes.set_xticks([])
+            axes.axhline(y=sum(prices) / len(prices), dashes=[1, 3])
+            axes.plot(average, color='#5865F2')
+            axes.plot(prices, color='lightslategrey')
+            axes.set_title('Past 180 Days', loc='right', color='lightslategrey')
+            os.makedirs('artifacts', exist_ok=True)
+            figure.savefig(output, transparent=True)
+
+        finally:
+            figure.clear()
+
+        return f'{filename}.png'
+
+
 async def generate_graph(data: dict) -> str:
     '''
-    Generates a graph with given api price data.
+    Helper function which generates a graph with given API price data.
 
     :param data: (Dictionary) -
         Represents a dictionary of price data.
 
     :return: (String) -
-        The filename of the generated graph.
+        The filename of the generated PNG graph.
     '''
 
-    prices = data['daily'].values()
-    average = data['average'].values()
-    filename = str(uuid.uuid4())
-
-    plotter.rcParams['ytick.color'] = 'lightslategrey'
-    plotter.rcParams['figure.figsize'] = 8, 3
-    plotter.box(on=None)
-    plotter.yticks(
-        [
-            max(prices),
-            sum(prices) / len(prices),
-            min(prices)
-        ],
-        [
-            normalize_price(max(prices)),
-            normalize_price(sum(prices) / len(prices)),
-            normalize_price(min(prices))
-        ]
-    )
-    plotter.xticks([])
-    plotter.axhline(y=sum(prices) / len(prices), dashes=[1, 3])
-    plotter.plot(average, color='#5865F2')
-    plotter.plot(prices, color='lightslategrey')
-    plotter.title('Past 180 Days', loc='right', color='lightslategrey')
-    os.makedirs('artifacts', exist_ok=True)
-    plotter.savefig(f'artifacts/{filename}', transparent=True)
-    plotter.close()
-    return f'{filename}.png'
+    return await asyncio.to_thread(_render_graph, data)
 
 
 def parse_hiscores(
