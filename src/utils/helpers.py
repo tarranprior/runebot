@@ -25,13 +25,14 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import sys
 import os
 import io
 import json
 from datetime import datetime, timezone
 
-from typing import Callable, Optional, Tuple
+from typing import Callable, Mapping, Optional
 from urllib.request import Request, urlopen
 from humanfriendly import format_timespan
 import disnake
@@ -89,14 +90,45 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _download_and_extract_colour(
+    image_url: str,
+    headers: tuple[tuple[str, str], ...],
+    *,
+    timeout: float = 60,
+) -> tuple[int, int, int]:
+    '''
+    Helper function which synchronously downloads an image and extracts its
+    most frequent colour using color-thief-py.
+
+    This function contains only the blocking network and image-processing work
+    so it can be executed outside the Discord event loop.
+
+    :param image_url: (String) -
+        Represents the URL of the image.
+    :param headers: (Tuple) -
+        Represents immutable HTTP request headers for the web request.
+    :param timeout: (Float) -
+        Represents the maximum number of seconds for the image request.
+
+    :return: (Tuple) -
+        A tuple representing the dominant RGB colour value of the image.
+    '''
+
+    request_image = Request(image_url, headers=dict(headers))
+    open_image = urlopen(request_image, timeout=timeout)
+    image_data = io.BytesIO(open_image.read())
+    colour_thief = ColourThief(image_data)
+    return colour_thief.get_color(quality=1)
+
+
 async def extract_colour(
     self,
     guild_id: int,
     guild_owner_id: int,
     image_url: str,
-    headers: str,
+    headers: Mapping[str, str],
     on_failure: Callable[[Exception], None] | None = None,
-) -> Optional[Tuple[int, int, int]]:
+) -> tuple[int, int, int]:
     '''
     Helper function which extracts the most frequent colour from an image with
     a given URL, using color-thief-py.
@@ -110,15 +142,15 @@ async def extract_colour(
         Represents the id of the guild owner.
     :param image_url: (String) -
         Represents the URL/to/image.
-    :param headers: (String) -
+    :param headers: (Dictionary) -
         Represents HTTP request headers for the web request.
     :param on_failure: (Optional[Callable]) -
         Receives a handled colour-extraction exception before the fallback
         colour is returned.
 
     :return: (Tuple) -
-        A tuple representing the dominant RGB color value of the image,
-        or None if an error occurs during color extraction.
+        A tuple representing the dominant RGB colour value of the image,
+        or the default blurple colour if extraction is disabled or fails.
     '''
 
     from .database import get_colour_mode
@@ -127,11 +159,12 @@ async def extract_colour(
         colour_mode = await get_colour_mode(self, guild_id, guild_owner_id)
         if colour_mode:
             try:
-                request_image = Request(image_url, headers=headers)
-                open_image = urlopen(request_image)
-                image_data = io.BytesIO(open_image.read())
-                colour_thief = ColourThief(image_data)
-                dominant_colour = colour_thief.get_color(quality=1)
+                dominant_colour = await asyncio.to_thread(
+                    _download_and_extract_colour,
+                    image_url,
+                    tuple(headers.items()),
+                    timeout=60,
+                )
                 return (dominant_colour)
             except Exception as exc:
                 if on_failure is not None:
