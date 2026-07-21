@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "runebot"
-version = "v1.0.6-dev.3"
-description = "Runebot is a feature rich Discord tool which scrapes, pulls and displays information about the popular MMORPG Old School RuneScape."
+version = "1.0.7.dev3"
+description = "The modern RuneScape companion for your Discord server."
 authors = ["Tarran Prior <Tarranprior@protonmail.com>"]
 license = "CC BY-NC-SA 3.0"
 
