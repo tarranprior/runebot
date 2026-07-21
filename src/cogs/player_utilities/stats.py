@@ -28,6 +28,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import time
 import uuid
 from disnake.ext import commands
@@ -477,7 +478,8 @@ class Stats(commands.Cog, name='stats'):
 
             if account_type == 'Normal':
                 try:
-                    hiscore_data = parse_hiscores(
+                    hiscore_data = await asyncio.to_thread(
+                        parse_hiscores,
                         HISCORE_API_URLS.get(account_type),
                         HEADERS,
                         HISCORES_ORDER,
@@ -489,7 +491,8 @@ class Stats(commands.Cog, name='stats'):
 
             else:
                 try:
-                    hiscore_data = parse_hiscores(
+                    hiscore_data = await asyncio.to_thread(
+                        parse_hiscores,
                         HISCORE_API_URLS.get(account_type),
                         HEADERS,
                         HISCORES_ORDER,
@@ -498,7 +501,8 @@ class Stats(commands.Cog, name='stats'):
                     )
                 except (IndexError, exceptions.NoHiscoreData) as exc1:
                     try:
-                        hiscore_data = parse_hiscores(
+                        hiscore_data = await asyncio.to_thread(
+                            parse_hiscores,
                             NORMAL_API,
                             HEADERS,
                             HISCORES_ORDER,
