@@ -115,7 +115,13 @@ def parse_all(page_content: BeautifulSoup) -> dict:
              'thumbnail_url': page_thumbnail}
 
 
-def parse_page(url: str, search_query: str, headers: dict, trace_id: str | None = None) -> BeautifulSoup:
+def parse_page(
+    url: str,
+    search_query: str,
+    headers: dict,
+    trace_id: str | None = None,
+    timeout: float = 60,
+) -> BeautifulSoup:
     '''
     Parser function whichs parses all page content from an
     Old School RuneScape wikipedia page.
@@ -126,6 +132,8 @@ def parse_page(url: str, search_query: str, headers: dict, trace_id: str | None 
         Represents the search query given by the user. (Ex: 'firecape'.)
     :param headers: (Dictionary) -
         Represents a series of request headers.
+    :param timeout: (Float) -
+        Represents the maximum number of seconds for each page request.
 
     :return: (BeautifulSoup) -
         A BeautifulSoup object containing the parsed search results.
@@ -152,7 +160,7 @@ def parse_page(url: str, search_query: str, headers: dict, trace_id: str | None 
     for query in queries:
         try:
             request = Request(f'{url}{query}', headers=headers)
-            page = urlopen(request)
+            page = urlopen(request, timeout=timeout)
             page_content = BeautifulSoup(page, 'html.parser')
 
             resolved_page_title = None

@@ -32,6 +32,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import disnake
 import time
 import uuid
@@ -153,7 +154,13 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         resolution_source = 'wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query'
 
         try:
-            page_content = parse_page(BASE_URL, resolved_search_term, HEADERS, trace_id=trace_id)
+            page_content = await asyncio.to_thread(
+                parse_page,
+                BASE_URL,
+                resolved_search_term,
+                HEADERS,
+                trace_id=trace_id,
+            )
             attributes = parse_all(page_content)
             title = attributes['title']
             resolved_search_term = title

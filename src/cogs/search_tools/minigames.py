@@ -29,6 +29,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import random
 import time
 import uuid
@@ -151,7 +152,8 @@ class Minigames(commands.Cog, name='minigames'):
                         'Creature Creation'
                     )]
                 )
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     slugify(random_selection),
                     HEADERS,
@@ -159,7 +161,8 @@ class Minigames(commands.Cog, name='minigames'):
                 )
                 resolved_search_term = random_selection
             else:
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     search_query,
                     HEADERS,
@@ -195,7 +198,8 @@ class Minigames(commands.Cog, name='minigames'):
 
             description = parse_description(page_content).pop()
             info = parse_infobox(page_content)
-            minigames = parse_page(
+            minigames = await asyncio.to_thread(
+                parse_page,
                 BASE_URL,
                 'Minigames',
                 HEADERS,

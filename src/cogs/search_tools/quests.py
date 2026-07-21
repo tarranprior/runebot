@@ -29,6 +29,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import random
 import time
 import uuid
@@ -149,14 +150,16 @@ class Quests(commands.Cog, name='quests'):
                 resolved_search_term = lucky_selection
                 resolution_source = 'wiki_random_quest'
 
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     slugify(lucky_selection),
                     HEADERS,
                     trace_id=trace_id
                 )
             else:
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     search_query,
                     HEADERS,

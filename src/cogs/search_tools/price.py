@@ -29,6 +29,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import datetime as dt
 import random
 import time
@@ -240,14 +241,16 @@ class Price(commands.Cog, name='price'):
                     [i for i in await get_suggestions(self, ['Tradeable items']) if not any(w in i for w in BLACKLIST_ITEMS)]
                 )
                 resolved_search_term = random_selection
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     slugify(random_selection),
                     HEADERS,
                     trace_id=trace_id
                 )
             else:
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     search_query,
                     HEADERS,
@@ -349,7 +352,7 @@ class Price(commands.Cog, name='price'):
             raise
 
 
-    def _resolve_item_info_by_id(
+    async def _resolve_item_info_by_id(
         self,
         item_id: str,
         trace_id: str | None = None,
@@ -366,7 +369,8 @@ class Price(commands.Cog, name='price'):
         if not isinstance(item_name, str) or not item_name.strip():
             raise exceptions.NoPriceData
 
-        page_content = parse_page(
+        page_content = await asyncio.to_thread(
+            parse_page,
             BASE_URL,
             slugify(item_name),
             HEADERS,
@@ -652,7 +656,7 @@ class Price(commands.Cog, name='price'):
         try:
             loading_view = build_loading_button_view(inter)
             await inter.response.edit_message(view=loading_view)
-            api_data, info, title = self._resolve_item_info_by_id(
+            api_data, info, title = await self._resolve_item_info_by_id(
                 item_id,
                 trace_id=trace_id,
             )

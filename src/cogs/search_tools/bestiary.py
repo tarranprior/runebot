@@ -29,6 +29,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
 import random
 import time
 import uuid
@@ -144,7 +145,8 @@ class Bestiary(commands.Cog, name='bestiary'):
         try:
             if invocation_mode == 'feeling_lucky':
                 random_selection = random.choice(await get_suggestions(self, ['Monsters']))
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     slugify(random_selection),
                     HEADERS,
@@ -152,7 +154,8 @@ class Bestiary(commands.Cog, name='bestiary'):
                 )
                 resolved_search_term = random_selection
             else:
-                page_content = parse_page(
+                page_content = await asyncio.to_thread(
+                    parse_page,
                     BASE_URL,
                     search_query,
                     HEADERS,
