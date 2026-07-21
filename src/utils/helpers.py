@@ -230,6 +230,9 @@ async def ack_wrong_component_user(
     operation: str = 'wrong_component_user',
     invocation_source: str | None = None,
     trace_id: str | None = None,
+    origin_trace_id: str | None = None,
+    started_at: float | None = None,
+    emit_runtime_failure: bool = True,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement when a component is used
@@ -257,6 +260,9 @@ async def ack_wrong_component_user(
         operation=operation,
         invocation_source=invocation_source,
         trace_id=trace_id,
+        origin_trace_id=origin_trace_id,
+        started_at=started_at,
+        emit_runtime_failure=emit_runtime_failure,
     )
 
 
@@ -270,6 +276,9 @@ async def ack_component_failure(
     operation: str = 'component_failure',
     invocation_source: str | None = None,
     trace_id: str | None = None,
+    origin_trace_id: str | None = None,
+    started_at: float | None = None,
+    emit_runtime_failure: bool = True,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement for a handled component
@@ -297,35 +306,12 @@ async def ack_component_failure(
     custom_id = getattr(getattr(inter, 'component', None), 'custom_id', None)
     component_prefix, component_action = get_component_custom_id_metadata(custom_id)
 
-    try:
-        from utils.logging import build_log_message
+    from utils.logging import build_log_message, elapsed_ms
 
-        computed_invocation_source = (
-            'component_callback' if isinstance(inter, MessageInteraction) else 'slash_command'
-        )
-        invocation = invocation_source or computed_invocation_source
-
-        bound_logger.warning(
-            inter,
-            build_log_message(
-                command=command,
-                stage='failure',
-                operation=operation,
-            ),
-            invocation_source=invocation,
-            action='fail',
-            stage='failure',
-            operation=operation,
-            trace_id=trace_id,
-            component_type='component',
-            handled=True,
-            expected_failure=True,
-            user_visible=True,
-            component_prefix=component_prefix,
-            component_action=component_action,
-        )
-    except Exception:
-        pass
+    computed_invocation_source = (
+        'component_callback' if isinstance(inter, MessageInteraction) else 'slash_command'
+    )
+    invocation = invocation_source or computed_invocation_source
 
     try:
         from utils.embeds import EmbedFactory
@@ -347,8 +333,69 @@ async def ack_component_failure(
             await inter.followup.send(embed=embed, view=view, ephemeral=True)
         else:
             await inter.response.send_message(embed=embed, view=view, ephemeral=True)
-    except Exception:
-        return
+    except Exception as exc:
+        if emit_runtime_failure:
+            bound_logger.error(
+                inter,
+                build_log_message(
+                    command=command,
+                    stage='runtime_failure',
+                    operation=operation,
+                ),
+                exc=exc,
+                invocation_source=invocation,
+                action='fail',
+                stage='runtime_failure',
+                operation=operation,
+                trace_id=trace_id,
+                component_type='component',
+                handled=False,
+                expected_failure=False,
+                user_visible=False,
+                component_prefix=component_prefix,
+                component_action=component_action,
+                **(
+                    {'origin_trace_id': origin_trace_id}
+                    if origin_trace_id is not None
+                    else {}
+                ),
+                **(
+                    {'duration_ms': elapsed_ms(started_at)}
+                    if started_at is not None
+                    else {}
+                ),
+            )
+        raise
+
+    bound_logger.warning(
+        inter,
+        build_log_message(
+            command=command,
+            stage='failure',
+            operation=operation,
+        ),
+        invocation_source=invocation,
+        action='fail',
+        stage='failure',
+        operation=operation,
+        trace_id=trace_id,
+        component_type='component',
+        handled=True,
+        expected_failure=True,
+        user_visible=True,
+        component_prefix=component_prefix,
+        component_action=component_action,
+        **(
+            {'origin_trace_id': origin_trace_id}
+            if origin_trace_id is not None
+            else {}
+        ),
+        **(
+            {'duration_ms': elapsed_ms(started_at)}
+            if started_at is not None
+            else {}
+        ),
+    )
 
 
 async def ack_runtime_failure(
@@ -356,6 +403,7 @@ async def ack_runtime_failure(
     *,
     description: str = 'Something went wrong while handling that request. Please try again.',
     title: str = 'Nothing interesting happens.',
+    raise_on_failure: bool = False,
 ) -> None:
     '''
     Sends a neutral ephemeral acknowledgement for a generic runtime
@@ -390,6 +438,8 @@ async def ack_runtime_failure(
         else:
             await inter.response.send_message(embed=embed, view=view, ephemeral=True)
     except Exception:
+        if raise_on_failure:
+            raise
         return
 
 

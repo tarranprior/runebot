@@ -125,6 +125,7 @@ class Stats(commands.Cog, name='stats'):
         self,
         inter: MessageInteraction,
         trace_id: str,
+        started_at: float,
     ) -> None:
         await ack_component_failure(
             inter,
@@ -134,6 +135,7 @@ class Stats(commands.Cog, name='stats'):
             operation='invalid_component',
             invocation_source=self._invocation_source(inter),
             trace_id=trace_id,
+            started_at=started_at,
         )
 
 
@@ -374,6 +376,7 @@ class Stats(commands.Cog, name='stats'):
         default_account=None,
         default_account_checked: bool = False,
         started_at: float | None = None,
+        emit_expected_failure: bool = True,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         Function which takes a username and returns hiscore
@@ -675,33 +678,34 @@ class Stats(commands.Cog, name='stats'):
                 default_account_id=default_account_id,
                 account_type=account_type,
             )
-            self._stats_log.warning(
-                inter,
-                build_log_message(
-                    command='stats',
+            if emit_expected_failure:
+                self._stats_log.warning(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='failure',
+                        operation=operation,
+                    ),
+                    invocation_source=self._invocation_source(inter),
+                    action='fail',
                     stage='failure',
                     operation=operation,
-                ),
-                invocation_source=self._invocation_source(inter),
-                action='fail',
-                stage='failure',
-                operation=operation,
-                trace_id=trace_id,
-                hiscore_category=hiscore_category,
-                account_type=account_type,
-                username=input_username,
-                resolved_username=resolved_username,
-                resolved_account_type=resolved_account_type,
-                resolution_source=resolution_source,
-                handled=True,
-                expected_failure=True,
-                user_visible=True,
-                exception_type=type(exc).__name__,
-                exception=str(exc),
-                log_params=serialize_params(fail_params),
-                owner_id=owner_id,
-                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
-            )
+                    trace_id=trace_id,
+                    hiscore_category=hiscore_category,
+                    account_type=account_type,
+                    username=input_username,
+                    resolved_username=resolved_username,
+                    resolved_account_type=resolved_account_type,
+                    resolution_source=resolution_source,
+                    handled=True,
+                    expected_failure=True,
+                    user_visible=True,
+                    exception_type=type(exc).__name__,
+                    exception=str(exc),
+                    log_params=serialize_params(fail_params),
+                    owner_id=owner_id,
+                    **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
+                )
             raise
 
 
@@ -967,6 +971,7 @@ class Stats(commands.Cog, name='stats'):
             )
             else None
         )
+        started_at = time.perf_counter()
         self._log_component_start(
             inter,
             trace_id,
@@ -980,7 +985,7 @@ class Stats(commands.Cog, name='stats'):
             params = payload.split(',')
 
             if len(params) != 5:
-                await self._ack_invalid_stats_component(inter, trace_id)
+                await self._ack_invalid_stats_component(inter, trace_id, started_at)
                 return
 
             action, owner_id, account_id, manager_message_id, _raw_origin_trace_id = params
@@ -992,6 +997,8 @@ class Stats(commands.Cog, name='stats'):
                     'stats',
                     invocation_source=self._invocation_source(inter),
                     trace_id=trace_id,
+                    origin_trace_id=origin_trace_id,
+                    started_at=started_at,
                 )
                 return
 
@@ -1015,6 +1022,7 @@ class Stats(commands.Cog, name='stats'):
                         owner_id=owner_id,
                         component_type='button',
                         account_id=account_id,
+                        duration_ms=elapsed_ms(started_at),
                     )
                 except Exception as exc:
                     self._stats_log.error(
@@ -1037,12 +1045,13 @@ class Stats(commands.Cog, name='stats'):
                         handled=False,
                         expected_failure=False,
                         user_visible=False,
+                        duration_ms=elapsed_ms(started_at),
                     )
                     raise
                 return
 
             if action != 'ok':
-                await self._ack_invalid_stats_component(inter, trace_id)
+                await self._ack_invalid_stats_component(inter, trace_id, started_at)
                 return
 
             try:
@@ -1100,6 +1109,7 @@ class Stats(commands.Cog, name='stats'):
                     component_type='button',
                     account_id=account_id,
                     deleted=deleted,
+                    duration_ms=elapsed_ms(started_at),
                 )
             except Exception as exc:
                 self._stats_log.error(
@@ -1122,6 +1132,7 @@ class Stats(commands.Cog, name='stats'):
                     handled=True,
                     expected_failure=False,
                     user_visible=True,
+                    duration_ms=elapsed_ms(started_at),
                 )
                 raise
             return
@@ -1131,14 +1142,14 @@ class Stats(commands.Cog, name='stats'):
             params = payload.split(',')
 
             if not params:
-                await self._ack_invalid_stats_component(inter, trace_id)
+                await self._ack_invalid_stats_component(inter, trace_id, started_at)
                 return
 
             action = params[0]
 
             if action == 'refresh':
                 if len(params) != 2:
-                    await self._ack_invalid_stats_component(inter, trace_id)
+                    await self._ack_invalid_stats_component(inter, trace_id, started_at)
                     return
 
                 _, owner_id = params
@@ -1149,6 +1160,7 @@ class Stats(commands.Cog, name='stats'):
                         'stats',
                         invocation_source=self._invocation_source(inter),
                         trace_id=trace_id,
+                        started_at=started_at,
                     )
                     return
 
@@ -1193,6 +1205,7 @@ class Stats(commands.Cog, name='stats'):
                         default_account_id=getattr(default_account, 'account_id', None),
                         default_username=getattr(default_account, 'username', None),
                         default_account_type=getattr(default_account, 'account_type', None),
+                        duration_ms=elapsed_ms(started_at),
                     )
 
                 except Exception as exc:
@@ -1223,13 +1236,14 @@ class Stats(commands.Cog, name='stats'):
                         handled=True,
                         expected_failure=False,
                         user_visible=True,
+                        duration_ms=elapsed_ms(started_at),
                     )
                     raise
                 return
 
             if action == 'delete':
                 if len(params) != 3:
-                    await self._ack_invalid_stats_component(inter, trace_id)
+                    await self._ack_invalid_stats_component(inter, trace_id, started_at)
                     return
 
                 _, owner_id, account_id = params
@@ -1242,6 +1256,7 @@ class Stats(commands.Cog, name='stats'):
                         'stats',
                         invocation_source=self._invocation_source(inter),
                         trace_id=trace_id,
+                        started_at=started_at,
                     )
                     return
 
@@ -1254,6 +1269,7 @@ class Stats(commands.Cog, name='stats'):
                         operation='account_delete_no_default',
                         invocation_source=self._invocation_source(inter),
                         trace_id=trace_id,
+                        started_at=started_at,
                     )
                     return
 
@@ -1318,6 +1334,7 @@ class Stats(commands.Cog, name='stats'):
                         owner_id=owner_id,
                         component_type='button',
                         account_id=account_id,
+                        duration_ms=elapsed_ms(started_at),
                     )
                 except Exception as exc:
                     self._stats_log.error(
@@ -1339,11 +1356,12 @@ class Stats(commands.Cog, name='stats'):
                         handled=True,
                         expected_failure=False,
                         user_visible=True,
+                        duration_ms=elapsed_ms(started_at),
                     )
                     raise
                 return
 
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         if not custom_id.startswith('stats:'):
@@ -1353,14 +1371,14 @@ class Stats(commands.Cog, name='stats'):
         params = payload.split(',')
 
         if not params:
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         action = params[0]
 
         if action == 'account_manager':
             if len(params) != 2:
-                await self._ack_invalid_stats_component(inter, trace_id)
+                await self._ack_invalid_stats_component(inter, trace_id, started_at)
                 return
             owner_id = params[1]
             if str(inter.author.id) != owner_id:
@@ -1370,6 +1388,7 @@ class Stats(commands.Cog, name='stats'):
                     'stats',
                     invocation_source=self._invocation_source(inter),
                     trace_id=trace_id,
+                    started_at=started_at,
                 )
                 return
 
@@ -1404,6 +1423,7 @@ class Stats(commands.Cog, name='stats'):
                     default_account_id=getattr(default_account, 'account_id', None),
                     default_username=getattr(default_account, 'username', None),
                     default_account_type=getattr(default_account, 'account_type', None),
+                    duration_ms=elapsed_ms(started_at),
                 )
             except Exception as exc:
                 self._stats_log.error(
@@ -1433,16 +1453,17 @@ class Stats(commands.Cog, name='stats'):
                     handled=True,
                     expected_failure=False,
                     user_visible=True,
+                    duration_ms=elapsed_ms(started_at),
                 )
                 raise
             return
 
         if action not in ['navigate', 'refresh']:
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         if len(params) != 5:
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         _, hiscore_category, account_type, resolved_username, owner_id = params
@@ -1454,6 +1475,7 @@ class Stats(commands.Cog, name='stats'):
                 'stats',
                 invocation_source=self._invocation_source(inter),
                 trace_id=trace_id,
+                started_at=started_at,
             )
             return
 
@@ -1469,6 +1491,8 @@ class Stats(commands.Cog, name='stats'):
                 int(owner_id),
                 trace_id=trace_id,
                 operation=action,
+                started_at=started_at,
+                emit_expected_failure=False,
             )
             await inter.edit_original_response(
                 embed=embed,
@@ -1499,6 +1523,7 @@ class Stats(commands.Cog, name='stats'):
                         account_type=resolved_account_type,
                         resolution_source='button_navigate',
                     ),
+                    duration_ms=elapsed_ms(started_at),
                 )
             else:
                 self._stats_log.success(
@@ -1524,6 +1549,7 @@ class Stats(commands.Cog, name='stats'):
                         account_type=resolved_account_type,
                         resolution_source='button_refresh',
                     ),
+                    duration_ms=elapsed_ms(started_at),
                 )
 
         except (
@@ -1533,31 +1559,80 @@ class Stats(commands.Cog, name='stats'):
             exceptions.NoHiscoreData,
             exceptions.NoGameModeData,
         ) as exc:
-            view = self._build_stats_view(
-                hiscore_category,
-                account_type,
-                resolved_username,
-                int(owner_id)
-            )
-            if isinstance(exc, (
-                exceptions.NoHiscoreData,
-                exceptions.UsernameInvalid,
-            )):
-                colour = 0xB72615
-            else:
-                colour = 0x8B8B8B
+            try:
+                view = self._build_stats_view(
+                    hiscore_category,
+                    account_type,
+                    resolved_username,
+                    int(owner_id)
+                )
+                if isinstance(exc, (
+                    exceptions.NoHiscoreData,
+                    exceptions.UsernameInvalid,
+                )):
+                    colour = 0xB72615
+                else:
+                    colour = 0x8B8B8B
 
-            embed, _ = EmbedFactory().create(
-                title='Nothing interesting happens.',
-                description=str(exc),
-                thumbnail_url=None,
-                colour=colour,
-                button_label='Support Server',
-                button_url=SUPPORT_SERVER
+                embed, _ = EmbedFactory().create(
+                    title='Nothing interesting happens.',
+                    description=str(exc),
+                    thumbnail_url=None,
+                    colour=colour,
+                    button_label='Support Server',
+                    button_url=SUPPORT_SERVER
+                )
+                embed.timestamp = inter.created_at
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+                await inter.edit_original_response(embed=embed, view=view)
+            except Exception as fallback_exc:
+                self._stats_log.error(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='runtime_failure',
+                        operation=action,
+                    ),
+                    exc=exc,
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='fail',
+                    stage='runtime_failure',
+                    operation=action,
+                    component_type='button',
+                    handled=False,
+                    expected_failure=False,
+                    user_visible=False,
+                    fallback_exception_type=type(fallback_exc).__name__,
+                    fallback_exception=str(fallback_exc),
+                    duration_ms=elapsed_ms(started_at),
+                )
+                raise exc from fallback_exc
+
+            self._stats_log.warning(
+                inter,
+                build_log_message(
+                    command='stats',
+                    stage='failure',
+                    operation=action,
+                ),
+                trace_id=trace_id,
+                invocation_source=self._invocation_source(inter),
+                action='fail',
+                stage='failure',
+                operation=action,
+                hiscore_category=hiscore_category,
+                account_type=account_type,
+                resolved_username=resolved_username,
+                owner_id=owner_id,
+                component_type='button',
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                duration_ms=elapsed_ms(started_at),
             )
-            embed.timestamp = inter.created_at
-            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-            await inter.edit_original_response(embed=embed, view=view)
             return
 
         except Exception as exc:
@@ -1590,6 +1665,7 @@ class Stats(commands.Cog, name='stats'):
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
+                duration_ms=elapsed_ms(started_at),
             )
             raise
 
@@ -1617,6 +1693,7 @@ class Stats(commands.Cog, name='stats'):
             return
 
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
         self._log_component_start(
             inter,
             trace_id,
@@ -1628,13 +1705,13 @@ class Stats(commands.Cog, name='stats'):
         params = payload.split(',')
 
         if len(params) != 2:
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         action, owner_id = params
 
         if action != 'select':
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
 
         if str(inter.author.id) != owner_id:
@@ -1644,14 +1721,41 @@ class Stats(commands.Cog, name='stats'):
                 'stats',
                 invocation_source=self._invocation_source(inter),
                 trace_id=trace_id,
+                started_at=started_at,
             )
             return
 
         selected_value = inter.values[0] if inter.values else None
         if selected_value is None:
-            await self._ack_invalid_stats_component(inter, trace_id)
+            await self._ack_invalid_stats_component(inter, trace_id, started_at)
             return
         if selected_value == 'none':
+            try:
+                await inter.response.defer()
+            except Exception as exc:
+                self._stats_log.error(
+                    inter,
+                    build_log_message(
+                        command='stats',
+                        stage='runtime_failure',
+                        operation='default_account_select',
+                    ),
+                    exc=exc,
+                    trace_id=trace_id,
+                    invocation_source=self._invocation_source(inter),
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='default_account_select',
+                    component_type='dropdown',
+                    owner_id=owner_id,
+                    selected_value=selected_value,
+                    handled=False,
+                    expected_failure=False,
+                    user_visible=False,
+                    duration_ms=elapsed_ms(started_at),
+                )
+                raise
+
             self._stats_log.warning(
                 inter,
                 build_log_message(
@@ -1670,27 +1774,34 @@ class Stats(commands.Cog, name='stats'):
                 handled=True,
                 expected_failure=True,
                 user_visible=False,
+                duration_ms=elapsed_ms(started_at),
             )
-            await inter.response.defer()
             return
 
         selected_username = None
         selected_account_type = None
+        acknowledgement_failed = False
         try:
             all_accounts = await get_user_accounts(self, int(owner_id))
             selected_account = next(
                 (acc for acc in all_accounts if str(acc[0]) == selected_value), None
             )
             if selected_account is None:
-                await ack_component_failure(
-                    inter,
-                    self._stats_log,
-                    'stats',
-                    description='That account is no longer available. Please refresh the account manager.',
-                    operation='default_account_select',
-                    invocation_source=self._invocation_source(inter),
-                    trace_id=trace_id,
-                )
+                try:
+                    await ack_component_failure(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        description='That account is no longer available. Please refresh the account manager.',
+                        operation='default_account_select',
+                        invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
+                        started_at=started_at,
+                        emit_runtime_failure=False,
+                    )
+                except Exception:
+                    acknowledgement_failed = True
+                    raise
                 return
             selected_username = selected_account[1] if selected_account else None
             selected_account_type = selected_account[2] if selected_account else None
@@ -1727,6 +1838,7 @@ class Stats(commands.Cog, name='stats'):
                 selected_value=selected_value,
                 selected_username=selected_username,
                 selected_account_type=selected_account_type,
+                duration_ms=elapsed_ms(started_at),
             )
 
         except Exception as exc:
@@ -1748,9 +1860,10 @@ class Stats(commands.Cog, name='stats'):
                 selected_value=selected_value,
                 selected_username=selected_username,
                 selected_account_type=selected_account_type,
-                handled=True,
+                handled=not acknowledgement_failed,
                 expected_failure=False,
-                user_visible=True,
+                user_visible=not acknowledgement_failed,
+                duration_ms=elapsed_ms(started_at),
             )
             raise
 

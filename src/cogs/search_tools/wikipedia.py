@@ -126,6 +126,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         trace_id: str | None = None,
         invocation_mode_override: str | None = None,
         started_at: float | None = None,
+        emit_expected_failure: bool = True,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         Primary function for the `wikipedia` command which takes a search
@@ -295,39 +296,40 @@ class Wikipedia(commands.Cog, name='wikipedia'):
             return embed, view, resolved_search_term, title
 
         except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
-            self._wiki_log.warning(
-                inter,
-                build_log_message(
-                    command='wikipedia',
+            if emit_expected_failure:
+                self._wiki_log.warning(
+                    inter,
+                    build_log_message(
+                        command='wikipedia',
+                        stage='failure',
+                        operation='search',
+                    ),
+                    action='fail',
                     stage='failure',
-                    operation='search',
-                ),
-                action='fail',
-                stage='failure',
-                trace_id=trace_id,
-                search_query=original_query,
-                resolved_search_term=resolved_search_term,
-                resolution_source=resolution_source,
-                invocation_mode=invocation_mode,
-                log_params=[
-                    {
-                        'kind': 'query',
-                        'label': 'search_query',
-                        'value': original_query,
-                    },
-                    {
-                        'kind': 'query',
-                        'label': 'resolved_search_term',
-                        'value': resolved_search_term,
-                    },
-                ],
-                exception_type=type(exc).__name__,
-                exception=str(exc),
-                handled=True,
-                expected_failure=True,
-                user_visible=True,
-                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
-            )
+                    trace_id=trace_id,
+                    search_query=original_query,
+                    resolved_search_term=resolved_search_term,
+                    resolution_source=resolution_source,
+                    invocation_mode=invocation_mode,
+                    log_params=[
+                        {
+                            'kind': 'query',
+                            'label': 'search_query',
+                            'value': original_query,
+                        },
+                        {
+                            'kind': 'query',
+                            'label': 'resolved_search_term',
+                            'value': resolved_search_term,
+                        },
+                    ],
+                    exception_type=type(exc).__name__,
+                    exception=str(exc),
+                    handled=True,
+                    expected_failure=True,
+                    user_visible=True,
+                    **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
+                )
             raise
         except Exception:
             raise
@@ -570,6 +572,7 @@ class Dropdown(disnake.ui.StringSelect):
         trace_id = uuid.uuid4().hex
         origin_trace_id = self.trace_id
         selected_value = self.values[0] if self.values else None
+        started_at = time.perf_counter()
 
         self._cog._wiki_log.info(
             inter,
@@ -621,6 +624,8 @@ class Dropdown(disnake.ui.StringSelect):
                 selected_value,
                 trace_id=trace_id,
                 invocation_mode_override='dropdown_selection',
+                started_at=started_at,
+                emit_expected_failure=False,
             )
 
             self._cog._wiki_log.debug(
@@ -702,49 +707,117 @@ class Dropdown(disnake.ui.StringSelect):
                         'value': resolved_page_title,
                     },
                 ],
+                duration_ms=elapsed_ms(started_at),
             )
         except (exceptions.Nonexistence, exceptions.StubArticle, exceptions.WikiRequestFailed) as exc:
-            if isinstance(exc, exceptions.StubArticle):
-                title = 'This project page is a stub.'
-                thumbnail_url = THUMBNAILS['stub']
-                colour = 0x60533E
-            elif isinstance(exc, exceptions.WikiRequestFailed):
-                title = 'Nothing interesting happens.'
-                thumbnail_url = None
-                colour = 0xB72615
-            else:
-                title = 'Nothing interesting happens.'
-                thumbnail_url = None
-                colour = 0x8B8B8B
+            try:
+                if isinstance(exc, exceptions.StubArticle):
+                    title = 'This project page is a stub.'
+                    thumbnail_url = THUMBNAILS['stub']
+                    colour = 0x60533E
+                elif isinstance(exc, exceptions.WikiRequestFailed):
+                    title = 'Nothing interesting happens.'
+                    thumbnail_url = None
+                    colour = 0xB72615
+                else:
+                    title = 'Nothing interesting happens.'
+                    thumbnail_url = None
+                    colour = 0x8B8B8B
 
-            embed, view = EmbedFactory().create(
-                title=title,
-                description=str(exc),
-                thumbnail_url=thumbnail_url,
-                colour=colour,
-                button_label='Support Server',
-                button_url=SUPPORT_SERVER
+                embed, view = EmbedFactory().create(
+                    title=title,
+                    description=str(exc),
+                    thumbnail_url=thumbnail_url,
+                    colour=colour,
+                    button_label='Support Server',
+                    button_url=SUPPORT_SERVER
+                )
+                embed.timestamp = inter.created_at
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+
+                is_public_dropdown_result = isinstance(exc, exceptions.StubArticle)
+
+                if inter.response.is_done():
+                    await inter.followup.send(
+                        embed=embed,
+                        view=view,
+                        ephemeral=not is_public_dropdown_result,
+                    )
+                else:
+                    await inter.response.send_message(
+                        embed=embed,
+                        view=view,
+                        ephemeral=not is_public_dropdown_result,
+                    )
+            except Exception as fallback_exc:
+                self._cog._wiki_log.error(
+                    inter,
+                    build_log_message(
+                        command='wikipedia',
+                        stage='runtime_failure',
+                        operation='search',
+                    ),
+                    exc=exc,
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='search',
+                    invocation_mode='dropdown_selection',
+                    search_query=selected_value,
+                    component_type='dropdown',
+                    selected_value=selected_value,
+                    trace_id=trace_id,
+                    origin_trace_id=origin_trace_id,
+                    handled=False,
+                    expected_failure=False,
+                    user_visible=False,
+                    fallback_exception_type=type(fallback_exc).__name__,
+                    fallback_exception=str(fallback_exc),
+                    duration_ms=elapsed_ms(started_at),
+                )
+                raise exc from fallback_exc
+
+            self._cog._wiki_log.warning(
+                inter,
+                build_log_message(
+                    command='wikipedia',
+                    stage='failure',
+                    operation='search',
+                ),
+                action='fail',
+                stage='failure',
+                operation='search',
+                invocation_mode='dropdown_selection',
+                search_query=selected_value,
+                component_type='dropdown',
+                selected_value=selected_value,
+                trace_id=trace_id,
+                origin_trace_id=origin_trace_id,
+                handled=True,
+                expected_failure=True,
+                user_visible=True,
+                exception_type=type(exc).__name__,
+                exception=str(exc),
+                duration_ms=elapsed_ms(started_at),
             )
-            embed.timestamp = inter.created_at
-            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-
-            is_public_dropdown_result = isinstance(exc, exceptions.StubArticle)
-
-            if inter.response.is_done():
-                await inter.followup.send(
-                    embed=embed,
-                    view=view,
-                    ephemeral=not is_public_dropdown_result,
-                )
-            else:
-                await inter.response.send_message(
-                    embed=embed,
-                    view=view,
-                    ephemeral=not is_public_dropdown_result,
-                )
             return
 
         except Exception as exc:
+            fallback_exc = None
+            try:
+                if inter.response.is_done():
+                    await inter.followup.send(
+                        'Something went wrong while handling that selection.',
+                        ephemeral=True,
+                    )
+                else:
+                    await inter.response.send_message(
+                        'Something went wrong while handling that selection.',
+                        ephemeral=True,
+                    )
+            except Exception as response_exc:
+                fallback_exc = response_exc
+
+            fallback_succeeded = fallback_exc is None
             self._cog._wiki_log.error(
                 inter,
                 build_log_message(
@@ -762,21 +835,21 @@ class Dropdown(disnake.ui.StringSelect):
                 selected_value=selected_value,
                 trace_id=trace_id,
                 origin_trace_id=origin_trace_id,
-                handled=True,
+                handled=fallback_succeeded,
                 expected_failure=False,
-                user_visible=True,
+                user_visible=fallback_succeeded,
+                **(
+                    {
+                        'fallback_exception_type': type(fallback_exc).__name__,
+                        'fallback_exception': str(fallback_exc),
+                    }
+                    if fallback_exc is not None
+                    else {}
+                ),
+                duration_ms=elapsed_ms(started_at),
             )
-
-            if inter.response.is_done():
-                await inter.followup.send(
-                    'Something went wrong while handling that selection.',
-                    ephemeral=True,
-                )
-            else:
-                await inter.response.send_message(
-                    'Something went wrong while handling that selection.',
-                    ephemeral=True,
-                )
+            if fallback_exc is not None:
+                raise exc from fallback_exc
             return
 
 

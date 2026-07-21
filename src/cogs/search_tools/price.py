@@ -184,6 +184,7 @@ class Price(commands.Cog, name='price'):
         self,
         inter: MessageInteraction,
         trace_id: str,
+        started_at: float,
     ) -> None:
         await ack_component_failure(
             inter,
@@ -193,6 +194,7 @@ class Price(commands.Cog, name='price'):
             operation='invalid_component',
             invocation_source=self._invocation_source(inter),
             trace_id=trace_id,
+            started_at=started_at,
         )
 
 
@@ -615,6 +617,7 @@ class Price(commands.Cog, name='price'):
             if len(parts) == 3 and parts[0] == 'refresh'
             else 'invalid_component'
         )
+        started_at = time.perf_counter()
         self._price_log.info(
             inter,
             build_log_message(command='price', stage='start', operation=operation),
@@ -627,13 +630,13 @@ class Price(commands.Cog, name='price'):
         )
 
         if len(parts) != 3:
-            await self._ack_invalid_price_component(inter, trace_id)
+            await self._ack_invalid_price_component(inter, trace_id, started_at)
             return
 
         action, item_id, owner_id = parts
 
         if action != 'refresh':
-            await self._ack_invalid_price_component(inter, trace_id)
+            await self._ack_invalid_price_component(inter, trace_id, started_at)
             return
         
         if str(inter.author.id) != owner_id:
@@ -642,6 +645,7 @@ class Price(commands.Cog, name='price'):
                 self._price_log,
                 'price',
                 trace_id=trace_id,
+                started_at=started_at,
             )
             return
 
@@ -731,6 +735,7 @@ class Price(commands.Cog, name='price'):
                 log_params=[
                     {'kind': 'item', 'label': 'item_id', 'value': item_id},
                 ],
+                duration_ms=elapsed_ms(started_at),
             )
 
         except (
@@ -743,6 +748,44 @@ class Price(commands.Cog, name='price'):
             else:
                 expected_description = str(exceptions.NoPriceData())
             colour = 0xB72615 if isinstance(exc, exceptions.WikiRequestFailed) else 0x8B8B8B
+
+            try:
+                embed, view = EmbedFactory().create(
+                    title='Nothing interesting happens.',
+                    description=expected_description,
+                    thumbnail_url=None,
+                    colour=colour,
+                    button_label='Support Server',
+                    button_url=SUPPORT_SERVER
+                )
+                embed.timestamp = inter.created_at
+                embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
+                await inter.edit_original_response(embed=embed, view=view, attachments=[])
+            except Exception as fallback_exc:
+                self._price_log.error(
+                    inter,
+                    build_log_message(
+                        command='price',
+                        stage='runtime_failure',
+                        operation='refresh',
+                    ),
+                    exc=exc,
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='refresh',
+                    trace_id=trace_id,
+                    component_type='button',
+                    button_action='refresh',
+                    item_id=item_id,
+                    owner_id=owner_id,
+                    handled=False,
+                    expected_failure=False,
+                    user_visible=False,
+                    fallback_exception_type=type(fallback_exc).__name__,
+                    fallback_exception=str(fallback_exc),
+                    duration_ms=elapsed_ms(started_at),
+                )
+                raise exc from fallback_exc
 
             self._price_log.warning(
                 inter,
@@ -765,21 +808,24 @@ class Price(commands.Cog, name='price'):
                 user_visible=True,
                 exception_type=type(exc).__name__,
                 exception=str(exc),
+                duration_ms=elapsed_ms(started_at),
             )
-
-            embed, view = EmbedFactory().create(
-                title='Nothing interesting happens.',
-                description=expected_description,
-                thumbnail_url=None,
-                colour=colour,
-                button_label='Support Server',
-                button_url=SUPPORT_SERVER
-            )
-            embed.timestamp = inter.created_at
-            embed.set_footer(text=f'Runebot {DISPLAY_VERSION}')
-            await inter.edit_original_response(embed=embed, view=view, attachments=[])
 
         except Exception as exc:
+            restoration_exc = None
+            try:
+                view = self._build_price_view(item_id, int(owner_id))
+                await inter.edit_original_response(view=view)
+            except Exception as response_exc:
+                restoration_exc = response_exc
+
+            acknowledgement_exc = None
+            try:
+                await ack_runtime_failure(inter, raise_on_failure=True)
+            except Exception as response_exc:
+                acknowledgement_exc = response_exc
+
+            fallback_succeeded = acknowledgement_exc is None
             self._price_log.error(
                 inter,
                 build_log_message(
@@ -796,13 +842,29 @@ class Price(commands.Cog, name='price'):
                 button_action='refresh',
                 item_id=item_id,
                 owner_id=owner_id,
-                handled=True,
+                handled=fallback_succeeded,
                 expected_failure=False,
-                user_visible=True,
+                user_visible=fallback_succeeded,
+                **(
+                    {
+                        'restoration_exception_type': type(restoration_exc).__name__,
+                        'restoration_exception': str(restoration_exc),
+                    }
+                    if restoration_exc is not None
+                    else {}
+                ),
+                **(
+                    {
+                        'fallback_exception_type': type(acknowledgement_exc).__name__,
+                        'fallback_exception': str(acknowledgement_exc),
+                    }
+                    if acknowledgement_exc is not None
+                    else {}
+                ),
+                duration_ms=elapsed_ms(started_at),
             )
-            view = self._build_price_view(item_id, int(owner_id))
-            await inter.edit_original_response(view=view)
-            await ack_runtime_failure(inter)
+            if acknowledgement_exc is not None:
+                raise exc from acknowledgement_exc
             return
 
 
