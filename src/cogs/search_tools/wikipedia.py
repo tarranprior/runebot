@@ -33,6 +33,7 @@ docstrings.
 '''
 
 import disnake
+import time
 import uuid
 
 from disnake.ext import commands
@@ -48,6 +49,7 @@ from utils.logging import (
     build_interaction_log_context,
     build_log_message,
     log_colour_extraction_failure,
+    elapsed_ms,
 )
 
 
@@ -122,6 +124,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         search_query: str,
         trace_id: str | None = None,
         invocation_mode_override: str | None = None,
+        started_at: float | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str]:
         '''
         Primary function for the `wikipedia` command which takes a search
@@ -322,6 +325,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 handled=True,
                 expected_failure=True,
                 user_visible=True,
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
         except Exception:
@@ -362,6 +366,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
         resolved_search_term = FEELING_LUCKY if invocation_mode == 'feeling_lucky' else search_query
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
 
         self._wiki_log.info(
             inter,
@@ -389,7 +394,10 @@ class Wikipedia(commands.Cog, name='wikipedia'):
         try:
             await inter.response.defer()
             embed, view, resolved_search_term, resolved_page_title = await self.search_wikipedia(
-                inter, search_query, trace_id=trace_id
+                inter,
+                search_query,
+                trace_id=trace_id,
+                started_at=started_at,
             )
             if isinstance(view, DropdownView):
                 view.attach_interaction_context(inter, invocation_mode=invocation_mode)
@@ -413,6 +421,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 resolved_page_title=resolved_page_title,
                 invocation_mode=invocation_mode,
                 resolution_source='wiki_special_random' if invocation_mode == 'feeling_lucky' else 'user_query',
+                duration_ms=elapsed_ms(started_at),
                 log_params=[
                     {
                         'kind': 'query',
@@ -485,6 +494,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
+                duration_ms=elapsed_ms(started_at),
             )
 
             await ack_runtime_failure(inter)

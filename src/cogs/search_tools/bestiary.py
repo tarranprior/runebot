@@ -30,6 +30,7 @@ docstrings.
 '''
 
 import random
+import time
 import uuid
 
 from disnake.ext import commands
@@ -43,6 +44,7 @@ from utils.logging import (
     build_resolved_search_log_params,
     build_search_query_log_params,
     build_unexpected_user_visible_failure_metadata,
+    elapsed_ms,
 )
 
 import exceptions
@@ -118,6 +120,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         inter: ApplicationCommandInteraction,
         search_query: str,
         trace_id: str | None = None,
+        started_at: float | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         General function which takes the given search query and returns
@@ -291,6 +294,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                     {'kind': 'page_title', 'label': 'resolved_page_title', 'value': title if 'title' in locals() else None},
                 ],
                 **build_expected_user_visible_failure_metadata(exc),
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
 
@@ -314,6 +318,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                     {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
                 ],
                 **build_expected_user_visible_failure_metadata(exc),
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
 
@@ -352,6 +357,7 @@ class Bestiary(commands.Cog, name='bestiary'):
         invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
         resolution_source = 'wiki_random_monster' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
 
         self._bestiary_log.info(
             inter,
@@ -376,6 +382,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                 inter,
                 search_query,
                 trace_id=trace_id,
+                started_at=started_at,
             )
             await inter.followup.send(embed=embed, view=view)
 
@@ -396,6 +403,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
                 monster_id=monster_id,
+                duration_ms=elapsed_ms(started_at),
                 log_params=[
                     *build_resolved_search_log_params(
                         search_query=search_query,
@@ -445,6 +453,7 @@ class Bestiary(commands.Cog, name='bestiary'):
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
                 log_params=build_search_query_log_params(search_query),
+                duration_ms=elapsed_ms(started_at),
                 **build_unexpected_user_visible_failure_metadata(),
             )
 

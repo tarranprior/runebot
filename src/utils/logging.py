@@ -41,6 +41,7 @@ docstrings.
 '''
 
 from dataclasses import dataclass, field, asdict
+import time
 from typing import Any, Dict, List
 from urllib.parse import urlparse
 from loguru import logger
@@ -58,6 +59,10 @@ class LogParam:
 
 def _snowflake_str(value: Any) -> str | None:
     return str(value) if value is not None else None
+
+
+def elapsed_ms(started_at: float) -> int:
+    return max(0, int((time.perf_counter() - started_at) * 1000))
 
 
 def build_interaction_log_context(inter: Any) -> dict:

@@ -27,6 +27,7 @@ docstrings.
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, Option, OptionType
 
+import time
 import uuid
 
 import exceptions
@@ -37,6 +38,7 @@ from utils.logging import (
     BoundCommandLogger,
     build_log_message,
     build_command_log_bind,
+    elapsed_ms,
 )
 
 
@@ -107,6 +109,7 @@ class Setrsn(commands.Cog, name='setrsn'):
         username: str,
         account_type: str = None,
         trace_id: str | None = None,
+        started_at: float | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View]:
         '''
         Function which takes a provided username and stores it
@@ -152,6 +155,11 @@ class Setrsn(commands.Cog, name='setrsn'):
                 trace_id=trace_id,
                 exception_type='UsernameInvalid',
                 exception=str(exceptions.UsernameInvalid()),
+                **(
+                    {'duration_ms': elapsed_ms(started_at)}
+                    if started_at is not None
+                    else {}
+                ),
             )
             raise exceptions.UsernameInvalid
 
@@ -242,6 +250,7 @@ class Setrsn(commands.Cog, name='setrsn'):
         '''
 
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
 
         self._setrsn_log.info(
             inter,
@@ -270,6 +279,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 username,
                 account_type,
                 trace_id=trace_id,
+                started_at=started_at,
             )
             await inter.send(embed=embed, view=view, ephemeral=True)
 
@@ -290,6 +300,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 account_type=account_type or 'Normal',
                 resolved_account_type=account_type or 'Normal',
                 resolution_source='provided_username',
+                duration_ms=elapsed_ms(started_at),
                 log_params=[
                     {'kind': 'username', 'label': 'username', 'value': username},
                     {'kind': 'account_type', 'label': 'account_type', 'value': account_type or 'Normal'},
@@ -328,6 +339,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 user_visible=True,
                 exception_type=type(exc).__name__,
                 exception=str(exc),
+                duration_ms=elapsed_ms(started_at),
             )
 
             embed, view = EmbedFactory().create(
@@ -363,6 +375,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 handled=False,
                 expected_failure=False,
                 user_visible=False,
+                duration_ms=elapsed_ms(started_at),
             )
             raise
 

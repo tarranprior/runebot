@@ -28,6 +28,7 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import time
 import uuid
 from disnake.ext import commands
 from disnake import ApplicationCommandInteraction, MessageInteraction, Option, OptionType
@@ -45,6 +46,7 @@ from utils.logging import (
     build_stats_resolution_params,
     build_stats_failure_params,
     build_log_message,
+    elapsed_ms,
 )
 
 
@@ -347,6 +349,7 @@ class Stats(commands.Cog, name='stats'):
         operation: str = 'lookup',
         default_account=None,
         default_account_checked: bool = False,
+        started_at: float | None = None,
     ) -> Tuple[disnake.Embed, disnake.ui.View, str, str, str]:
         '''
         Function which takes a username and returns hiscore
@@ -673,6 +676,7 @@ class Stats(commands.Cog, name='stats'):
                 exception=str(exc),
                 log_params=serialize_params(fail_params),
                 owner_id=owner_id,
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
 
@@ -740,6 +744,7 @@ class Stats(commands.Cog, name='stats'):
                     )
                 )
         primary_param = params[0] if params else None
+        started_at = time.perf_counter()
 
         self._stats_log.info(
             inter,
@@ -781,6 +786,7 @@ class Stats(commands.Cog, name='stats'):
                 trace_id=trace_id,
                 default_account=default_account,
                 default_account_checked=default_account_checked,
+                started_at=started_at,
             )
             await inter.followup.send(
                 embed=embed,
@@ -810,6 +816,7 @@ class Stats(commands.Cog, name='stats'):
                     account_type=resolved_account_type,
                     resolution_source=resolution_source
                 ),
+                duration_ms=elapsed_ms(started_at),
             )
 
         except (
@@ -878,6 +885,7 @@ class Stats(commands.Cog, name='stats'):
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
+                duration_ms=elapsed_ms(started_at),
             )
             await ack_runtime_failure(inter)
             return

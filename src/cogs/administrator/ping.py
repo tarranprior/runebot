@@ -46,6 +46,7 @@ from utils.logging import (
     build_command_log_bind,
     build_expected_user_visible_failure_metadata,
     build_log_message,
+    elapsed_ms,
 )
 
 
@@ -175,6 +176,7 @@ class Ping(commands.Cog, name='ping'):
         :return: (None)
         '''
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
 
         self._ping_log.info(
             inter,
@@ -204,6 +206,7 @@ class Ping(commands.Cog, name='ping'):
                 stage='complete',
                 operation='latency',
                 trace_id=trace_id,
+                duration_ms=elapsed_ms(started_at),
             )
 
         except exceptions.NoAdministratorPermissions as exc:
@@ -218,6 +221,7 @@ class Ping(commands.Cog, name='ping'):
                 stage='failure',
                 operation='latency',
                 trace_id=trace_id,
+                duration_ms=elapsed_ms(started_at),
                 **build_expected_user_visible_failure_metadata(exc),
             )
             raise
@@ -235,6 +239,7 @@ class Ping(commands.Cog, name='ping'):
                 stage='runtime_failure',
                 operation='latency',
                 trace_id=trace_id,
+                duration_ms=elapsed_ms(started_at),
                 handled=False,
                 expected_failure=False,
                 user_visible=False,

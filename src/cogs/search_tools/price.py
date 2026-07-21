@@ -31,6 +31,7 @@ docstrings.
 
 import datetime as dt
 import random
+import time
 import uuid
 from typing import Tuple, Union, List
 
@@ -46,6 +47,7 @@ from utils.logging import (
     build_command_log_bind,
     build_log_message,
     log_colour_extraction_failure,
+    elapsed_ms,
 )
 
 
@@ -204,6 +206,7 @@ class Price(commands.Cog, name='price'):
         search_query: str,
         trace_id: str | None = None,
         lucky_selection: str | None = None,
+        started_at: float | None = None,
     ) -> Tuple[dict, str, str]:
         '''
         Resolves a search query to item information and resolved page metadata.
@@ -306,6 +309,7 @@ class Price(commands.Cog, name='price'):
                 user_visible=True,
                 exception_type=type(exc).__name__,
                 exception=str(exc),
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
 
@@ -333,6 +337,7 @@ class Price(commands.Cog, name='price'):
                 user_visible=True,
                 exception_type=type(exc).__name__,
                 exception=str(exc),
+                **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
 
@@ -831,6 +836,7 @@ class Price(commands.Cog, name='price'):
         invocation_mode = 'feeling_lucky' if search_query == 'I\'m feeling lucky\u200a' else 'explicit'
         resolution_source = 'wiki_random_item' if invocation_mode == 'feeling_lucky' else 'user_query'
         trace_id = uuid.uuid4().hex
+        started_at = time.perf_counter()
 
         self._price_log.info(
             inter,
@@ -862,6 +868,7 @@ class Price(commands.Cog, name='price'):
                 search_query,
                 trace_id=trace_id,
                 lucky_selection=lucky_selection,
+                started_at=started_at,
             )
             item_id = info['Item ID']
             api_data = parse_price_data(
@@ -917,6 +924,7 @@ class Price(commands.Cog, name='price'):
                 invocation_mode=invocation_mode,
                 resolution_source=resolution_source,
                 item_id=item_id,
+                duration_ms=elapsed_ms(started_at),
                 log_params=[
                     {'kind': 'query', 'label': 'search_query', 'value': search_query},
                     {'kind': 'query', 'label': 'resolved_search_term', 'value': resolved_search_term},
@@ -964,6 +972,7 @@ class Price(commands.Cog, name='price'):
                     user_visible=True,
                     exception_type=type(exc).__name__,
                     exception=str(exc),
+                    duration_ms=elapsed_ms(started_at),
                     **({'resolved_search_term': resolved_search_term} if 'resolved_search_term' in locals() else {}),
                     **({'resolved_page_title': resolved_page_title} if 'resolved_page_title' in locals() else {}),
                     **({'item_id': item_id} if 'item_id' in locals() else {}),
@@ -1006,6 +1015,7 @@ class Price(commands.Cog, name='price'):
                 handled=True,
                 expected_failure=False,
                 user_visible=True,
+                duration_ms=elapsed_ms(started_at),
             )
             await ack_runtime_failure(inter)
             return
