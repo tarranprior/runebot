@@ -60,17 +60,36 @@ def main() -> None:
     )
     setattr(bot, 'log_pipeline', log_pipeline)
 
-    bot.load_extensions(exts=[
-        'cogs.administrator.ping',
-        'cogs.player_utilities.setrsn',
-        'cogs.player_utilities.stats',
-        'cogs.search_tools.alchemy',
-        'cogs.search_tools.bestiary',
-        'cogs.search_tools.minigames',
-        'cogs.search_tools.price',
-        'cogs.search_tools.quests',
-        'cogs.search_tools.wikipedia'
-    ])
+    try:
+        bot.load_extensions(exts=[
+            'cogs.administrator.ping',
+            'cogs.player_utilities.setrsn',
+            'cogs.player_utilities.stats',
+            'cogs.search_tools.alchemy',
+            'cogs.search_tools.bestiary',
+            'cogs.search_tools.minigames',
+            'cogs.search_tools.price',
+            'cogs.search_tools.quests',
+            'cogs.search_tools.wikipedia'
+        ])
+    except Exception:
+        if log_pipeline is not None:
+            try:
+                log_pipeline.stop()
+            except Exception as exc:
+                logger.bind(
+                    action='fail',
+                    stage='runtime_failure',
+                    operation='log_pipeline_shutdown',
+                    exception_type=type(exc).__name__,
+                    exception_message=str(exc),
+                    handled=True,
+                    expected_failure=False,
+                    startup_failure=True,
+                ).opt(exception=exc).error(
+                    'Failed to stop the log pipeline after startup failure.'
+                )
+        raise
 
     internal_api = InternalStatsAPIServer(
         bot=bot,

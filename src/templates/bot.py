@@ -106,21 +106,61 @@ class Bot(commands.InteractionBot):
                 loaded_extensions.append(ext)
                 count += 1
             except Exception as exc:
-                exception = f'{type(exc).__name__}: {exc}'
                 failed_extensions.append(
                     {
                         'extension': ext,
-                        'exception': exception,
+                        'exception_type': type(exc).__name__,
+                        'exception_message': str(exc),
                     }
                 )
-                logger.error(
-                    f'Unable to load extension: {ext}\n{exception}.'
+
+                logger.bind(
+                    action='load',
+                    stage='runtime_failure',
+                    operation='extension_loading',
+                    extension=ext,
+                    exception_type=type(exc).__name__,
+                    exception_message=str(exc),
+                    handled=False,
+                    expected_failure=False,
+                    startup_failure=True,
+                ).opt(exception=exc).error(
+                    f'Unable to load required extension: {ext}.'
                 )
 
-        logger.bind(
+        extension_summary_logger = logger.bind(
             loaded_extensions=loaded_extensions,
             failed_extensions=failed_extensions,
-        ).info(f'{count} extension(s) have loaded successfully.\n')
+            total_attempted_extensions=len(exts),
+            failed_extension_count=len(failed_extensions),
+            failed_extension_names=[
+                failure['extension'] for failure in failed_extensions
+            ],
+            action='complete' if not failed_extensions else 'fail',
+            stage='complete' if not failed_extensions else 'runtime_failure',
+            operation='extension_loading',
+            startup_failure=bool(failed_extensions),
+            startup_failure_classification=(
+                'required_extension_load_failure'
+                if failed_extensions
+                else None
+            ),
+        )
+
+        if failed_extensions:
+            failed_names = ', '.join(
+                failure['extension'] for failure in failed_extensions
+            )
+            extension_summary_logger.error(
+                f'{len(failed_extensions)} required extension(s) failed to load.'
+            )
+            raise RuntimeError(
+                f'Required extensions failed to load: {failed_names}'
+            )
+
+        extension_summary_logger.info(
+            f'{count} extension(s) have loaded successfully.\n'
+        )
 
 
     async def on_connect(self) -> None:
