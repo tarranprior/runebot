@@ -22,9 +22,7 @@ Functions:
             identifier.
     - `remove_guild()`:
             Removes a guild from the `all_guilds` table.
-    - `remove_username()`:
-            Removes a username from the `all_users` table.
-        - `remove_user_account()`:
+    - `remove_user_account()`:
             Removes a specific saved account for a user.
     - `update_colour_mode()`:
             Toggles `colour_mode` for a given guild.
@@ -602,36 +600,6 @@ async def remove_guild(self, guild_id: int) -> None:
             DELETE FROM all_guilds WHERE guild_id = ?
             ''',
             (guild_id,)
-        )
-
-        return await self.bot.runebotdb.commit()
-
-
-async def remove_username(self, user_id: int):
-    '''
-    Database function which removes a username from the database.
-
-    :param self: -
-        Represents this object.
-    :param user_id: (Integer) -
-        Represents a user id.
-
-    :return: (None)
-    '''
-
-    async with self.bot.runebotdb.cursor() as cursor:
-        await cursor.execute(
-            '''
-            DELETE FROM user_accounts WHERE user_id = ?
-            ''',
-            (user_id,)
-        )
-
-        await cursor.execute(
-            '''
-            DELETE FROM all_users WHERE user_id = ?
-            ''',
-            (user_id,)
         )
 
         return await self.bot.runebotdb.commit()
