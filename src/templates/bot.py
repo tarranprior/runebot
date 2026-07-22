@@ -51,10 +51,12 @@ from config import *
 from utils import (
     DISPLAY_VERSION,
     EmbedFactory,
+    ack_runtime_failure,
     configuration,
     add_guild,
     remove_guild,
 )
+from utils.logging import build_interaction_log_context
 from utils.runtime_stats import get_community_stats
 
 
@@ -658,8 +660,43 @@ class Bot(commands.InteractionBot):
                     ephemeral=True
                 )
 
-        logger.error(
-            f'Ignoring exception in slash command {inter.application_command.name}: {error}')
+        command_name = inter.application_command.name
+        operational_context = {
+            'command': command_name,
+            'invocation_source': 'slash_command',
+            'interaction_id': str(inter.id),
+            'handled': False,
+            'expected_failure': False,
+            'user_visible': False,
+            'operational_diagnostic': True,
+            'exception_type': type(error).__name__,
+            'exception_message': str(error),
+            **build_interaction_log_context(inter),
+        }
+
+        logger.bind(
+            **operational_context,
+            action='slash_command_runtime',
+            stage='runtime_failure',
+            operation='slash_command_runtime',
+        ).opt(exception=error).error(
+            'Unexpected slash command failure reached the global error handler.'
+        )
+
+        try:
+            await ack_runtime_failure(inter, raise_on_failure=True)
+        except Exception as acknowledgement_error:
+            logger.bind(
+                **operational_context,
+                action='runtime_acknowledgement',
+                stage='runtime_failure',
+                operation='runtime_acknowledgement',
+                fallback_exception_type=type(acknowledgement_error).__name__,
+                fallback_exception=str(acknowledgement_error),
+            ).opt(exception=error).error(
+                'Unable to acknowledge unexpected slash command failure. '
+                f'Acknowledgement error: {acknowledgement_error}'
+            )
 
 
     @tasks.loop(minutes=10.0)
