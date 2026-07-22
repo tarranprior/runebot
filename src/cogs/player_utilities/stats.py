@@ -51,6 +51,11 @@ from utils.logging import (
 )
 
 
+_CANONICAL_ACCOUNT_TYPES = {
+    account_type.casefold(): account_type for account_type in ACCOUNT_TYPES
+}
+
+
 class Stats(commands.Cog, name='stats'):
     '''
     A class which represents the Stats cog.
@@ -120,6 +125,18 @@ class Stats(commands.Cog, name='stats'):
             if isinstance(inter, MessageInteraction)
             else 'slash_command'
         )
+
+
+    @staticmethod
+    def _get_hiscores_api_url(account_type: str) -> str:
+        url = HISCORE_API_URLS.get(account_type)
+
+        if not url:
+            raise RuntimeError(
+                f'Missing Hiscores API URL for account type: {account_type!r}'
+            )
+
+        return url
 
 
     async def _ack_invalid_stats_component(
@@ -438,6 +455,18 @@ class Stats(commands.Cog, name='stats'):
             if not account_type:
                 account_type = 'Normal'
 
+            canonical_account_type = _CANONICAL_ACCOUNT_TYPES.get(
+                account_type.casefold()
+            )
+            if canonical_account_type is None:
+                raise RuntimeError(
+                    f'Unsupported Hiscores account type: {account_type!r}'
+                )
+            account_type = canonical_account_type
+
+            hiscores_api_url = self._get_hiscores_api_url(account_type)
+            normal_hiscores_api_url = self._get_hiscores_api_url('Normal')
+
             if owner_id is None:
                 owner_id = request_user_id
             
@@ -480,7 +509,7 @@ class Stats(commands.Cog, name='stats'):
                 try:
                     hiscore_data = await asyncio.to_thread(
                         parse_hiscores,
-                        HISCORE_API_URLS.get(account_type),
+                        hiscores_api_url,
                         HEADERS,
                         HISCORES_ORDER,
                         [working_username],
@@ -493,7 +522,7 @@ class Stats(commands.Cog, name='stats'):
                 try:
                     hiscore_data = await asyncio.to_thread(
                         parse_hiscores,
-                        HISCORE_API_URLS.get(account_type),
+                        hiscores_api_url,
                         HEADERS,
                         HISCORES_ORDER,
                         [working_username],
@@ -503,7 +532,7 @@ class Stats(commands.Cog, name='stats'):
                     try:
                         hiscore_data = await asyncio.to_thread(
                             parse_hiscores,
-                            NORMAL_API,
+                            normal_hiscores_api_url,
                             HEADERS,
                             HISCORES_ORDER,
                             [working_username],
