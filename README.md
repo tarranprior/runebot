@@ -2,7 +2,7 @@
 <p align="center"><img src="https://github.com/tarranprior/runebot/blob/main/assets/banner.png" /></p>
 <h1 align="center">Runebot</h1>
 
-<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.6-7289da?style=for-the-badge)</a>
+<a href="https://github.com/tarranprior/runebot/releases"><p align="center">![Version](https://img.shields.io/badge/Latest%20Version-v1.0.7-7289da?style=for-the-badge)</a>
 <a href="https://www.python.org/downloads/">![Python](https://img.shields.io/badge/made%20with-python%203.10-7289da?style=for-the-badge&logo=python&logoColor=ffdd54)</a>
 <a href="https://github.com/tarranprior/runebot/blob/main/LICENSE">![License](https://img.shields.io/badge/license-CC%20BY%20NC%20SA%203.0-7289da?style=for-the-badge)</p></a>
 </p>
@@ -12,7 +12,8 @@
 Runebot is the modern RuneScape companion for your Discord server. Invite the live version [here](https://discord.com/oauth2/authorize?client_id=978953033989914654&permissions=2147764224&scope=bot%20applications.commands).
 
 ## Key Features
-- Search for items and equipment, activities, bosses and more directly on discord.
+- Manage your RuneScape accounts and view stats directly from Discord.
+- Search for items and equipment, activities, bosses and more.
 - Get the most up to date information - directly from the official api and wiki.
 - Full support of slash commands and the latest developer tools.
 - Autocomplete suggestions for all applicable interactions.
@@ -71,6 +72,9 @@ Preferably, you should use Poetry to run this bot for local development:
    BOT_TOKEN = 'YOUR_BOT_TOKEN'
    BOT_OWNER = 'YOUR_USER_ID'
 
+   DB_PATH = './runebot.db'
+   RUNEBOT_INTERNAL_LOGS_DB_PATH = './runebot-logs-dev.db'
+
    RUNEBOT_INTERNAL_API_TOKEN = 'SET_A_LONG_RANDOM_SECRET'
    RUNEBOT_INTERNAL_API_HOST = '127.0.0.1'
    RUNEBOT_INTERNAL_API_PORT = '8080'
@@ -83,7 +87,9 @@ Preferably, you should use Poetry to run this bot for local development:
    }
    ```
 
-## Usage
+Local development loads these values from `.env` and runs with `--env development`.
+Production runs with `--env production` and loads the bot token, database path and
+internal API configuration from AWS.
 
 ## Support
 If you have any questions about this project, please submit an issue [here](https://github.com/tarranprior/runebot/issues).<br/>

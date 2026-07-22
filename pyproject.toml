@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "runebot"
-version = "1.0.7.dev3"
+version = "1.0.7"
 description = "The modern RuneScape companion for your Discord server."
 authors = ["Tarran Prior <Tarranprior@protonmail.com>"]
 license = "CC BY-NC-SA 3.0"
