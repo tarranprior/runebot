@@ -36,12 +36,106 @@ For more information about each function and its usage, refer to the
 docstrings.
 '''
 
+import asyncio
+from contextlib import asynccontextmanager
 from typing import List, Optional, Tuple
+
+import aiosqlite
 from .models import DefaultAccount
 
 import exceptions
 
 from .helpers import utc_now_iso
+
+
+ACCOUNT_LIMIT = 5
+
+
+@asynccontextmanager
+async def _account_transaction(self):
+    '''
+    Helper function which provides an isolated transaction for saved-account
+    mutations.
+
+    :param self: -
+        Represents this object.
+
+    :return: (Async Context Manager) -
+        Yields the active aiosqlite.Connection transaction connection to the
+        caller.
+    '''
+
+    lock = getattr(self.bot, '_account_write_lock', None)
+    if lock is None:
+        lock = asyncio.Lock()
+        setattr(self.bot, '_account_write_lock', lock)
+
+    async with lock:
+        connection = await aiosqlite.connect(self.bot.db_path, timeout=5)
+        try:
+            await connection.execute('PRAGMA foreign_keys = ON;')
+            await connection.execute('PRAGMA busy_timeout = 5000;')
+            await connection.execute('BEGIN IMMEDIATE;')
+            try:
+                yield connection
+            except BaseException:
+                await connection.rollback()
+                raise
+            else:
+                await connection.commit()
+        finally:
+            await connection.close()
+
+
+async def _store_default_account(
+    connection,
+    user_id: int,
+    username: str,
+    account_type: str,
+    account_id: int,
+) -> None:
+    '''
+    Helper function which stores a selected account as the user's current
+    default account.
+
+    :param connection: (aiosqlite.Connection) -
+        Represents the active SQLite transaction connection.
+    :param user_id: (Integer) -
+        Represents a Discord user id.
+    :param username: (String) -
+        Represents a player's username.
+    :param account_type: (String) -
+        Represents an account type.
+    :param account_id: (Integer) -
+        Represents the selected saved-account id.
+
+    :return: (None)
+    '''
+
+    existing_cursor = await connection.execute(
+        'SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1',
+        (user_id,),
+    )
+    existing_user = await existing_cursor.fetchone()
+    await existing_cursor.close()
+
+    if existing_user:
+        await connection.execute(
+            '''
+            UPDATE all_users
+            SET username = ?, account_type = ?, default_account_id = ?
+            WHERE user_id = ?
+            ''',
+            (username, account_type, account_id, user_id),
+        )
+    else:
+        await connection.execute(
+            '''
+            INSERT INTO all_users (user_id, username, account_type, default_account_id)
+            VALUES (?, ?, ?, ?)
+            ''',
+            (user_id, username, account_type, account_id),
+        )
 
 
 async def add_guild(
@@ -107,72 +201,45 @@ async def add_username(
     if not username:
         return
 
-    async with self.bot.runebotdb.cursor() as cursor:
-        await cursor.execute(
-            '''
-            SELECT 1
-            FROM all_users
-            WHERE user_id = ?
-            LIMIT 1
-            ''',
-            (user_id,)
-        )
-        existing_user = await cursor.fetchone()
-
-        if not existing_user:
-            await cursor.execute(
-                '''
-                INSERT INTO all_users (
-                    user_id,
-                    username,
-                    account_type,
-                    default_account_id
-                )
-                VALUES (?, ?, ?, NULL)
-                ''',
-                (user_id, username, account_type)
-            )
-
-        await cursor.execute(
+    async with _account_transaction(self) as connection:
+        existing_cursor = await connection.execute(
             '''
             SELECT id, username
             FROM user_accounts
             WHERE user_id = ?
-              AND LOWER(username) = LOWER(?)
+              AND username = ? COLLATE NOCASE
               AND account_type = ?
             LIMIT 1
             ''',
-            (user_id, username, account_type)
+            (user_id, username, account_type),
         )
-        existing_account = await cursor.fetchone()
+        existing_account = await existing_cursor.fetchone()
+        await existing_cursor.close()
 
         timestamp = utc_now_iso()
 
         if existing_account:
             account_id = existing_account[0]
-
-            await cursor.execute(
+            stored_username = existing_account[1]
+            await connection.execute(
                 '''
                 UPDATE user_accounts
                 SET last_used_at = ?
-                WHERE id = ?
+                WHERE id = ? AND user_id = ?
                 ''',
-                (timestamp, account_id)
+                (timestamp, account_id, user_id),
             )
         else:
-            await cursor.execute(
-                '''
-                SELECT COUNT(*)
-                FROM user_accounts
-                WHERE user_id = ?
-                ''',
-                (user_id,)
+            count_cursor = await connection.execute(
+                'SELECT COUNT(*) FROM user_accounts WHERE user_id = ?',
+                (user_id,),
             )
-            count_row = await cursor.fetchone()
-            if count_row and count_row[0] >= 5:
+            count = (await count_cursor.fetchone())[0]
+            await count_cursor.close()
+            if count >= ACCOUNT_LIMIT:
                 raise exceptions.MaximumAccountsReached
 
-            await cursor.execute(
+            insert_cursor = await connection.execute(
                 '''
                 INSERT INTO user_accounts (
                     user_id,
@@ -183,46 +250,19 @@ async def add_username(
                 )
                 VALUES (?, ?, ?, ?, ?)
                 ''',
-                (user_id, username, account_type, timestamp, timestamp)
+                (user_id, username, account_type, timestamp, timestamp),
             )
+            account_id = insert_cursor.lastrowid
+            await insert_cursor.close()
+            stored_username = username
 
-            await cursor.execute(
-                '''
-                SELECT id
-                FROM user_accounts
-                WHERE user_id = ?
-                  AND username = ?
-                  AND account_type = ?
-                LIMIT 1
-                ''',
-                (user_id, username, account_type)
-            )
-            account = await cursor.fetchone()
-            account_id = account[0] if account else None
-
-        if account_id:
-            await cursor.execute(
-                '''
-                SELECT username
-                FROM user_accounts
-                WHERE id = ?
-                LIMIT 1
-                ''',
-                (account_id,)
-            )
-            account_row = await cursor.fetchone()
-            stored_username = account_row[0] if account_row else username
-
-            await cursor.execute(
-                '''
-                UPDATE all_users
-                SET default_account_id = ?, username = ?, account_type = ?
-                WHERE user_id = ?
-                ''',
-                (account_id, stored_username, account_type, user_id)
-            )
-
-        return await self.bot.runebotdb.commit()
+        await _store_default_account(
+            connection,
+            user_id,
+            stored_username,
+            account_type,
+            account_id,
+        )
 
 
 async def get_all_articles(self) -> List[str]:
@@ -509,63 +549,38 @@ async def set_default_account(self, user_id: int, account_id: int) -> bool:
         True if default account is updated, otherwise False.
     '''
 
-    async with self.bot.runebotdb.cursor() as cursor:
-        await cursor.execute(
+    async with _account_transaction(self) as connection:
+        account_cursor = await connection.execute(
             '''
             SELECT username, account_type
             FROM user_accounts
             WHERE id = ? AND user_id = ?
             LIMIT 1
             ''',
-            (account_id, user_id)
+            (account_id, user_id),
         )
-        account = await cursor.fetchone()
+        account = await account_cursor.fetchone()
+        await account_cursor.close()
         if not account:
             return False
 
         username, account_type = account
-
-        await cursor.execute(
-            '''
-            SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1
-            ''',
-            (user_id,)
-        )
-        existing_user = await cursor.fetchone()
-
-        if not existing_user:
-            await cursor.execute(
-                '''
-                INSERT INTO all_users (
-                    user_id,
-                    username,
-                    account_type,
-                    default_account_id
-                )
-                VALUES (?, ?, ?, ?)
-                ''',
-                (user_id, username, account_type, account_id)
-            )
-
-        await cursor.execute(
-            '''
-            UPDATE all_users
-            SET default_account_id = ?, username = ?, account_type = ?
-            WHERE user_id = ?
-            ''',
-            (account_id, username, account_type, user_id)
+        await _store_default_account(
+            connection,
+            user_id,
+            username,
+            account_type,
+            account_id,
         )
 
-        await cursor.execute(
+        await connection.execute(
             '''
             UPDATE user_accounts
             SET last_used_at = ?
             WHERE id = ? AND user_id = ?
             ''',
-            (utc_now_iso(), account_id, user_id)
+            (utc_now_iso(), account_id, user_id),
         )
-
-        await self.bot.runebotdb.commit()
         return True
 
 
@@ -638,30 +653,31 @@ async def remove_user_account(self, user_id: int, account_id: int) -> bool:
         True if an account was deleted, otherwise False.
     '''
 
-    async with self.bot.runebotdb.cursor() as cursor:
-        await cursor.execute(
+    async with _account_transaction(self) as connection:
+        account_cursor = await connection.execute(
             '''
             SELECT 1
             FROM user_accounts
             WHERE user_id = ? AND id = ?
             LIMIT 1
             ''',
-            (user_id, account_id)
+            (user_id, account_id),
         )
-        account_exists = await cursor.fetchone()
+        account_exists = await account_cursor.fetchone()
+        await account_cursor.close()
 
         if not account_exists:
             return False
 
-        await cursor.execute(
+        await connection.execute(
             '''
             DELETE FROM user_accounts
             WHERE user_id = ? AND id = ?
             ''',
-            (user_id, account_id)
+            (user_id, account_id),
         )
 
-        await cursor.execute(
+        default_cursor = await connection.execute(
             '''
             SELECT id, username, account_type
             FROM user_accounts
@@ -669,52 +685,28 @@ async def remove_user_account(self, user_id: int, account_id: int) -> bool:
             ORDER BY last_used_at DESC, id ASC
             LIMIT 1
             ''',
-            (user_id,)
+            (user_id,),
         )
-        next_default = await cursor.fetchone()
+        next_default = await default_cursor.fetchone()
+        await default_cursor.close()
 
         if next_default:
             next_id, next_username, next_account_type = next_default
 
-            await cursor.execute(
-                '''
-                SELECT 1 FROM all_users WHERE user_id = ? LIMIT 1
-                ''',
-                (user_id,)
+            await _store_default_account(
+                connection,
+                user_id,
+                next_username,
+                next_account_type,
+                next_id,
             )
-            existing_user = await cursor.fetchone()
-
-            if existing_user:
-                await cursor.execute(
-                    '''
-                    UPDATE all_users
-                    SET default_account_id = ?, username = ?, account_type = ?
-                    WHERE user_id = ?
-                    ''',
-                    (next_id, next_username, next_account_type, user_id)
-                )
-            else:
-                await cursor.execute(
-                    '''
-                    INSERT INTO all_users (
-                        user_id,
-                        username,
-                        account_type,
-                        default_account_id
-                    )
-                    VALUES (?, ?, ?, ?)
-                    ''',
-                    (user_id, next_username, next_account_type, next_id)
-                )
         else:
-            await cursor.execute(
+            await connection.execute(
                 '''
                 DELETE FROM all_users WHERE user_id = ?
                 ''',
-                (user_id,)
+                (user_id,),
             )
-
-        await self.bot.runebotdb.commit()
         return True
 
 

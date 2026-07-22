@@ -1066,6 +1066,20 @@ class Stats(commands.Cog, name='stats'):
                     int(account_id)
                 )
 
+                if not deleted:
+                    await ack_component_failure(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        description='That account is no longer available. Please refresh the account manager.',
+                        operation='account_delete_confirm',
+                        invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
+                        origin_trace_id=origin_trace_id,
+                        started_at=started_at,
+                    )
+                    return
+
                 await inter.delete_original_response()
 
                 if deleted:
@@ -1813,7 +1827,24 @@ class Stats(commands.Cog, name='stats'):
             await inter.response.defer()
 
             user_id = int(owner_id)
-            await set_default_account(self, user_id, int(selected_value))
+            default_updated = await set_default_account(self, user_id, int(selected_value))
+            if not default_updated:
+                try:
+                    await ack_component_failure(
+                        inter,
+                        self._stats_log,
+                        'stats',
+                        description='That account is no longer available. Please refresh the account manager.',
+                        operation='default_account_select',
+                        invocation_source=self._invocation_source(inter),
+                        trace_id=trace_id,
+                        started_at=started_at,
+                        emit_runtime_failure=False,
+                    )
+                except Exception:
+                    acknowledgement_failed = True
+                    raise
+                return
 
             default_account = await get_default_account(self, user_id)
             accounts = await get_user_accounts(self, user_id)
