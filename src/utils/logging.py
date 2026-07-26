@@ -618,6 +618,7 @@ def build_internal_log_message(
 def emit_internal_log(
     *,
     level: str,
+    action: str,
     stage: str,
     operation: str,
     subject: str | None = None,
@@ -631,6 +632,8 @@ def emit_internal_log(
 
     :param level: (String) -
         Represents the log level to emit.
+    :param action: (String) -
+        Represents the lifecycle action token for the log event.
     :param stage: (String) -
         Represents the execution stage token.
     :param operation: (String) -
@@ -658,7 +661,7 @@ def emit_internal_log(
 
     payload = {
         'trace_id': trace_id,
-        'action': operation,
+        'action': action,
         'stage': stage,
         'operation': operation,
         'subject': subject,

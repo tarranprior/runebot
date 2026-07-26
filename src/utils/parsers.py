@@ -61,6 +61,15 @@ from utils.helpers import normalize_price, slugify
 
 _GRAPH_RENDER_LOCK = threading.Lock()
 
+_PARSER_ACTION_BY_STAGE = {
+    'start': 'start',
+    'resolve': 'resolve',
+    'complete': 'complete',
+    'retry': 'retry',
+    'failure': 'fail',
+    'runtime_failure': 'fail',
+}
+
 
 def parser_log(
     level: str,
@@ -72,8 +81,11 @@ def parser_log(
     log_params: list | None = None,
     **extra,
 ) -> None:
+    action = _PARSER_ACTION_BY_STAGE[stage]
+
     emit_internal_log(
         level=level,
+        action=action,
         stage=stage,
         operation=operation,
         subject=subject,
