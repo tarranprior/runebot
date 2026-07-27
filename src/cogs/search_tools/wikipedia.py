@@ -977,10 +977,10 @@ class DropdownView(disnake.ui.View):
                 helper_kwargs['invocation_mode'] = 'dropdown_selection'
             if stage == 'runtime_failure' and exc is not None:
                 self._cog._wiki_log.error(
-                inter,
-                message,
-                exc=exc,
-                **helper_kwargs,
+                    inter,
+                    message,
+                    exc=exc,
+                    **helper_kwargs,
                 )
             elif level == 'info':
                 self._cog._wiki_log.info(inter, message, **helper_kwargs)
