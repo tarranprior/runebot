@@ -621,6 +621,7 @@ def emit_internal_log(
     action: str,
     stage: str,
     operation: str,
+    exc: BaseException | None = None,
     subject: str | None = None,
     resolved: str | None = None,
     trace_id: str | None = None,
@@ -638,6 +639,8 @@ def emit_internal_log(
         Represents the execution stage token.
     :param operation: (String) -
         Represents the operation name for the event.
+    :param exc: (Optional[BaseException]) -
+        Represents an exception to attach to the diagnostic log envelope.
     :param subject: (Optional[String]) -
         Represents the subject token for the event.
     :param resolved: (Optional[String]) -
@@ -671,6 +674,8 @@ def emit_internal_log(
     }
     payload = {k: v for k, v in payload.items() if v is not None}
     bound_logger = logger.bind(**payload)
+    if exc is not None:
+        bound_logger = bound_logger.opt(exception=exc)
 
     log_method = getattr(bound_logger, level, bound_logger.debug)
     log_method(message)
