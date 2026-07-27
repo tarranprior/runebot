@@ -404,6 +404,47 @@ def insert_internal_logs(db_path: str, logs: list[dict[str, Any]]) -> int:
     return inserted_count
 
 
+def _normalise_exception_projection(
+    metadata: Any,
+    exception: Any,
+) -> dict[str, str | None]:
+    '''
+    Builds canonical exception fields from historic and current log shapes.
+
+    :param metadata: (Any) -
+        Represents the persisted structured metadata.
+    :param exception: (Any) -
+        Represents the persisted top-level exception envelope.
+
+    :return: (Dictionary) -
+        Canonical exception type, message and traceback fields.
+    '''
+
+    metadata_fields = metadata if isinstance(metadata, dict) else {}
+    exception_fields = exception if isinstance(exception, dict) else {}
+
+    def first_string(*values: Any) -> str | None:
+        return next(
+            (value for value in values if isinstance(value, str)),
+            None,
+        )
+
+    return {
+        'exception_type': first_string(
+            metadata_fields.get('exception_type'),
+            exception_fields.get('type'),
+        ),
+        'exception_message': first_string(
+            metadata_fields.get('exception_message'),
+            metadata_fields.get('exception'),
+            exception_fields.get('message'),
+        ),
+        'exception_traceback': first_string(
+            exception_fields.get('traceback'),
+        ),
+    }
+
+
 def query_internal_logs(
     db_path: str,
     page: int,
@@ -471,8 +512,15 @@ def query_internal_logs(
         total = conn.execute(count_sql, params).fetchone()[0]
         rows = conn.execute(data_sql, [*params, page_size, offset]).fetchall()
 
-    items = [
-        {
+    items = []
+    for row in rows:
+        metadata = json.loads(row['metadata']) if row['metadata'] else {}
+        exception = (
+            json.loads(row['exception'])
+            if row['exception']
+            else None
+        )
+        items.append({
             'id': row['id'],
             'timestamp': row['timestamp'],
             'level': row['level'],
@@ -482,14 +530,13 @@ def query_internal_logs(
             'line': row['line'],
             'message': row['message'],
             'source': row['source'],
-            'metadata': json.loads(row['metadata']) if row['metadata'] else {},
-            'exception': json.loads(row['exception']) if row['exception'] else None,
+            'metadata': metadata,
+            'exception': exception,
+            **_normalise_exception_projection(metadata, exception),
             'session_id': row['session_id'],
             'trace_id': row['trace_id'],
             'event_id': row['event_id'],
-        }
-        for row in rows
-    ]
+        })
 
     return items, total
 
