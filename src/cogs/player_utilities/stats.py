@@ -734,7 +734,7 @@ class Stats(commands.Cog, name='stats'):
                     expected_failure=True,
                     user_visible=True,
                     exception_type=type(exc).__name__,
-                    exception=str(exc),
+                    exception_message=str(exc),
                     log_params=serialize_params(fail_params),
                     owner_id=owner_id,
                     **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
@@ -1678,7 +1678,7 @@ class Stats(commands.Cog, name='stats'):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 duration_ms=elapsed_ms(started_at),
             )
             return

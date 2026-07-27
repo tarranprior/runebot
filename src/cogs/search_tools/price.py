@@ -318,7 +318,7 @@ class Price(commands.Cog, name='price'):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
@@ -346,7 +346,7 @@ class Price(commands.Cog, name='price'):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 **({'duration_ms': elapsed_ms(started_at)} if started_at is not None else {}),
             )
             raise
@@ -814,7 +814,7 @@ class Price(commands.Cog, name='price'):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 duration_ms=elapsed_ms(started_at),
             )
 
@@ -1045,7 +1045,7 @@ class Price(commands.Cog, name='price'):
                     expected_failure=True,
                     user_visible=True,
                     exception_type=type(exc).__name__,
-                    exception=str(exc),
+                    exception_message=str(exc),
                     duration_ms=elapsed_ms(started_at),
                     **({'resolved_search_term': resolved_search_term} if 'resolved_search_term' in locals() else {}),
                     **({'resolved_page_title': resolved_page_title} if 'resolved_page_title' in locals() else {}),

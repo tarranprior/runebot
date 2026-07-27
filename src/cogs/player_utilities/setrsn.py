@@ -154,7 +154,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 user_visible=True,
                 trace_id=trace_id,
                 exception_type='UsernameInvalid',
-                exception=str(exceptions.UsernameInvalid()),
+                exception_message=str(exceptions.UsernameInvalid()),
                 **(
                     {'duration_ms': elapsed_ms(started_at)}
                     if started_at is not None
@@ -338,7 +338,7 @@ class Setrsn(commands.Cog, name='setrsn'):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 duration_ms=elapsed_ms(started_at),
             )
 

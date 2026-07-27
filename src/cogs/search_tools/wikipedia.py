@@ -331,7 +331,7 @@ class Wikipedia(commands.Cog, name='wikipedia'):
                         },
                     ],
                     exception_type=type(exc).__name__,
-                    exception=str(exc),
+                    exception_message=str(exc),
                     handled=True,
                     expected_failure=True,
                     user_visible=True,
@@ -803,7 +803,7 @@ class Dropdown(disnake.ui.StringSelect):
                 expected_failure=True,
                 user_visible=True,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
                 duration_ms=elapsed_ms(started_at),
             )
             return

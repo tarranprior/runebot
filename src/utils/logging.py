@@ -355,7 +355,7 @@ def log_colour_extraction_failure(
         image_url=image_url,
         image_host=image_host,
         exception_type=type(exc).__name__,
-        exception=str(exc),
+        exception_message=str(exc),
         **context,
     )
 
@@ -399,7 +399,7 @@ def build_expected_user_visible_failure_metadata(exc: Exception) -> dict:
         'expected_failure': True,
         'user_visible': True,
         'exception_type': type(exc).__name__,
-        'exception': str(exc),
+        'exception_message': str(exc),
     }
 
 

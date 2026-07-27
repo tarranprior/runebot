@@ -244,7 +244,7 @@ class Ping(commands.Cog, name='ping'):
                 expected_failure=False,
                 user_visible=False,
                 exception_type=type(exc).__name__,
-                exception=str(exc),
+                exception_message=str(exc),
             )
             raise
 
