@@ -966,13 +966,23 @@ class DropdownView(disnake.ui.View):
             payload['cleanup_failed'] = True
             if exc is not None:
                 payload['exception_type'] = type(exc).__name__
-                payload['exception'] = str(exc)
+                payload['exception_message'] = str(exc)
+                payload['handled'] = True
+                payload['expected_failure'] = False
+                payload['user_visible'] = False
 
         if inter is not None:
             helper_kwargs = dict(payload)
             if 'invocation_mode' not in helper_kwargs:
                 helper_kwargs['invocation_mode'] = 'dropdown_selection'
-            if level == 'info':
+            if stage == 'runtime_failure' and exc is not None:
+                self._cog._wiki_log.error(
+                inter,
+                message,
+                exc=exc,
+                **helper_kwargs,
+                )
+            elif level == 'info':
                 self._cog._wiki_log.info(inter, message, **helper_kwargs)
             else:
                 self._cog._wiki_log.debug(inter, message, **helper_kwargs)
